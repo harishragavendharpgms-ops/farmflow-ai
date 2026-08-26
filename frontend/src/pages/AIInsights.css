@@ -1,0 +1,86 @@
+.insights-page {
+  min-height: 100vh;
+  background-color: #f4f9f4;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 40px 20px;
+  font-family: Arial, sans-serif;
+}
+
+.insights-card {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+  width: 100%;
+  max-width: 700px;
+}
+
+.insights-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.insights-header h2 {
+  color: #2c3e50;
+  margin: 0;
+}
+
+.insights-subtitle {
+  color: #7f8c8d;
+  font-size: 14px;
+  margin-bottom: 25px;
+  border-bottom: 2px solid #f4f9f4;
+  padding-bottom: 15px;
+}
+
+.insights-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.insight-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 15px;
+  border-radius: 8px;
+  gap: 15px;
+  border-left: 5px solid transparent; /* Placeholder for colored border */
+}
+
+/* Custom styling for different types of insights */
+.insight-item.price-up {
+  background-color: #f0f8ff;
+  border-left-color: #3498db;
+}
+
+.insight-item.weather-warn {
+  background-color: #fff3cd;
+  border-left-color: #f1c40f;
+}
+
+.insight-item.optimal {
+  background-color: #e8f5e9;
+  border-left-color: #27ae60;
+}
+
+.insight-icon {
+  font-size: 28px;
+}
+
+.insight-content h4 {
+  margin: 0 0 5px 0;
+  color: #2c3e50;
+  font-size: 16px;
+}
+
+.insight-content p {
+  margin: 0;
+  color: #555;
+  font-size: 14px;
+  line-height: 1.5;
+}

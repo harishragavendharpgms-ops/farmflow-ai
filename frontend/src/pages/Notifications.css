@@ -1,0 +1,77 @@
+.notifications-page {
+  min-height: 100vh;
+  background-color: #f4f9f4;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 40px 20px;
+  font-family: Arial, sans-serif;
+}
+
+.notifications-card {
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+  width: 100%;
+  max-width: 600px;
+}
+
+.notifications-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+  border-bottom: 2px solid #f4f9f4;
+  padding-bottom: 15px;
+}
+
+.notifications-header h2 {
+  color: #2c3e50;
+  margin: 0;
+}
+
+.notifications-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.alert-item {
+  display: flex;
+  align-items: flex-start;
+  padding: 15px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background-color: #fafafa;
+  gap: 15px;
+}
+
+/* This makes unread messages look slightly different */
+.alert-item.unread {
+  background-color: #e8f5e9; /* Light green background */
+  border-color: #a5d6a7;
+}
+
+.alert-icon {
+  font-size: 24px;
+}
+
+.alert-content h4 {
+  margin: 0 0 5px 0;
+  color: #2c3e50;
+  font-size: 16px;
+}
+
+.alert-content p {
+  margin: 0 0 8px 0;
+  color: #555;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.alert-time {
+  font-size: 12px;
+  color: #999;
+  font-weight: bold;
+}

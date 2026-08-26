@@ -1,0 +1,91 @@
+.status-page {
+  min-height: 100vh;
+  background-color: #f4f9f4;
+  padding: 40px 20px;
+  font-family: Arial, sans-serif;
+}
+
+.status-container {
+  max-width: 800px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 12px;
+  padding: 30px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+
+.status-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 30px;
+  border-bottom: 2px solid #f4f9f4;
+  padding-bottom: 15px;
+}
+
+.status-header h2 {
+  color: #2c3e50;
+  margin: 0;
+}
+
+.back-btn {
+  text-decoration: none;
+  color: #27ae60;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.back-btn:hover {
+  text-decoration: underline;
+}
+
+.status-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.status-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  background-color: #fafafa;
+}
+
+.crop-info h3 {
+  margin: 0 0 5px 0;
+  color: #2c3e50;
+  font-size: 18px;
+}
+
+.crop-info p {
+  margin: 0;
+  color: #7f8c8d;
+  font-size: 14px;
+}
+
+/* Beautiful colored badges for the different statuses */
+.status-badge {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.scheduled {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.processing {
+  background-color: #cce5ff;
+  color: #004085;
+}
+
+.collected {
+  background-color: #d4edda;
+  color: #155724;
+}
