@@ -9,7 +9,7 @@ function Market() {
 
   useEffect(() => {
     // Ask Python for the live market prices
-    axios.get("http://localhost:8000/api/market")
+    axios.get("[https://farmflow-ai-84t0.onrender.com](https://farmflow-ai-84t0.onrender.com)/api/market")
       .then((response) => {
         setPrices(response.data);
         setLoading(false);

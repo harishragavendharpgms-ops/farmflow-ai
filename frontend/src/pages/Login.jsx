@@ -24,7 +24,7 @@ function Login() {
     setMessage("Checking credentials...");
 
     // Ask Python if the email and password are correct
-    axios.post("http://localhost:8000/api/login", {
+    axios.post("[https://farmflow-ai-84t0.onrender.com](https://farmflow-ai-84t0.onrender.com)/api/login", {
       email: formData.email,
       password: formData.password
     })

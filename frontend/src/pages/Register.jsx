@@ -36,7 +36,7 @@ function Register() {
     }
 
     // Send the data to our Python API
-    axios.post("http://localhost:8000/api/register", {
+    axios.post("[https://farmflow-ai-84t0.onrender.com](https://farmflow-ai-84t0.onrender.com)/api/register", {
       name: formData.name,
       email: formData.email,
       phone: formData.phone,

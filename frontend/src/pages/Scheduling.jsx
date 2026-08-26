@@ -33,7 +33,7 @@ function Scheduling() {
     }
 
     // 2. Send the booking to our Python API
-    axios.post("http://localhost:8000/api/schedule", {
+    axios.post("[https://farmflow-ai-84t0.onrender.com](https://farmflow-ai-84t0.onrender.com)/api/schedule", {
       farmer_email: userEmail,
       crop_type: formData.cropType,
       quantity: Number(formData.quantity), // Make sure this is a number!

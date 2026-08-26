@@ -24,7 +24,7 @@ function Dashboard() {
     }
 
     // 2. Fetch appointments from Python backend
-    axios.get(`http://localhost:8000/api/appointments?email=${savedEmail}`)
+    axios.get(`[https://farmflow-ai-84t0.onrender.com](https://farmflow-ai-84t0.onrender.com)/api/appointments?email=${savedEmail}`)
       .then((response) => {
         setAppointments(response.data);
       })
@@ -33,7 +33,7 @@ function Dashboard() {
       });
 
     // 3. Fetch market prices from Python backend
-    axios.get("http://localhost:8000/api/market")
+    axios.get("[https://farmflow-ai-84t0.onrender.com](https://farmflow-ai-84t0.onrender.com)/api/market")
       .then((response) => {
         setMarketPrices(response.data);
         setLoadingMarket(false);
