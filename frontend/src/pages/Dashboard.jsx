@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-// Simulated current market rates in India (Rupees per kg)
+// Simulated current market rates in India (Rupees)
 const indianMarketRates = {
   "Rice (Paddy)": 22.50,
   "Wheat": 25.00,
@@ -17,17 +17,22 @@ const indianMarketRates = {
   "Potato": 18.00
 };
 
+// Simulated farming supplies for procurement
+const farmingSupplies = {
+  "Urea Fertilizer (45kg Bag)": 266.50,
+  "Premium Wheat Seeds (40kg)": 3500.00
+};
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
   
   // Procurement Form States
   const [orderingItem, setOrderingItem] = useState(null);
-  const [orderDetails, setOrderDetails] = useState({ location: '', datetime: '' });
+  const [orderDetails, setOrderDetails] = useState({ location: '', datetime: '', quantity: '' });
 
   // Crop Tracking States
   const [myCrops, setMyCrops] = useState([
-    // Starting with one dummy crop so the dashboard isn't completely empty
     { id: 1, name: "Wheat", weightKg: 500, sector: "Sector A", ratePerKg: 25.00 }
   ]);
   const [newCrop, setNewCrop] = useState({ name: '', weightKg: '', sector: '' });
@@ -37,11 +42,11 @@ const Dashboard = () => {
 
   const submitOrder = (e) => {
     e.preventDefault();
-    alert(`Success! Application submitted for ${orderingItem} at ${orderDetails.location} on ${orderDetails.datetime}.`);
-    setOrderingItem(null);
+    alert(`Success! Procurement application submitted for ${orderDetails.quantity}kg of ${orderingItem} at ${orderDetails.location} on ${orderDetails.datetime}.`);
+    setOrderingItem(null); // Reset form
+    setOrderDetails({ location: '', datetime: '', quantity: '' });
   };
 
-  // Function to handle adding a new crop to the list
   const handleAddCrop = (e) => {
     e.preventDefault();
     if (!newCrop.name || !newCrop.weightKg || !newCrop.sector) {
@@ -58,7 +63,7 @@ const Dashboard = () => {
     };
 
     setMyCrops([...myCrops, cropEntry]);
-    setNewCrop({ name: '', weightKg: '', sector: '' }); // Clear form
+    setNewCrop({ name: '', weightKg: '', sector: '' }); 
     alert(`${newCrop.name} added successfully!`);
   };
 
@@ -72,7 +77,6 @@ const Dashboard = () => {
           <div onClick={() => {setActiveTab('dashboard'); setOrderingItem(null);}} style={{ color: activeTab === 'dashboard' ? '#fff' : '#a0b2a6', fontWeight: activeTab === 'dashboard' ? 'bold' : 'normal', cursor: 'pointer' }}>📊 Dashboard</div>
           <div onClick={() => {setActiveTab('crops'); setOrderingItem(null);}} style={{ color: activeTab === 'crops' ? '#fff' : '#a0b2a6', fontWeight: activeTab === 'crops' ? 'bold' : 'normal', cursor: 'pointer' }}>🌾 My Crops</div>
           <div onClick={() => setActiveTab('procurement')} style={{ color: activeTab === 'procurement' ? '#fff' : '#a0b2a6', fontWeight: activeTab === 'procurement' ? 'bold' : 'normal', cursor: 'pointer' }}>🛒 Procurement</div>
-          <div onClick={() => {setActiveTab('irrigation'); setOrderingItem(null);}} style={{ color: activeTab === 'irrigation' ? '#fff' : '#a0b2a6', fontWeight: activeTab === 'irrigation' ? 'bold' : 'normal', cursor: 'pointer' }}>💧 Irrigation</div>
           <div onClick={() => {setActiveTab('ai'); setOrderingItem(null);}} style={{ color: activeTab === 'ai' ? '#fff' : '#a0b2a6', fontWeight: activeTab === 'ai' ? 'bold' : 'normal', cursor: 'pointer' }}>🤖 AI Insights</div>
         </nav>
         <button onClick={handleLogout} style={{ padding: '12px', backgroundColor: 'transparent', color: '#ff6b6b', border: '1px solid #ff6b6b', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>Log Out</button>
@@ -104,11 +108,9 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* VIEW 2: MY CROPS (UPDATED WITH ADD CROP & LIVE RATES) */}
+        {/* VIEW 2: MY CROPS */}
         {activeTab === 'crops' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
-            
-            {/* Add Crop Form */}
             <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
               <h3 style={{ marginBottom: '20px', color: '#2c3e50' }}>➕ Add New Crop Inventory</h3>
               <form onSubmit={handleAddCrop} style={{ display: 'flex', gap: '15px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
@@ -121,25 +123,20 @@ const Dashboard = () => {
                     ))}
                   </select>
                 </div>
-                
                 <div style={{ width: '150px' }}>
                   <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', fontSize: '14px', color: '#555' }}>Weight (in KGs)</label>
                   <input type="number" min="1" required placeholder="e.g. 100" value={newCrop.weightKg} onChange={(e) => setNewCrop({...newCrop, weightKg: e.target.value})} style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '6px' }} />
                 </div>
-
                 <div style={{ flexGrow: 1, minWidth: '150px' }}>
                   <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', fontSize: '14px', color: '#555' }}>Farm Sector/Plot</label>
                   <input type="text" required placeholder="e.g. Plot 1" value={newCrop.sector} onChange={(e) => setNewCrop({...newCrop, sector: e.target.value})} style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '6px' }} />
                 </div>
-
                 <button type="submit" style={{ padding: '10px 20px', backgroundColor: '#4caf50', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', height: '40px' }}>Add Crop</button>
               </form>
             </div>
 
-            {/* Inventory Display */}
             <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
               <h3 style={{ marginBottom: '20px', color: '#2c3e50' }}>🌾 My Crop Inventory</h3>
-              
               {myCrops.length === 0 ? (
                 <p style={{ color: '#777' }}>No crops added yet. Use the form above to add your inventory.</p>
               ) : (
@@ -158,48 +155,80 @@ const Dashboard = () => {
                 </div>
               )}
             </div>
-            
           </div>
         )}
 
-        {/* VIEW 3: PROCUREMENT */}
+        {/* VIEW 3: PROCUREMENT LIST */}
         {activeTab === 'procurement' && !orderingItem && (
-          <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px' }}>
-            <h3 style={{ marginBottom: '20px' }}>Live Market Prices</h3>
-            <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ borderBottom: '2px solid #eee' }}>
-                  <th style={{ padding: '15px 10px' }}>Item</th>
-                  <th style={{ padding: '15px 10px' }}>Current Price</th>
-                  <th style={{ padding: '15px 10px' }}>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr style={{ borderBottom: '1px solid #eee' }}>
-                  <td style={{ padding: '15px 10px' }}><strong>Urea Fertilizer (45kg)</strong></td>
-                  <td style={{ padding: '15px 10px' }}>₹266.50 <span style={{ color: 'green' }}>↓</span></td>
-                  <td style={{ padding: '15px 10px' }}><button onClick={() => setOrderingItem('Urea Fertilizer')} style={{ padding: '8px 15px', backgroundColor: '#2196f3', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Apply for Procurement</button></td>
-                </tr>
-                <tr>
-                  <td style={{ padding: '15px 10px' }}><strong>Wheat Seeds (40kg)</strong></td>
-                  <td style={{ padding: '15px 10px' }}>₹3,500.00 <span style={{ color: 'red' }}>↑</span></td>
-                  <td style={{ padding: '15px 10px' }}><button onClick={() => setOrderingItem('Wheat Seeds')} style={{ padding: '8px 15px', backgroundColor: '#2196f3', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Apply for Procurement</button></td>
-                </tr>
-              </tbody>
-            </table>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+            
+            {/* Crop Procurement (Selling to Government/Market) */}
+            <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px' }}>
+              <h3 style={{ marginBottom: '20px', color: '#2c3e50' }}>🌾 Crop Procurement (Sell your Harvest)</h3>
+              <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid #eee' }}>
+                    <th style={{ padding: '15px 10px' }}>Crop Name</th>
+                    <th style={{ padding: '15px 10px' }}>Current Market/MSP Rate</th>
+                    <th style={{ padding: '15px 10px' }}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.keys(indianMarketRates).map(crop => (
+                    <tr key={crop} style={{ borderBottom: '1px solid #eee' }}>
+                      <td style={{ padding: '15px 10px' }}><strong>{crop}</strong></td>
+                      <td style={{ padding: '15px 10px' }}>₹{indianMarketRates[crop].toFixed(2)} / kg</td>
+                      <td style={{ padding: '15px 10px' }}>
+                        <button onClick={() => setOrderingItem(crop)} style={{ padding: '8px 15px', backgroundColor: '#4caf50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>Apply for Procurement</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Supply Procurement (Buying) */}
+            <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px' }}>
+              <h3 style={{ marginBottom: '20px', color: '#2c3e50' }}>🛒 Farming Supplies (Buy)</h3>
+              <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid #eee' }}>
+                    <th style={{ padding: '15px 10px' }}>Item Name</th>
+                    <th style={{ padding: '15px 10px' }}>Current Price</th>
+                    <th style={{ padding: '15px 10px' }}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.keys(farmingSupplies).map(supply => (
+                    <tr key={supply} style={{ borderBottom: '1px solid #eee' }}>
+                      <td style={{ padding: '15px 10px' }}><strong>{supply}</strong></td>
+                      <td style={{ padding: '15px 10px' }}>₹{farmingSupplies[supply].toFixed(2)}</td>
+                      <td style={{ padding: '15px 10px' }}>
+                        <button onClick={() => setOrderingItem(supply)} style={{ padding: '8px 15px', backgroundColor: '#2196f3', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>Apply for Procurement</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
           </div>
         )}
 
-        {/* PROCUREMENT FORM */}
+        {/* VIEW 3.5: PROCUREMENT APPLICATION FORM */}
         {activeTab === 'procurement' && orderingItem && (
           <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px', maxWidth: '500px' }}>
             <h3 style={{ color: '#2c3e50', marginBottom: '10px' }}>Procurement Application</h3>
-            <p style={{ color: '#777', marginBottom: '20px' }}>Applying for: <strong>{orderingItem}</strong></p>
+            <p style={{ color: '#777', marginBottom: '20px' }}>Applying for: <strong style={{ color: '#2e7d32', fontSize: '18px' }}>{orderingItem}</strong></p>
             
             <form onSubmit={submitOrder} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
               <div>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Quantity (in KGs / Bags)</label>
+                <input type="number" required min="1" placeholder="Enter quantity" value={orderDetails.quantity} onChange={(e) => setOrderDetails({...orderDetails, quantity: e.target.value})} style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '6px' }} />
+              </div>
+              <div>
                 <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Farm Location / Address</label>
-                <input type="text" required placeholder="Enter delivery location" value={orderDetails.location} onChange={(e) => setOrderDetails({...orderDetails, location: e.target.value})} style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '6px' }} />
+                <input type="text" required placeholder="Enter pickup/delivery location" value={orderDetails.location} onChange={(e) => setOrderDetails({...orderDetails, location: e.target.value})} style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '6px' }} />
               </div>
               <div>
                 <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>Preferred Date & Time</label>
@@ -214,30 +243,16 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* VIEW 4: IRRIGATION */}
-        {activeTab === 'irrigation' && (
-          <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px' }}>
-            <h3 style={{ marginBottom: '20px' }}>Smart Irrigation Control</h3>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '20px', border: '1px solid #eee', borderRadius: '8px' }}>
-              <div>
-                <h4 style={{ margin: '0 0 5px 0' }}>Main Water Pump</h4>
-                <p style={{ margin: 0, color: '#777' }}>Soil moisture is currently at 42% (Optimal).</p>
-              </div>
-              <button onClick={() => handleFeatureClick('Pump Switch')} style={{ padding: '10px 20px', backgroundColor: '#e74c3c', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold' }}>Turn Pump ON</button>
-            </div>
-          </div>
-        )}
-
-        {/* VIEW 5: AI INSIGHTS */}
+        {/* VIEW 4: AI INSIGHTS */}
         {activeTab === 'ai' && (
           <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px' }}>
             <h3 style={{ marginBottom: '20px' }}>🤖 FarmFlow AI Analysis</h3>
             <div style={{ backgroundColor: '#f9f9f9', padding: '20px', borderRadius: '8px', borderLeft: '4px solid #2196f3' }}>
               <p style={{ margin: '0 0 10px 0', fontWeight: 'bold', color: '#333' }}>Weekly Insight Report generated:</p>
               <ul style={{ color: '#555', lineHeight: '1.8' }}>
-                <li>Yield forecast indicates a 12% increase if watering schedules are shifted to 5:00 AM.</li>
                 <li>Nitrogen levels in Sector 2 are dropping. Recommended to apply Urea by Thursday.</li>
                 <li>Market conditions suggest holding wheat sales for 2 weeks to maximize profit.</li>
+                <li>Weather analysis shows low risk of pests for the next 7 days.</li>
               </ul>
             </div>
           </div>
