@@ -5,7 +5,6 @@ const Dashboard = () => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    // Teleport the user back to the login screen
     navigate('/login');
   };
 
@@ -19,6 +18,7 @@ const Dashboard = () => {
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '20px', flexGrow: 1 }}>
           <div style={{ color: '#fff', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer' }}>📊 Dashboard</div>
           <div style={{ color: '#a0b2a6', fontSize: '18px', cursor: 'pointer' }}>🌾 My Crops</div>
+          <div style={{ color: '#a0b2a6', fontSize: '18px', cursor: 'pointer' }}>🛒 Procurement</div> {/* New Sidebar Item */}
           <div style={{ color: '#a0b2a6', fontSize: '18px', cursor: 'pointer' }}>💧 Irrigation</div>
           <div style={{ color: '#a0b2a6', fontSize: '18px', cursor: 'pointer' }}>🤖 AI Insights</div>
         </nav>
@@ -48,7 +48,7 @@ const Dashboard = () => {
         {/* FEATURE CARDS GRID */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '25px' }}>
           
-          {/* Card 1 */}
+          {/* Card 1: Soil Health */}
           <div style={{ backgroundColor: 'white', padding: '25px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
             <h3 style={{ margin: '0 0 15px 0', color: '#2c3e50', fontSize: '20px' }}>🧪 Soil Health Analysis</h3>
             <p style={{ color: '#7f8c8d', lineHeight: '1.6', marginBottom: '20px' }}>AI is currently analyzing recent soil sensor data. Nitrogen levels are optimal.</p>
@@ -57,7 +57,7 @@ const Dashboard = () => {
             </button>
           </div>
 
-          {/* Card 2 */}
+          {/* Card 2: Weather */}
           <div style={{ backgroundColor: 'white', padding: '25px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
             <h3 style={{ margin: '0 0 15px 0', color: '#2c3e50', fontSize: '20px' }}>🌤️ Weather Prediction</h3>
             <p style={{ color: '#7f8c8d', lineHeight: '1.6', marginBottom: '20px' }}>Clear skies expected for the next 3 days. Rain probability remains at a low 10%.</p>
@@ -66,7 +66,25 @@ const Dashboard = () => {
             </button>
           </div>
 
-          {/* Card 3 */}
+          {/* Card 3: Smart Procurement - NEW */}
+          <div style={{ backgroundColor: 'white', padding: '25px', borderRadius: '12px', borderTop: '4px solid #2196f3', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
+            <h3 style={{ margin: '0 0 15px 0', color: '#2c3e50', fontSize: '20px' }}>🛒 Smart Procurement</h3>
+            <p style={{ color: '#7f8c8d', lineHeight: '1.6', marginBottom: '20px' }}>Urea prices dropped by 4% today. Recommended time to bulk order fertilizers from top suppliers.</p>
+            <button style={{ width: '100%', padding: '10px', backgroundColor: '#2196f3', border: 'none', borderRadius: '6px', cursor: 'pointer', color: 'white', fontWeight: 'bold' }}>
+              Compare Market Prices
+            </button>
+          </div>
+
+          {/* Card 4: Inventory - NEW */}
+          <div style={{ backgroundColor: 'white', padding: '25px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
+            <h3 style={{ margin: '0 0 15px 0', color: '#2c3e50', fontSize: '20px' }}>📦 Inventory Levels</h3>
+            <p style={{ color: '#7f8c8d', lineHeight: '1.6', marginBottom: '20px' }}>Wheat seed stocks are running low (15% remaining). Auto-procurement threshold reached.</p>
+            <button style={{ width: '100%', padding: '10px', backgroundColor: '#f8f9fa', border: '1px solid #dee2e6', borderRadius: '6px', cursor: 'pointer', color: '#495057', fontWeight: 'bold' }}>
+              Manage Inventory
+            </button>
+          </div>
+
+          {/* Card 5: Yield */}
           <div style={{ backgroundColor: 'white', padding: '25px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
             <h3 style={{ margin: '0 0 15px 0', color: '#2c3e50', fontSize: '20px' }}>📈 AI Yield Forecast</h3>
             <p style={{ color: '#7f8c8d', lineHeight: '1.6', marginBottom: '20px' }}>Based on current growth rates, your corn yield is projected to be 15% above average.</p>
@@ -75,7 +93,7 @@ const Dashboard = () => {
             </button>
           </div>
 
-          {/* Card 4 */}
+          {/* Card 6: Pest Alerts */}
           <div style={{ backgroundColor: 'white', padding: '25px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
             <h3 style={{ margin: '0 0 15px 0', color: '#2c3e50', fontSize: '20px' }}>🐛 Pest Alert System</h3>
             <p style={{ color: '#7f8c8d', lineHeight: '1.6', marginBottom: '20px' }}>No active threats detected in Sector A. Last drone scan completed 2 hours ago.</p>
