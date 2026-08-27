@@ -1,6 +1,22 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+// Simulated current market rates in India (Rupees per kg)
+const indianMarketRates = {
+  "Rice (Paddy)": 22.50,
+  "Wheat": 25.00,
+  "Maize (Corn)": 20.00,
+  "Cotton": 70.00,
+  "Sugarcane": 3.15,
+  "Soybean": 46.00,
+  "Mustard": 52.00,
+  "Bajra (Pearl Millet)": 24.50,
+  "Groundnut": 65.00,
+  "Tur (Pigeon Pea)": 110.00,
+  "Onion": 28.00,
+  "Potato": 18.00
+};
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -9,13 +25,41 @@ const Dashboard = () => {
   const [orderingItem, setOrderingItem] = useState(null);
   const [orderDetails, setOrderDetails] = useState({ location: '', datetime: '' });
 
+  // Crop Tracking States
+  const [myCrops, setMyCrops] = useState([
+    // Starting with one dummy crop so the dashboard isn't completely empty
+    { id: 1, name: "Wheat", weightKg: 500, sector: "Sector A", ratePerKg: 25.00 }
+  ]);
+  const [newCrop, setNewCrop] = useState({ name: '', weightKg: '', sector: '' });
+
   const handleLogout = () => navigate('/login');
   const handleFeatureClick = (featureName) => alert(`Opening ${featureName}...`);
 
   const submitOrder = (e) => {
     e.preventDefault();
     alert(`Success! Application submitted for ${orderingItem} at ${orderDetails.location} on ${orderDetails.datetime}.`);
-    setOrderingItem(null); // Reset form
+    setOrderingItem(null);
+  };
+
+  // Function to handle adding a new crop to the list
+  const handleAddCrop = (e) => {
+    e.preventDefault();
+    if (!newCrop.name || !newCrop.weightKg || !newCrop.sector) {
+      alert("Please fill in all crop details.");
+      return;
+    }
+    
+    const cropEntry = {
+      id: Date.now(),
+      name: newCrop.name,
+      weightKg: parseFloat(newCrop.weightKg),
+      sector: newCrop.sector,
+      ratePerKg: indianMarketRates[newCrop.name]
+    };
+
+    setMyCrops([...myCrops, cropEntry]);
+    setNewCrop({ name: '', weightKg: '', sector: '' }); // Clear form
+    alert(`${newCrop.name} added successfully!`);
   };
 
   return (
@@ -60,22 +104,65 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* VIEW 2: MY CROPS */}
+        {/* VIEW 2: MY CROPS (UPDATED WITH ADD CROP & LIVE RATES) */}
         {activeTab === 'crops' && (
-          <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px' }}>
-            <h3 style={{ marginBottom: '20px' }}>Active Plantings</h3>
-            <div style={{ padding: '15px', border: '1px solid #eee', borderRadius: '8px', marginBottom: '15px' }}>
-              <h4 style={{ margin: '0 0 5px 0', color: '#2e7d32' }}>Wheat (Sector 1)</h4>
-              <p style={{ margin: 0, color: '#555' }}>Status: <strong style={{ color: 'green' }}>Healthy</strong> | Expected Harvest: Oct 15</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
+            
+            {/* Add Crop Form */}
+            <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
+              <h3 style={{ marginBottom: '20px', color: '#2c3e50' }}>➕ Add New Crop Inventory</h3>
+              <form onSubmit={handleAddCrop} style={{ display: 'flex', gap: '15px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                <div style={{ flexGrow: 1, minWidth: '200px' }}>
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', fontSize: '14px', color: '#555' }}>Crop Type</label>
+                  <select required value={newCrop.name} onChange={(e) => setNewCrop({...newCrop, name: e.target.value})} style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '6px' }}>
+                    <option value="">-- Select Major Indian Crop --</option>
+                    {Object.keys(indianMarketRates).map(cropName => (
+                      <option key={cropName} value={cropName}>{cropName} (₹{indianMarketRates[cropName].toFixed(2)}/kg)</option>
+                    ))}
+                  </select>
+                </div>
+                
+                <div style={{ width: '150px' }}>
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', fontSize: '14px', color: '#555' }}>Weight (in KGs)</label>
+                  <input type="number" min="1" required placeholder="e.g. 100" value={newCrop.weightKg} onChange={(e) => setNewCrop({...newCrop, weightKg: e.target.value})} style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '6px' }} />
+                </div>
+
+                <div style={{ flexGrow: 1, minWidth: '150px' }}>
+                  <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold', fontSize: '14px', color: '#555' }}>Farm Sector/Plot</label>
+                  <input type="text" required placeholder="e.g. Plot 1" value={newCrop.sector} onChange={(e) => setNewCrop({...newCrop, sector: e.target.value})} style={{ width: '100%', padding: '10px', border: '1px solid #ddd', borderRadius: '6px' }} />
+                </div>
+
+                <button type="submit" style={{ padding: '10px 20px', backgroundColor: '#4caf50', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', height: '40px' }}>Add Crop</button>
+              </form>
             </div>
-            <div style={{ padding: '15px', border: '1px solid #eee', borderRadius: '8px' }}>
-              <h4 style={{ margin: '0 0 5px 0', color: '#2e7d32' }}>Corn (Sector 2)</h4>
-              <p style={{ margin: 0, color: '#555' }}>Status: <strong style={{ color: '#f39c12' }}>Needs Nitrogen</strong> | Expected Harvest: Nov 01</p>
+
+            {/* Inventory Display */}
+            <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
+              <h3 style={{ marginBottom: '20px', color: '#2c3e50' }}>🌾 My Crop Inventory</h3>
+              
+              {myCrops.length === 0 ? (
+                <p style={{ color: '#777' }}>No crops added yet. Use the form above to add your inventory.</p>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
+                  {myCrops.map(crop => (
+                    <div key={crop.id} style={{ padding: '20px', border: '1px solid #eee', borderRadius: '8px', borderLeft: '4px solid #4caf50' }}>
+                      <h4 style={{ margin: '0 0 10px 0', color: '#2e7d32', fontSize: '20px' }}>{crop.name}</h4>
+                      <p style={{ margin: '5px 0', color: '#555' }}><strong>Sector:</strong> {crop.sector}</p>
+                      <p style={{ margin: '5px 0', color: '#555' }}><strong>Weight:</strong> {crop.weightKg} kgs</p>
+                      <p style={{ margin: '5px 0', color: '#555' }}><strong>Market Rate:</strong> ₹{crop.ratePerKg.toFixed(2)} / kg</p>
+                      <div style={{ marginTop: '15px', paddingTop: '10px', borderTop: '1px dashed #ccc' }}>
+                        <strong style={{ fontSize: '18px', color: '#2c3e50' }}>Est. Value: ₹{(crop.weightKg * crop.ratePerKg).toLocaleString('en-IN')}</strong>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
+            
           </div>
         )}
 
-        {/* VIEW 3: PROCUREMENT (WITH APPLICATION FORM) */}
+        {/* VIEW 3: PROCUREMENT */}
         {activeTab === 'procurement' && !orderingItem && (
           <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px' }}>
             <h3 style={{ marginBottom: '20px' }}>Live Market Prices</h3>
@@ -103,7 +190,7 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* PROCUREMENT FORM (Visible when an item is selected) */}
+        {/* PROCUREMENT FORM */}
         {activeTab === 'procurement' && orderingItem && (
           <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px', maxWidth: '500px' }}>
             <h3 style={{ color: '#2c3e50', marginBottom: '10px' }}>Procurement Application</h3>
