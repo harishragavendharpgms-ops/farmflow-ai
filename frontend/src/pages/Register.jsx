@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import './Register.css'; // Assuming you have standard CSS
+import { useNavigate } from 'react-router-dom'; // 1. Import useNavigate
 
 const Register = () => {
   const [formData, setFormData] = useState({ name: '', email: '', phone: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  
+  const navigate = useNavigate(); // 2. Initialize the navigation tool
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -18,13 +20,17 @@ const Register = () => {
 
     try {
       const response = await axios.post("https://farmflow-ai-84t0.onrender.com/register", formData);
-      setMessage(`Success! Welcome, ${response.data.email}`);
-      // Redirect to login here if needed
+      setMessage(`Success! Redirecting to login...`);
+      
+      // 3. Wait 1.5 seconds so they can read the message, then redirect to login
+      setTimeout(() => {
+        navigate('/login');
+      }, 1500);
+
     } catch (err) {
       const errorMsg = err.response?.data?.detail || err.message;
       setMessage(`Error: ${errorMsg}`);
-    } finally {
-      setLoading(false);
+      setLoading(false); // Stop loading only if there's an error
     }
   };
 
@@ -40,7 +46,7 @@ const Register = () => {
         <input type="password" name="password" placeholder="Password" required onChange={handleChange} style={{ padding: '10px' }} />
         
         <button type="submit" disabled={loading} style={{ padding: '12px', backgroundColor: loading ? '#ccc' : '#28a745', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
-          {loading ? 'Connecting to Server...' : 'Create Account'}
+          {loading ? 'Processing...' : 'Create Account'}
         </button>
       </form>
 

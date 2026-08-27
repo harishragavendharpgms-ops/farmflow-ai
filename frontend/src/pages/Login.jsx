@@ -1,114 +1,63 @@
-import "./Login.css";
-import { Link, useNavigate } from "react-router-dom";
-import { useState } from "react";
-import axios from "axios";
+import React, { useState } from 'react';
+import axios from 'axios';
 
-function Login() {
-  const navigate = useNavigate();
-
-  // Memory for what the user types
-  const [formData, setFormData] = useState({
-    email: "",
-    password: ""
-  });
-
-  // Memory for messages
-  const [message, setMessage] = useState("");
+const Login = () => {
+  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.id]: e.target.value });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleLogin = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setMessage("Checking credentials...");
+    setLoading(true);
+    setMessage('');
 
-    // Ask Python if the email and password are correct
-    axios.post("[https://farmflow-ai-84t0.onrender.com](https://farmflow-ai-84t0.onrender.com)/api/login", {
-      email: formData.email,
-      password: formData.password
-    })
-    .then((response) => {
-      setMessage("✅ Login successful!");
-      
-      // Save the real farmer's details in the browser's "backpack" (localStorage)
-      const realName = response.data.farmer.name;
-      const realEmail = response.data.farmer.email;
-      const realPhone = response.data.farmer.phone;
-      
-      localStorage.setItem("farmerName", realName);
-      localStorage.setItem("farmerEmail", realEmail);
-      localStorage.setItem("farmerPhone", realPhone);
-
-      // Send them to the Dashboard after a 1-second delay
-      setTimeout(() => {
-        navigate("/dashboard");
-      }, 1000);
-    })
-    .catch((error) => {
-      // If Python sends an error (like "Invalid password")
-      if (error.response && error.response.data) {
-        setMessage("❌ " + error.response.data.detail);
-      } else {
-        setMessage("❌ Could not connect to the server.");
-      }
-    });
+    try {
+      const response = await axios.post("https://farmflow-ai-84t0.onrender.com/login", formData);
+      setMessage(`Welcome back, ${response.data.name}!`);
+      // Here is where you will eventually redirect them to a Dashboard
+    } catch (err) {
+      // Safely grab the error detail from FastAPI, or fall back to a generic message
+      const errorMsg = err.response?.data?.detail || "Could not connect to server.";
+      setMessage(`Error: ${errorMsg}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="login-page">
-      <div className="login-card">
-        <div className="login-logo">🌾</div>
-        <h1>Welcome Back</h1>
-        <p className="login-subtitle">Login to FarmFlow AI</p>
+    <div style={{ padding: '20px', maxWidth: '400px', margin: '0 auto', textAlign: 'center' }}>
+      <h2>Login</h2>
+      <p>Welcome back to FarmFlow AI</p>
+      
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+        <input 
+          type="email" name="email" placeholder="Email" 
+          required onChange={handleChange} style={{ padding: '10px' }} 
+        />
+        <input 
+          type="password" name="password" placeholder="Password" 
+          required onChange={handleChange} style={{ padding: '10px' }} 
+        />
         
-        <form onSubmit={handleLogin}>
-          <div className="login-form-group">
-            <label htmlFor="email">Email</label>
-            <input 
-              id="email" 
-              type="email" 
-              placeholder="Enter your email" 
-              value={formData.email}
-              onChange={handleChange}
-              required 
-            />
-          </div>
-          
-          <div className="login-form-group">
-            <label htmlFor="password">Password</label>
-            <input 
-              id="password" 
-              type="password" 
-              placeholder="Enter your password" 
-              value={formData.password}
-              onChange={handleChange}
-              required 
-            />
-          </div>
-          
-          {message && (
-            <div style={{ 
-              textAlign: "center", 
-              marginBottom: "15px", 
-              fontWeight: "bold", 
-              color: message.includes("✅") ? "#27ae60" : "#e74c3c" 
-            }}>
-              {message}
-            </div>
-          )}
+        <button type="submit" disabled={loading} style={{ 
+          padding: '12px', backgroundColor: loading ? '#ccc' : '#007bff', 
+          color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer' 
+        }}>
+          {loading ? 'Logging in...' : 'Login'}
+        </button>
+      </form>
 
-          <button type="submit" className="login-submit">
-            Login
-          </button>
-        </form>
-        
-        <p className="register-text">
-          Don't have an account? <Link to="/register">Sign up</Link>
+      {message && (
+        <p style={{ marginTop: '15px', color: message.includes('Error') ? 'red' : 'green' }}>
+          {message}
         </p>
-      </div>
+      )}
     </div>
   );
-}
+};
 
 export default Login;
