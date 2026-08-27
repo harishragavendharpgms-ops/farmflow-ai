@@ -3,14 +3,12 @@ import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  // This state keeps track of which menu item is currently active
   const [activeTab, setActiveTab] = useState('dashboard');
 
   const handleLogout = () => {
     navigate('/login');
   };
 
-  // A helper function to make empty buttons show an alert instead of doing nothing
   const handleFeatureClick = (featureName) => {
     alert(`Opening ${featureName} Data... (This feature is processing!)`);
   };
@@ -23,7 +21,6 @@ const Dashboard = () => {
         <h2 style={{ color: '#4caf50', margin: '0 0 40px 0', fontSize: '24px' }}>🌱 FarmFlow AI</h2>
         
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '20px', flexGrow: 1 }}>
-          {/* Notice how the color and font-weight changes if the tab is active! */}
           <div onClick={() => setActiveTab('dashboard')} style={{ color: activeTab === 'dashboard' ? '#fff' : '#a0b2a6', fontSize: '18px', fontWeight: activeTab === 'dashboard' ? 'bold' : 'normal', cursor: 'pointer' }}>📊 Dashboard</div>
           <div onClick={() => setActiveTab('crops')} style={{ color: activeTab === 'crops' ? '#fff' : '#a0b2a6', fontSize: '18px', fontWeight: activeTab === 'crops' ? 'bold' : 'normal', cursor: 'pointer' }}>🌾 My Crops</div>
           <div onClick={() => setActiveTab('procurement')} style={{ color: activeTab === 'procurement' ? '#fff' : '#a0b2a6', fontSize: '18px', fontWeight: activeTab === 'procurement' ? 'bold' : 'normal', cursor: 'pointer' }}>🛒 Procurement</div>
@@ -75,7 +72,6 @@ const Dashboard = () => {
               <button onClick={() => handleFeatureClick('Weather Radar')} style={{ width: '100%', padding: '10px', backgroundColor: '#f8f9fa', border: '1px solid #dee2e6', borderRadius: '6px', cursor: 'pointer', color: '#495057', fontWeight: 'bold' }}>Open Radar</button>
             </div>
 
-            {/* Clicking this button switches the tab to Procurement! */}
             <div style={{ backgroundColor: 'white', padding: '25px', borderRadius: '12px', borderTop: '4px solid #2196f3', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
               <h3 style={{ margin: '0 0 15px 0', color: '#2c3e50', fontSize: '20px' }}>🛒 Smart Procurement</h3>
               <p style={{ color: '#7f8c8d', lineHeight: '1.6', marginBottom: '20px' }}>Urea prices dropped by 4% today. Recommended time to bulk order fertilizers.</p>
@@ -106,14 +102,14 @@ const Dashboard = () => {
               </thead>
               <tbody>
                 <tr style={{ borderBottom: '1px solid #eee' }}>
-                  <td style={{ padding: '15px 10px' }}><strong>Urea Fertilizer (50kg)</strong></td>
-                  <td style={{ padding: '15px 10px' }}>$42.50</td>
+                  <td style={{ padding: '15px 10px' }}><strong>Urea Fertilizer (45kg Bag)</strong></td>
+                  <td style={{ padding: '15px 10px' }}>₹266.50</td>
                   <td style={{ padding: '15px 10px', color: '#2e7d32', fontWeight: 'bold' }}>↓ 4% (Good time to buy)</td>
                   <td style={{ padding: '15px 10px' }}><button style={{ padding: '8px 15px', backgroundColor: '#2196f3', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }} onClick={() => handleFeatureClick('Order Urea')}>Order Now</button></td>
                 </tr>
                 <tr style={{ borderBottom: '1px solid #eee' }}>
-                  <td style={{ padding: '15px 10px' }}><strong>Wheat Seeds (Premium)</strong></td>
-                  <td style={{ padding: '15px 10px' }}>$35.00</td>
+                  <td style={{ padding: '15px 10px' }}><strong>Wheat Seeds (Premium 40kg)</strong></td>
+                  <td style={{ padding: '15px 10px' }}>₹3,500.00</td>
                   <td style={{ padding: '15px 10px', color: '#e74c3c', fontWeight: 'bold' }}>↑ 2% (Price rising)</td>
                   <td style={{ padding: '15px 10px' }}><button style={{ padding: '8px 15px', backgroundColor: '#2196f3', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }} onClick={() => handleFeatureClick('Order Seeds')}>Order Now</button></td>
                 </tr>
