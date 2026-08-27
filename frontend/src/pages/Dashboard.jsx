@@ -30,7 +30,6 @@ const Dashboard = () => {
   // User Profile State
   const [userProfile, setUserProfile] = useState({ name: 'Farmer', email: '' });
 
-  // Fetch the saved user info when the dashboard loads
   useEffect(() => {
     const savedUser = localStorage.getItem('farmflow_user');
     if (savedUser) {
@@ -42,13 +41,10 @@ const Dashboard = () => {
   const [orderingItem, setOrderingItem] = useState(null);
   const [orderDetails, setOrderDetails] = useState({ location: '', datetime: '', quantity: '' });
 
-  // Crop Tracking States
-  const [myCrops, setMyCrops] = useState([
-    { id: 1, name: "Wheat", weightKg: 500, sector: "Sector A", ratePerKg: 25.00 }
-  ]);
+  // Crop Tracking States - Starts completely empty now!
+  const [myCrops, setMyCrops] = useState([]);
   const [newCrop, setNewCrop] = useState({ name: '', weightKg: '', sector: '' });
 
-  // LOGOUT: Clears the saved session and goes to login
   const handleLogout = () => {
     localStorage.removeItem('farmflow_user'); 
     navigate('/login');
@@ -71,7 +67,7 @@ const Dashboard = () => {
     }
     
     const cropEntry = {
-      id: Date.now(),
+      id: Date.now(), // Unique ID for deleting later
       name: newCrop.name,
       weightKg: parseFloat(newCrop.weightKg),
       sector: newCrop.sector,
@@ -81,6 +77,12 @@ const Dashboard = () => {
     setMyCrops([...myCrops, cropEntry]);
     setNewCrop({ name: '', weightKg: '', sector: '' }); 
     alert(`${newCrop.name} added successfully!`);
+  };
+
+  // NEW: Function to delete a crop
+  const handleDeleteCrop = (idToRemove) => {
+    // Filters out the crop that matches the ID we want to delete
+    setMyCrops(myCrops.filter(crop => crop.id !== idToRemove));
   };
 
   return (
@@ -115,7 +117,7 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* VIEW: PROFILE (NEW) */}
+        {/* VIEW: PROFILE */}
         {activeTab === 'profile' && (
           <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', maxWidth: '600px' }}>
             <h3 style={{ color: '#2c3e50', marginBottom: '20px', borderBottom: '2px solid #eee', paddingBottom: '10px' }}>User Details</h3>
@@ -191,17 +193,25 @@ const Dashboard = () => {
             <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
               <h3 style={{ marginBottom: '20px', color: '#2c3e50' }}>🌾 My Crop Inventory</h3>
               {myCrops.length === 0 ? (
-                <p style={{ color: '#777' }}>No crops added yet. Use the form above to add your inventory.</p>
+                <p style={{ color: '#777', fontStyle: 'italic' }}>Your inventory is currently empty. Add crops above to see them here.</p>
               ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
                   {myCrops.map(crop => (
-                    <div key={crop.id} style={{ padding: '20px', border: '1px solid #eee', borderRadius: '8px', borderLeft: '4px solid #4caf50' }}>
+                    <div key={crop.id} style={{ padding: '20px', border: '1px solid #eee', borderRadius: '8px', borderLeft: '4px solid #4caf50', backgroundColor: '#fafafa' }}>
                       <h4 style={{ margin: '0 0 10px 0', color: '#2e7d32', fontSize: '20px' }}>{crop.name}</h4>
                       <p style={{ margin: '5px 0', color: '#555' }}><strong>Sector:</strong> {crop.sector}</p>
                       <p style={{ margin: '5px 0', color: '#555' }}><strong>Weight:</strong> {crop.weightKg} kgs</p>
                       <p style={{ margin: '5px 0', color: '#555' }}><strong>Market Rate:</strong> ₹{crop.ratePerKg.toFixed(2)} / kg</p>
-                      <div style={{ marginTop: '15px', paddingTop: '10px', borderTop: '1px dashed #ccc' }}>
-                        <strong style={{ fontSize: '18px', color: '#2c3e50' }}>Est. Value: ₹{(crop.weightKg * crop.ratePerKg).toLocaleString('en-IN')}</strong>
+                      
+                      {/* NEW: Updated layout for Value and Delete Button */}
+                      <div style={{ marginTop: '15px', paddingTop: '15px', borderTop: '1px dashed #ccc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <strong style={{ fontSize: '18px', color: '#2c3e50' }}>₹{(crop.weightKg * crop.ratePerKg).toLocaleString('en-IN')}</strong>
+                        <button 
+                          onClick={() => handleDeleteCrop(crop.id)} 
+                          style={{ padding: '6px 12px', backgroundColor: '#ffebee', color: '#d32f2f', border: '1px solid #ffcdd2', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}
+                        >
+                          Remove
+                        </button>
                       </div>
                     </div>
                   ))}
