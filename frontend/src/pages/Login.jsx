@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom'; // 1. Import navigation tool
 
 const Login = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  
+  const navigate = useNavigate(); // 2. Initialize it
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -17,14 +20,17 @@ const Login = () => {
 
     try {
       const response = await axios.post("https://farmflow-ai-84t0.onrender.com/login", formData);
-      setMessage(`Welcome back, ${response.data.name}!`);
-      // Here is where you will eventually redirect them to a Dashboard
+      setMessage(`Welcome back, ${response.data.name}! Redirecting to dashboard...`);
+      
+      // 3. Wait 1.5 seconds, then teleport to the dashboard
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 1500);
+
     } catch (err) {
-      // Safely grab the error detail from FastAPI, or fall back to a generic message
       const errorMsg = err.response?.data?.detail || "Could not connect to server.";
       setMessage(`Error: ${errorMsg}`);
-    } finally {
-      setLoading(false);
+      setLoading(false); // Stop loading if there's an error
     }
   };
 
