@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 
@@ -8,6 +8,13 @@ const Login = () => {
   const [message, setMessage] = useState('');
   const navigate = useNavigate();
 
+  // If already logged in, send them straight to the dashboard
+  useEffect(() => {
+    if (localStorage.getItem('farmflow_user')) {
+      navigate('/dashboard');
+    }
+  }, [navigate]);
+
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
@@ -16,6 +23,10 @@ const Login = () => {
     try {
       const response = await axios.post("https://farmflow-ai-84t0.onrender.com/login", formData);
       setMessage(`Welcome back, ${response.data.name}! Redirecting...`);
+      
+      // Save login info to the browser
+      localStorage.setItem('farmflow_user', JSON.stringify({ name: response.data.name, email: response.data.email }));
+      
       setTimeout(() => navigate('/dashboard'), 1500);
     } catch (err) {
       setMessage(`Error: ${err.response?.data?.detail || "Could not connect."}`);
@@ -37,6 +48,7 @@ const Login = () => {
             {loading ? 'Logging in...' : 'Log In'}
           </button>
         </form>
+
         {message && <p style={{ marginTop: '15px', color: message.includes('Error') ? '#e74c3c' : '#27ae60', fontWeight: 'bold' }}>{message}</p>}
         
         <p style={{ marginTop: '20px', color: '#555' }}>

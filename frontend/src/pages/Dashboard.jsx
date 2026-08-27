@@ -37,7 +37,12 @@ const Dashboard = () => {
   ]);
   const [newCrop, setNewCrop] = useState({ name: '', weightKg: '', sector: '' });
 
-  const handleLogout = () => navigate('/login');
+  // LOGOUT: Clears the saved session and goes to login
+  const handleLogout = () => {
+    localStorage.removeItem('farmflow_user'); 
+    navigate('/login');
+  };
+
   const handleFeatureClick = (featureName) => alert(`Opening ${featureName}...`);
 
   const submitOrder = (e) => {
