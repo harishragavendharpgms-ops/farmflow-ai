@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-// Simulated farming supplies for procurement (kept static for simplicity)
+// Simulated farming supplies for procurement
 const farmingSupplies = {
   "Urea Fertilizer (45kg Bag)": 266.50,
   "Premium Wheat Seeds (40kg)": 3500.00
@@ -24,22 +24,19 @@ const Dashboard = () => {
     const interval = setInterval(() => {
       setMarketRates(prevRates => {
         const newRates = { ...prevRates };
-        // Pick a random crop to update so it looks organic
         const crops = Object.keys(newRates);
         const randomCrop = crops[Math.floor(Math.random() * crops.length)];
-        
-        // Fluctuate price by a random amount between -2% and +2%
         const changePercent = (Math.random() * 0.04) - 0.02; 
         let newPrice = newRates[randomCrop] * (1 + changePercent);
-        
         newRates[randomCrop] = Number(newPrice.toFixed(2));
         return newRates;
       });
     }, 4000); 
 
-    return () => clearInterval(interval); // Cleanup when user leaves page
+    return () => clearInterval(interval);
   }, []);
 
+  // USER PROFILE
   const [userProfile, setUserProfile] = useState({ name: 'Farmer', email: '' });
 
   useEffect(() => {
@@ -57,6 +54,8 @@ const Dashboard = () => {
     navigate('/login');
   };
 
+  const handleFeatureClick = (featureName) => alert(`Opening ${featureName}...`);
+
   const submitOrder = (e) => {
     e.preventDefault();
     alert(`Success! Procurement application submitted for ${orderDetails.quantity}kg of ${orderingItem} at ${orderDetails.location}.`);
@@ -73,7 +72,7 @@ const Dashboard = () => {
       name: newCrop.name,
       weightKg: parseFloat(newCrop.weightKg),
       sector: newCrop.sector,
-      ratePerKg: marketRates[newCrop.name] // Locks in the price at the exact moment they add it
+      ratePerKg: marketRates[newCrop.name]
     };
     setMyCrops([...myCrops, cropEntry]);
     setNewCrop({ name: '', weightKg: '', sector: '' }); 
@@ -101,8 +100,12 @@ const Dashboard = () => {
       <div style={{ flexGrow: 1, padding: '40px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
           <div>
-            <h1 style={{ margin: 0, color: '#2c3e50', fontSize: '32px' }}>{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Module</h1>
-            <p style={{ color: '#7f8c8d', fontSize: '16px', marginTop: '8px' }}>Manage your smart farm operations seamlessly.</p>
+            <h1 style={{ margin: 0, color: '#2c3e50', fontSize: '32px' }}>
+              {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} {activeTab === 'profile' ? 'Info' : 'Module'}
+            </h1>
+            <p style={{ color: '#7f8c8d', fontSize: '16px', marginTop: '8px' }}>
+              {activeTab === 'profile' ? 'View and manage your account details.' : 'Manage your smart farm operations seamlessly.'}
+            </p>
           </div>
           <div style={{ padding: '10px 20px', backgroundColor: '#e8f5e9', color: '#2e7d32', borderRadius: '30px', fontWeight: 'bold', border: '1px solid #c8e6c9', display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ display: 'inline-block', width: '10px', height: '10px', backgroundColor: 'green', borderRadius: '50%', animation: 'pulse 1.5s infinite' }}></span>
@@ -110,12 +113,33 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* PROFILE VIEW */}
+        {/* RESTORED: DETAILED PROFILE VIEW */}
         {activeTab === 'profile' && (
           <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', maxWidth: '600px' }}>
-            <h3 style={{ color: '#2c3e50', marginBottom: '20px' }}>User Details</h3>
-            <p><strong>Name:</strong> {userProfile.name}</p>
-            <p><strong>Email:</strong> {userProfile.email}</p>
+            <h3 style={{ color: '#2c3e50', marginBottom: '20px', borderBottom: '2px solid #eee', paddingBottom: '10px' }}>User Details</h3>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '15px', backgroundColor: '#f9f9f9', borderRadius: '8px' }}>
+                <span style={{ fontWeight: 'bold', color: '#555' }}>Full Name:</span>
+                <span style={{ color: '#2e7d32', fontWeight: 'bold' }}>{userProfile.name}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '15px', backgroundColor: '#f9f9f9', borderRadius: '8px' }}>
+                <span style={{ fontWeight: 'bold', color: '#555' }}>Email Address:</span>
+                <span style={{ color: '#333' }}>{userProfile.email}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '15px', backgroundColor: '#f9f9f9', borderRadius: '8px' }}>
+                <span style={{ fontWeight: 'bold', color: '#555' }}>Role:</span>
+                <span style={{ color: '#333' }}>Farm Manager</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '15px', backgroundColor: '#f9f9f9', borderRadius: '8px' }}>
+                <span style={{ fontWeight: 'bold', color: '#555' }}>Account Status:</span>
+                <span style={{ color: 'green', fontWeight: 'bold' }}>Verified 🟢</span>
+              </div>
+            </div>
+
+            <button onClick={() => handleFeatureClick('Edit Profile')} style={{ marginTop: '25px', width: '100%', padding: '12px', backgroundColor: '#2196f3', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+              Edit Profile Information
+            </button>
           </div>
         )}
 
@@ -126,6 +150,10 @@ const Dashboard = () => {
               <h3 style={{ margin: '0 0 15px 0' }}>🌤️ Weather</h3>
               <p>Clear skies expected. 10% rain chance.</p>
             </div>
+            <div style={{ backgroundColor: 'white', padding: '25px', borderRadius: '12px' }}>
+              <h3 style={{ margin: '0 0 15px 0' }}>🐛 Pest Alert</h3>
+              <p>No active threats detected in Sector A.</p>
+            </div>
           </div>
         )}
 
@@ -134,8 +162,8 @@ const Dashboard = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
             <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px' }}>
               <h3 style={{ marginBottom: '20px' }}>➕ Add New Crop Inventory</h3>
-              <form onSubmit={handleAddCrop} style={{ display: 'flex', gap: '15px' }}>
-                <select required value={newCrop.name} onChange={(e) => setNewCrop({...newCrop, name: e.target.value})} style={{ padding: '10px', flexGrow: 1 }}>
+              <form onSubmit={handleAddCrop} style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
+                <select required value={newCrop.name} onChange={(e) => setNewCrop({...newCrop, name: e.target.value})} style={{ padding: '10px', flexGrow: 1, minWidth: '200px' }}>
                   <option value="">-- Select Major Indian Crop --</option>
                   {Object.keys(marketRates).map(crop => (
                     <option key={crop} value={crop}>{crop} (₹{marketRates[crop].toFixed(2)}/kg)</option>
@@ -149,16 +177,17 @@ const Dashboard = () => {
 
             <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px' }}>
               <h3 style={{ marginBottom: '20px' }}>🌾 My Crop Inventory</h3>
-              {myCrops.length === 0 ? <p>Your inventory is empty.</p> : (
+              {myCrops.length === 0 ? <p style={{ fontStyle: 'italic', color: '#777' }}>Your inventory is currently empty.</p> : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
                   {myCrops.map(crop => (
-                    <div key={crop.id} style={{ padding: '20px', borderLeft: '4px solid #4caf50', backgroundColor: '#fafafa' }}>
+                    <div key={crop.id} style={{ padding: '20px', borderLeft: '4px solid #4caf50', backgroundColor: '#fafafa', borderRadius: '8px', border: '1px solid #eee' }}>
                       <h4 style={{ margin: '0 0 10px 0', color: '#2e7d32' }}>{crop.name}</h4>
-                      <p><strong>Weight:</strong> {crop.weightKg} kgs</p>
-                      <p><strong>Locked Rate:</strong> ₹{crop.ratePerKg.toFixed(2)} / kg</p>
-                      <div style={{ marginTop: '15px', display: 'flex', justifyContent: 'space-between' }}>
+                      <p style={{ margin: '5px 0' }}><strong>Sector:</strong> {crop.sector}</p>
+                      <p style={{ margin: '5px 0' }}><strong>Weight:</strong> {crop.weightKg} kgs</p>
+                      <p style={{ margin: '5px 0' }}><strong>Locked Rate:</strong> ₹{crop.ratePerKg.toFixed(2)} / kg</p>
+                      <div style={{ marginTop: '15px', paddingTop: '15px', borderTop: '1px dashed #ccc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <strong style={{ fontSize: '18px' }}>₹{(crop.weightKg * crop.ratePerKg).toLocaleString('en-IN')}</strong>
-                        <button onClick={() => handleDeleteCrop(crop.id)} style={{ color: 'red' }}>Remove</button>
+                        <button onClick={() => handleDeleteCrop(crop.id)} style={{ padding: '6px 12px', backgroundColor: '#ffebee', color: '#d32f2f', border: '1px solid #ffcdd2', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>Remove</button>
                       </div>
                     </div>
                   ))}
@@ -173,14 +202,38 @@ const Dashboard = () => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
             <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px' }}>
               <h3 style={{ marginBottom: '20px' }}>🌾 Live Crop Market Prices</h3>
-              <table style={{ width: '100%', textAlign: 'left' }}>
-                <thead><tr><th>Crop Name</th><th>Live Rate</th><th>Action</th></tr></thead>
+              <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
+                <thead><tr style={{ borderBottom: '2px solid #eee' }}><th style={{ padding: '15px 10px' }}>Crop Name</th><th style={{ padding: '15px 10px' }}>Live Rate</th><th style={{ padding: '15px 10px' }}>Action</th></tr></thead>
                 <tbody>
                   {Object.keys(marketRates).map(crop => (
-                    <tr key={crop}>
-                      <td style={{ padding: '15px 0' }}><strong>{crop}</strong></td>
-                      <td style={{ padding: '15px 0', color: '#2e7d32', fontWeight: 'bold' }}>₹{marketRates[crop].toFixed(2)} / kg</td>
-                      <td><button onClick={() => setOrderingItem(crop)} style={{ padding: '8px 15px', backgroundColor: '#4caf50', color: 'white', borderRadius: '4px' }}>Sell to Market</button></td>
+                    <tr key={crop} style={{ borderBottom: '1px solid #eee' }}>
+                      <td style={{ padding: '15px 10px' }}><strong>{crop}</strong></td>
+                      <td style={{ padding: '15px 10px', color: '#2e7d32', fontWeight: 'bold' }}>₹{marketRates[crop].toFixed(2)} / kg</td>
+                      <td style={{ padding: '15px 10px' }}><button onClick={() => setOrderingItem(crop)} style={{ padding: '8px 15px', backgroundColor: '#4caf50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>Sell to Market</button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px' }}>
+              <h3 style={{ marginBottom: '20px', color: '#2c3e50' }}>🛒 Farming Supplies (Buy)</h3>
+              <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: '2px solid #eee' }}>
+                    <th style={{ padding: '15px 10px' }}>Item Name</th>
+                    <th style={{ padding: '15px 10px' }}>Current Price</th>
+                    <th style={{ padding: '15px 10px' }}>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.keys(farmingSupplies).map(supply => (
+                    <tr key={supply} style={{ borderBottom: '1px solid #eee' }}>
+                      <td style={{ padding: '15px 10px' }}><strong>{supply}</strong></td>
+                      <td style={{ padding: '15px 10px' }}>₹{farmingSupplies[supply].toFixed(2)}</td>
+                      <td style={{ padding: '15px 10px' }}>
+                        <button onClick={() => setOrderingItem(supply)} style={{ padding: '8px 15px', backgroundColor: '#2196f3', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>Buy Supplies</button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -192,13 +245,14 @@ const Dashboard = () => {
         {/* PROCUREMENT FORM */}
         {activeTab === 'procurement' && orderingItem && (
           <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px', maxWidth: '500px' }}>
-            <h3>Procurement Application: {orderingItem}</h3>
+            <h3 style={{ color: '#2c3e50', marginBottom: '10px' }}>Procurement Application</h3>
+            <p style={{ color: '#777', marginBottom: '20px' }}>Applying for: <strong style={{ color: '#2e7d32', fontSize: '18px' }}>{orderingItem}</strong></p>
             <form onSubmit={submitOrder} style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginTop: '20px' }}>
-              <input type="number" required placeholder="Quantity (KGs)" value={orderDetails.quantity} onChange={(e) => setOrderDetails({...orderDetails, quantity: e.target.value})} style={{ padding: '10px' }} />
-              <input type="text" required placeholder="Farm Location" value={orderDetails.location} onChange={(e) => setOrderDetails({...orderDetails, location: e.target.value})} style={{ padding: '10px' }} />
+              <input type="number" required placeholder="Quantity (KGs / Bags)" value={orderDetails.quantity} onChange={(e) => setOrderDetails({...orderDetails, quantity: e.target.value})} style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '6px' }} />
+              <input type="text" required placeholder="Farm Location" value={orderDetails.location} onChange={(e) => setOrderDetails({...orderDetails, location: e.target.value})} style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '6px' }} />
               <div style={{ display: 'flex', gap: '10px' }}>
-                <button type="submit" style={{ flexGrow: 1, padding: '12px', backgroundColor: '#2e7d32', color: 'white' }}>Confirm Order</button>
-                <button type="button" onClick={() => setOrderingItem(null)} style={{ padding: '12px', backgroundColor: '#ccc' }}>Cancel</button>
+                <button type="submit" style={{ flexGrow: 1, padding: '12px', backgroundColor: '#2e7d32', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>Confirm Order</button>
+                <button type="button" onClick={() => setOrderingItem(null)} style={{ padding: '12px', backgroundColor: '#ccc', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>Cancel</button>
               </div>
             </form>
           </div>
@@ -207,8 +261,15 @@ const Dashboard = () => {
         {/* AI INSIGHTS VIEW */}
         {activeTab === 'ai' && (
           <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px' }}>
-            <h3>🤖 FarmFlow AI Analysis</h3>
-            <p>Market conditions suggest holding wheat sales for 2 weeks to maximize profit based on current trends.</p>
+            <h3 style={{ marginBottom: '20px' }}>🤖 FarmFlow AI Analysis</h3>
+            <div style={{ backgroundColor: '#f9f9f9', padding: '20px', borderRadius: '8px', borderLeft: '4px solid #2196f3' }}>
+              <p style={{ margin: '0 0 10px 0', fontWeight: 'bold', color: '#333' }}>Weekly Insight Report generated:</p>
+              <ul style={{ color: '#555', lineHeight: '1.8' }}>
+                <li>Nitrogen levels in Sector 2 are dropping. Recommended to apply Urea by Thursday.</li>
+                <li>Market conditions suggest holding wheat sales for 2 weeks to maximize profit based on current trends.</li>
+                <li>Weather analysis shows low risk of pests for the next 7 days.</li>
+              </ul>
+            </div>
           </div>
         )}
 
