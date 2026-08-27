@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 // Simulated current market rates in India (Rupees)
@@ -27,6 +27,17 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
   
+  // User Profile State
+  const [userProfile, setUserProfile] = useState({ name: 'Farmer', email: '' });
+
+  // Fetch the saved user info when the dashboard loads
+  useEffect(() => {
+    const savedUser = localStorage.getItem('farmflow_user');
+    if (savedUser) {
+      setUserProfile(JSON.parse(savedUser));
+    }
+  }, []);
+
   // Procurement Form States
   const [orderingItem, setOrderingItem] = useState(null);
   const [orderDetails, setOrderDetails] = useState({ location: '', datetime: '', quantity: '' });
@@ -48,7 +59,7 @@ const Dashboard = () => {
   const submitOrder = (e) => {
     e.preventDefault();
     alert(`Success! Procurement application submitted for ${orderDetails.quantity}kg of ${orderingItem} at ${orderDetails.location} on ${orderDetails.datetime}.`);
-    setOrderingItem(null); // Reset form
+    setOrderingItem(null); 
     setOrderDetails({ location: '', datetime: '', quantity: '' });
   };
 
@@ -80,6 +91,7 @@ const Dashboard = () => {
         <h2 style={{ color: '#4caf50', margin: '0 0 40px 0', fontSize: '24px' }}>🌱 FarmFlow AI</h2>
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '20px', flexGrow: 1 }}>
           <div onClick={() => {setActiveTab('dashboard'); setOrderingItem(null);}} style={{ color: activeTab === 'dashboard' ? '#fff' : '#a0b2a6', fontWeight: activeTab === 'dashboard' ? 'bold' : 'normal', cursor: 'pointer' }}>📊 Dashboard</div>
+          <div onClick={() => {setActiveTab('profile'); setOrderingItem(null);}} style={{ color: activeTab === 'profile' ? '#fff' : '#a0b2a6', fontWeight: activeTab === 'profile' ? 'bold' : 'normal', cursor: 'pointer' }}>👤 My Profile</div>
           <div onClick={() => {setActiveTab('crops'); setOrderingItem(null);}} style={{ color: activeTab === 'crops' ? '#fff' : '#a0b2a6', fontWeight: activeTab === 'crops' ? 'bold' : 'normal', cursor: 'pointer' }}>🌾 My Crops</div>
           <div onClick={() => setActiveTab('procurement')} style={{ color: activeTab === 'procurement' ? '#fff' : '#a0b2a6', fontWeight: activeTab === 'procurement' ? 'bold' : 'normal', cursor: 'pointer' }}>🛒 Procurement</div>
           <div onClick={() => {setActiveTab('ai'); setOrderingItem(null);}} style={{ color: activeTab === 'ai' ? '#fff' : '#a0b2a6', fontWeight: activeTab === 'ai' ? 'bold' : 'normal', cursor: 'pointer' }}>🤖 AI Insights</div>
@@ -91,13 +103,49 @@ const Dashboard = () => {
       <div style={{ flexGrow: 1, padding: '40px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
           <div>
-            <h1 style={{ margin: 0, color: '#2c3e50', fontSize: '32px' }}>{activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Module</h1>
-            <p style={{ color: '#7f8c8d', fontSize: '16px', marginTop: '8px' }}>Manage your smart farm operations seamlessly.</p>
+            <h1 style={{ margin: 0, color: '#2c3e50', fontSize: '32px' }}>
+              {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} {activeTab === 'profile' ? 'Info' : 'Module'}
+            </h1>
+            <p style={{ color: '#7f8c8d', fontSize: '16px', marginTop: '8px' }}>
+              {activeTab === 'profile' ? 'View and manage your account details.' : 'Manage your smart farm operations seamlessly.'}
+            </p>
           </div>
-          <div style={{ padding: '10px 20px', backgroundColor: '#e8f5e9', color: '#2e7d32', borderRadius: '30px', fontWeight: 'bold', border: '1px solid #c8e6c9' }}>🟢 AI Engine Online</div>
+          <div style={{ padding: '10px 20px', backgroundColor: '#e8f5e9', color: '#2e7d32', borderRadius: '30px', fontWeight: 'bold', border: '1px solid #c8e6c9' }}>
+            🟢 AI Engine Online
+          </div>
         </div>
 
-        {/* VIEW 1: DASHBOARD */}
+        {/* VIEW: PROFILE (NEW) */}
+        {activeTab === 'profile' && (
+          <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', maxWidth: '600px' }}>
+            <h3 style={{ color: '#2c3e50', marginBottom: '20px', borderBottom: '2px solid #eee', paddingBottom: '10px' }}>User Details</h3>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '15px', backgroundColor: '#f9f9f9', borderRadius: '8px' }}>
+                <span style={{ fontWeight: 'bold', color: '#555' }}>Full Name:</span>
+                <span style={{ color: '#2e7d32', fontWeight: 'bold' }}>{userProfile.name}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '15px', backgroundColor: '#f9f9f9', borderRadius: '8px' }}>
+                <span style={{ fontWeight: 'bold', color: '#555' }}>Email Address:</span>
+                <span style={{ color: '#333' }}>{userProfile.email}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '15px', backgroundColor: '#f9f9f9', borderRadius: '8px' }}>
+                <span style={{ fontWeight: 'bold', color: '#555' }}>Role:</span>
+                <span style={{ color: '#333' }}>Farm Manager</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '15px', backgroundColor: '#f9f9f9', borderRadius: '8px' }}>
+                <span style={{ fontWeight: 'bold', color: '#555' }}>Account Status:</span>
+                <span style={{ color: 'green', fontWeight: 'bold' }}>Verified 🟢</span>
+              </div>
+            </div>
+
+            <button onClick={() => handleFeatureClick('Edit Profile')} style={{ marginTop: '25px', width: '100%', padding: '12px', backgroundColor: '#2196f3', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
+              Edit Profile Information
+            </button>
+          </div>
+        )}
+
+        {/* VIEW: DASHBOARD */}
         {activeTab === 'dashboard' && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '25px' }}>
             <div style={{ backgroundColor: 'white', padding: '25px', borderRadius: '12px' }}>
@@ -113,7 +161,7 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* VIEW 2: MY CROPS */}
+        {/* VIEW: MY CROPS */}
         {activeTab === 'crops' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
             <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
@@ -163,11 +211,9 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* VIEW 3: PROCUREMENT LIST */}
+        {/* VIEW: PROCUREMENT LIST */}
         {activeTab === 'procurement' && !orderingItem && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
-            
-            {/* Crop Procurement (Selling to Government/Market) */}
             <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px' }}>
               <h3 style={{ marginBottom: '20px', color: '#2c3e50' }}>🌾 Crop Procurement (Sell your Harvest)</h3>
               <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
@@ -192,7 +238,6 @@ const Dashboard = () => {
               </table>
             </div>
 
-            {/* Supply Procurement (Buying) */}
             <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px' }}>
               <h3 style={{ marginBottom: '20px', color: '#2c3e50' }}>🛒 Farming Supplies (Buy)</h3>
               <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
@@ -216,11 +261,10 @@ const Dashboard = () => {
                 </tbody>
               </table>
             </div>
-
           </div>
         )}
 
-        {/* VIEW 3.5: PROCUREMENT APPLICATION FORM */}
+        {/* VIEW: PROCUREMENT APPLICATION FORM */}
         {activeTab === 'procurement' && orderingItem && (
           <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px', maxWidth: '500px' }}>
             <h3 style={{ color: '#2c3e50', marginBottom: '10px' }}>Procurement Application</h3>
@@ -248,7 +292,7 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* VIEW 4: AI INSIGHTS */}
+        {/* VIEW: AI INSIGHTS */}
         {activeTab === 'ai' && (
           <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px' }}>
             <h3 style={{ marginBottom: '20px' }}>🤖 FarmFlow AI Analysis</h3>
