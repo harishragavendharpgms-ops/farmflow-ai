@@ -7,9 +7,38 @@ const farmingSupplies = {
   "Premium Wheat Seeds (40kg)": 3500.00
 };
 
+// Help Page Translations
+const translations = {
+  en: {
+    title: "Help & Guide",
+    intro: "Welcome to FarmFlow AI! Here is how to use your dashboard:",
+    profile: "Profile: View your registered account details and status.",
+    crops: "My Crops: Add your harvested crops, enter the weight, and see the estimated live market value.",
+    procurement: "Procurement: View live fluctuating market rates. You can apply to sell your crops or buy farming supplies like fertilizers.",
+    ai: "AI Insights: Read weekly AI-generated advice to maximize your farm's profit and health."
+  },
+  hi: {
+    title: "सहायता और मार्गदर्शन",
+    intro: "FarmFlow AI में आपका स्वागत है! यहाँ बताया गया है कि अपने डैशबोर्ड का उपयोग कैसे करें:",
+    profile: "प्रोफ़ाइल: अपने पंजीकृत खाते का विवरण और स्थिति देखें।",
+    crops: "मेरी फसलें: अपनी काटी गई फसलें जोड़ें, वजन दर्ज करें, और अनुमानित लाइव बाजार मूल्य देखें।",
+    procurement: "खरीद (Procurement): लाइव बाजार दरें देखें। आप अपनी फसल बेचने या उर्वरक जैसी कृषि आपूर्ति खरीदने के लिए आवेदन कर सकते हैं।",
+    ai: "एआई अंतर्दृष्टि (AI Insights): अपने खेत के मुनाफे और स्वास्थ्य को अधिकतम करने के लिए साप्ताहिक एआई-जनित सलाह पढ़ें।"
+  },
+  ta: {
+    title: "உதவி மற்றும் வழிகாட்டி",
+    intro: "FarmFlow AI-க்கு உங்களை வரவேற்கிறோம்! டாஷ்போர்டை எவ்வாறு பயன்படுத்துவது என்பது இங்கே:",
+    profile: "சுயவிவரம்: உங்கள் பதிவு செய்யப்பட்ட கணக்கு விவரங்கள் மற்றும் நிலையைப் பார்க்கவும்.",
+    crops: "என் பயிர்கள்: உங்கள் அறுவடை பயிர்களைச் சேர்க்கவும், எடையை உள்ளிடவும், மற்றும் நேரடி சந்தை மதிப்பை அறியவும்.",
+    procurement: "கொள்முதல்: நேரடி சந்தை விலைகளை காணுங்கள். உங்கள் பயிர்களை விற்க அல்லது விவசாய பொருட்களை வாங்க விண்ணப்பிக்கலாம்.",
+    ai: "AI ஆலோசனைகள்: உங்கள் பண்ணையின் லாபத்தை அதிகரிக்க வாராந்திர AI-அடிப்படையிலான ஆலோசனைகளைப் படியுங்கள்."
+  }
+};
+
 const Dashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [helpLang, setHelpLang] = useState('en'); // Default language is English
   
   // LIVE MARKET STATE
   const [marketRates, setMarketRates] = useState({
@@ -46,15 +75,15 @@ const Dashboard = () => {
 
   const [orderingItem, setOrderingItem] = useState(null);
   const [orderDetails, setOrderDetails] = useState({ location: '', datetime: '', quantity: '' });
+  
+  // CROP TRACKING (Removed Sector)
   const [myCrops, setMyCrops] = useState([]);
-  const [newCrop, setNewCrop] = useState({ name: '', weightKg: '', sector: '' });
+  const [newCrop, setNewCrop] = useState({ name: '', weightKg: '' });
 
   const handleLogout = () => {
     localStorage.removeItem('farmflow_user'); 
     navigate('/login');
   };
-
-  const handleFeatureClick = (featureName) => alert(`Opening ${featureName}...`);
 
   const submitOrder = (e) => {
     e.preventDefault();
@@ -65,17 +94,16 @@ const Dashboard = () => {
 
   const handleAddCrop = (e) => {
     e.preventDefault();
-    if (!newCrop.name || !newCrop.weightKg || !newCrop.sector) return alert("Please fill details.");
+    if (!newCrop.name || !newCrop.weightKg) return alert("Please fill in crop details.");
     
     const cropEntry = {
       id: Date.now(),
       name: newCrop.name,
       weightKg: parseFloat(newCrop.weightKg),
-      sector: newCrop.sector,
       ratePerKg: marketRates[newCrop.name]
     };
     setMyCrops([...myCrops, cropEntry]);
-    setNewCrop({ name: '', weightKg: '', sector: '' }); 
+    setNewCrop({ name: '', weightKg: '' }); 
   };
 
   const handleDeleteCrop = (idToRemove) => setMyCrops(myCrops.filter(crop => crop.id !== idToRemove));
@@ -92,6 +120,7 @@ const Dashboard = () => {
           <div onClick={() => {setActiveTab('crops'); setOrderingItem(null);}} style={{ color: activeTab === 'crops' ? '#fff' : '#a0b2a6', fontWeight: activeTab === 'crops' ? 'bold' : 'normal', cursor: 'pointer' }}>🌾 My Crops</div>
           <div onClick={() => setActiveTab('procurement')} style={{ color: activeTab === 'procurement' ? '#fff' : '#a0b2a6', fontWeight: activeTab === 'procurement' ? 'bold' : 'normal', cursor: 'pointer' }}>🛒 Procurement</div>
           <div onClick={() => {setActiveTab('ai'); setOrderingItem(null);}} style={{ color: activeTab === 'ai' ? '#fff' : '#a0b2a6', fontWeight: activeTab === 'ai' ? 'bold' : 'normal', cursor: 'pointer' }}>🤖 AI Insights</div>
+          <div onClick={() => {setActiveTab('help'); setOrderingItem(null);}} style={{ color: activeTab === 'help' ? '#fff' : '#a0b2a6', fontWeight: activeTab === 'help' ? 'bold' : 'normal', cursor: 'pointer', marginTop: '20px', borderTop: '1px solid #2e4d3a', paddingTop: '20px' }}>❓ Help / सहायता</div>
         </nav>
         <button onClick={handleLogout} style={{ padding: '12px', backgroundColor: 'transparent', color: '#ff6b6b', border: '1px solid #ff6b6b', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>Log Out</button>
       </div>
@@ -101,10 +130,10 @@ const Dashboard = () => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
           <div>
             <h1 style={{ margin: 0, color: '#2c3e50', fontSize: '32px' }}>
-              {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} {activeTab === 'profile' ? 'Info' : 'Module'}
+              {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} Module
             </h1>
             <p style={{ color: '#7f8c8d', fontSize: '16px', marginTop: '8px' }}>
-              {activeTab === 'profile' ? 'View and manage your account details.' : 'Manage your smart farm operations seamlessly.'}
+              Manage your smart farm operations seamlessly.
             </p>
           </div>
           <div style={{ padding: '10px 20px', backgroundColor: '#e8f5e9', color: '#2e7d32', borderRadius: '30px', fontWeight: 'bold', border: '1px solid #c8e6c9', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -113,11 +142,36 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* RESTORED: DETAILED PROFILE VIEW */}
+        {/* HELP PAGE WITH MULTI-LANGUAGE SUPPORT */}
+        {activeTab === 'help' && (
+          <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', maxWidth: '800px' }}>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', borderBottom: '2px solid #eee', paddingBottom: '20px' }}>
+              <h2 style={{ color: '#2e7d32', margin: 0 }}>{translations[helpLang].title}</h2>
+              
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button onClick={() => setHelpLang('en')} style={{ padding: '8px 15px', backgroundColor: helpLang === 'en' ? '#2196f3' : '#f0f0f0', color: helpLang === 'en' ? 'white' : '#333', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>English</button>
+                <button onClick={() => setHelpLang('hi')} style={{ padding: '8px 15px', backgroundColor: helpLang === 'hi' ? '#2196f3' : '#f0f0f0', color: helpLang === 'hi' ? 'white' : '#333', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>हिन्दी (Hindi)</button>
+                <button onClick={() => setHelpLang('ta')} style={{ padding: '8px 15px', backgroundColor: helpLang === 'ta' ? '#2196f3' : '#f0f0f0', color: helpLang === 'ta' ? 'white' : '#333', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>தமிழ் (Tamil)</button>
+              </div>
+            </div>
+
+            <div style={{ fontSize: '18px', color: '#444', lineHeight: '1.8' }}>
+              <p style={{ fontWeight: 'bold', marginBottom: '20px', fontSize: '20px' }}>{translations[helpLang].intro}</p>
+              <ul style={{ listStyleType: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                <li style={{ padding: '15px', backgroundColor: '#f9f9f9', borderRadius: '8px', borderLeft: '4px solid #4caf50' }}>{translations[helpLang].profile}</li>
+                <li style={{ padding: '15px', backgroundColor: '#f9f9f9', borderRadius: '8px', borderLeft: '4px solid #4caf50' }}>{translations[helpLang].crops}</li>
+                <li style={{ padding: '15px', backgroundColor: '#f9f9f9', borderRadius: '8px', borderLeft: '4px solid #4caf50' }}>{translations[helpLang].procurement}</li>
+                <li style={{ padding: '15px', backgroundColor: '#f9f9f9', borderRadius: '8px', borderLeft: '4px solid #4caf50' }}>{translations[helpLang].ai}</li>
+              </ul>
+            </div>
+          </div>
+        )}
+
+        {/* DETAILED PROFILE VIEW */}
         {activeTab === 'profile' && (
           <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', maxWidth: '600px' }}>
             <h3 style={{ color: '#2c3e50', marginBottom: '20px', borderBottom: '2px solid #eee', paddingBottom: '10px' }}>User Details</h3>
-            
             <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '15px', backgroundColor: '#f9f9f9', borderRadius: '8px' }}>
                 <span style={{ fontWeight: 'bold', color: '#555' }}>Full Name:</span>
@@ -136,10 +190,6 @@ const Dashboard = () => {
                 <span style={{ color: 'green', fontWeight: 'bold' }}>Verified 🟢</span>
               </div>
             </div>
-
-            <button onClick={() => handleFeatureClick('Edit Profile')} style={{ marginTop: '25px', width: '100%', padding: '12px', backgroundColor: '#2196f3', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
-              Edit Profile Information
-            </button>
           </div>
         )}
 
@@ -152,26 +202,25 @@ const Dashboard = () => {
             </div>
             <div style={{ backgroundColor: 'white', padding: '25px', borderRadius: '12px' }}>
               <h3 style={{ margin: '0 0 15px 0' }}>🐛 Pest Alert</h3>
-              <p>No active threats detected in Sector A.</p>
+              <p>No active threats detected in your area.</p>
             </div>
           </div>
         )}
 
-        {/* MY CROPS VIEW */}
+        {/* MY CROPS VIEW (Sector removed) */}
         {activeTab === 'crops' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '25px' }}>
             <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px' }}>
               <h3 style={{ marginBottom: '20px' }}>➕ Add New Crop Inventory</h3>
               <form onSubmit={handleAddCrop} style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
-                <select required value={newCrop.name} onChange={(e) => setNewCrop({...newCrop, name: e.target.value})} style={{ padding: '10px', flexGrow: 1, minWidth: '200px' }}>
+                <select required value={newCrop.name} onChange={(e) => setNewCrop({...newCrop, name: e.target.value})} style={{ padding: '10px', flexGrow: 1, minWidth: '200px', border: '1px solid #ddd', borderRadius: '6px' }}>
                   <option value="">-- Select Major Indian Crop --</option>
                   {Object.keys(marketRates).map(crop => (
                     <option key={crop} value={crop}>{crop} (₹{marketRates[crop].toFixed(2)}/kg)</option>
                   ))}
                 </select>
-                <input type="number" min="1" required placeholder="Weight (KGs)" value={newCrop.weightKg} onChange={(e) => setNewCrop({...newCrop, weightKg: e.target.value})} style={{ padding: '10px' }} />
-                <input type="text" required placeholder="Sector" value={newCrop.sector} onChange={(e) => setNewCrop({...newCrop, sector: e.target.value})} style={{ padding: '10px' }} />
-                <button type="submit" style={{ padding: '10px 20px', backgroundColor: '#4caf50', color: 'white', border: 'none', borderRadius: '6px' }}>Add Crop</button>
+                <input type="number" min="1" required placeholder="Weight (KGs)" value={newCrop.weightKg} onChange={(e) => setNewCrop({...newCrop, weightKg: e.target.value})} style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '6px', minWidth: '150px' }} />
+                <button type="submit" style={{ padding: '10px 20px', backgroundColor: '#4caf50', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>Add Crop</button>
               </form>
             </div>
 
@@ -181,8 +230,7 @@ const Dashboard = () => {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '20px' }}>
                   {myCrops.map(crop => (
                     <div key={crop.id} style={{ padding: '20px', borderLeft: '4px solid #4caf50', backgroundColor: '#fafafa', borderRadius: '8px', border: '1px solid #eee' }}>
-                      <h4 style={{ margin: '0 0 10px 0', color: '#2e7d32' }}>{crop.name}</h4>
-                      <p style={{ margin: '5px 0' }}><strong>Sector:</strong> {crop.sector}</p>
+                      <h4 style={{ margin: '0 0 10px 0', color: '#2e7d32', fontSize: '20px' }}>{crop.name}</h4>
                       <p style={{ margin: '5px 0' }}><strong>Weight:</strong> {crop.weightKg} kgs</p>
                       <p style={{ margin: '5px 0' }}><strong>Locked Rate:</strong> ₹{crop.ratePerKg.toFixed(2)} / kg</p>
                       <div style={{ marginTop: '15px', paddingTop: '15px', borderTop: '1px dashed #ccc', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -265,7 +313,7 @@ const Dashboard = () => {
             <div style={{ backgroundColor: '#f9f9f9', padding: '20px', borderRadius: '8px', borderLeft: '4px solid #2196f3' }}>
               <p style={{ margin: '0 0 10px 0', fontWeight: 'bold', color: '#333' }}>Weekly Insight Report generated:</p>
               <ul style={{ color: '#555', lineHeight: '1.8' }}>
-                <li>Nitrogen levels in Sector 2 are dropping. Recommended to apply Urea by Thursday.</li>
+                <li>Nitrogen levels in your fields may be dropping based on historical weather. Recommended to apply Urea by Thursday.</li>
                 <li>Market conditions suggest holding wheat sales for 2 weeks to maximize profit based on current trends.</li>
                 <li>Weather analysis shows low risk of pests for the next 7 days.</li>
               </ul>
