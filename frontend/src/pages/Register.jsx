@@ -1,135 +1,52 @@
-import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import axios from "axios";
-import "./Register.css"; // (Keep whatever stylesheet import you already use)
+import React, { useState } from 'react';
+import axios from 'axios';
+import './Register.css'; // Assuming you have standard CSS
 
-function Register() {
-  const navigate = useNavigate();
-  
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    password: "",
-    confirmPassword: ""
-  });
-
-  const [message, setMessage] = useState("");
+const Register = () => {
+  const [formData, setFormData] = useState({ name: '', email: '', phone: '', password: '' });
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState('');
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleRegister = (e) => {
-    e.preventDefault(); // Stops the page from refreshing
-    setMessage("Processing..."); // Show a loading message
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setMessage('');
 
-    // Check if passwords match first
-    if (formData.password !== formData.confirmPassword) {
-      setMessage("❌ Passwords do not match!");
-      return;
+    try {
+      const response = await axios.post("https://farmflow-ai-84t0.onrender.com/register", formData);
+      setMessage(`Success! Welcome, ${response.data.email}`);
+      // Redirect to login here if needed
+    } catch (err) {
+      const errorMsg = err.response?.data?.detail || err.message;
+      setMessage(`Error: ${errorMsg}`);
+    } finally {
+      setLoading(false);
     }
-
-    // Send the data to our Python API (Clean URL)
-    axios.post("https://farmflow-ai-84t0.onrender.com/register", {
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone,
-      password: formData.password
-    })
-    .then((response) => {
-      // If Python says success!
-      setMessage("✅ Registration successful! Sending you to login...");
-      
-      // Wait 2 seconds, then send them to the Login page
-      setTimeout(() => {
-        navigate("/login");
-      }, 2000);
-    })
-    .catch((error) => {
-      // Catch real errors instead of showing "undefined"
-      console.error("Registration error:", error);
-      const errorMsg = error.response?.data?.detail || error.message || "Registration failed";
-      setMessage(`❌ ${errorMsg}`);
-    });
   };
 
   return (
-    <div className="register-container">
-      <form className="register-form" onSubmit={handleRegister}>
-        <h2>Create Account</h2>
-        <p>Join FarmFlow AI and manage your farming smarter</p>
-
-        <div className="form-group">
-          <label>Full Name</label>
-          <input
-            type="text"
-            name="name"
-            value={formData.name}
-            onChange={handleChange}
-            required
-          />
-        </div>
-
-        <div className="form-group">
-          <label>Email</label>
-          <input
-            type="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            required
-          />
-        </div>
-
-        <div className="form-group">
-          <label>Phone Number</label>
-          <input
-            type="text"
-            name="phone"
-            value={formData.phone}
-            onChange={handleChange}
-            required
-          />
-        </div>
-
-        <div className="form-group">
-          <label>Password</label>
-          <input
-            type="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            required
-          />
-        </div>
-
-        <div className="form-group">
-          <label>Confirm Password</label>
-          <input
-            type="password"
-            name="confirmPassword"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            required
-          />
-        </div>
-
-        {message && <div className="register-message">{message}</div>}
-
-        <button type="submit" className="register-submit">
-          Create Account
+    <div className="register-container" style={{ padding: '20px', maxWidth: '400px', margin: '0 auto', textAlign: 'center' }}>
+      <h2>Create Account</h2>
+      <p>Join FarmFlow AI and manage your farming smarter</p>
+      
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+        <input type="text" name="name" placeholder="Full Name" required onChange={handleChange} style={{ padding: '10px' }} />
+        <input type="email" name="email" placeholder="Email" required onChange={handleChange} style={{ padding: '10px' }} />
+        <input type="tel" name="phone" placeholder="Phone Number" required onChange={handleChange} style={{ padding: '10px' }} />
+        <input type="password" name="password" placeholder="Password" required onChange={handleChange} style={{ padding: '10px' }} />
+        
+        <button type="submit" disabled={loading} style={{ padding: '12px', backgroundColor: loading ? '#ccc' : '#28a745', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
+          {loading ? 'Connecting to Server...' : 'Create Account'}
         </button>
-
-        <p className="login-redirect">
-          Already have an account? <Link to="/login">Login</Link>
-        </p>
       </form>
+
+      {message && <p style={{ marginTop: '15px', color: message.includes('Error') ? 'red' : 'green' }}>{message}</p>}
     </div>
   );
-}
+};
 
 export default Register;
