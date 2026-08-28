@@ -139,12 +139,12 @@ const Dashboard = () => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', borderBottom: '2px solid #e0e0e0', paddingBottom: '20px' }}>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            {/* THREE DOTS MENU TOGGLE BUTTON */}
+            {/* THREE BARS MENU TOGGLE BUTTON */}
             <button 
               onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
               style={{ fontSize: '30px', background: 'transparent', border: 'none', cursor: 'pointer', color: '#2c3e50', padding: '0', display: 'flex', alignItems: 'center' }}
             >
-              ⋮
+              ☰
             </button>
             
             <div>
