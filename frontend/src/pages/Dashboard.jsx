@@ -7,7 +7,52 @@ const farmingSupplies = {
   "Premium Wheat Seeds (40kg)": 3500.00
 };
 
-// MASSIVE TRANSLATION DICTIONARY FOR THE ENTIRE APP
+const initialRates = {
+  "Rice (Paddy)": 22.50, "Wheat": 25.00, "Maize (Corn)": 20.00,
+  "Cotton": 70.00, "Sugarcane": 3.15, "Soybean": 46.00,
+  "Mustard": 52.00, "Bajra (Pearl Millet)": 24.50, "Groundnut": 65.00,
+  "Tur (Pigeon Pea)": 110.00, "Onion": 28.00, "Potato": 18.00
+};
+
+// Generate fake historical data so the graphs aren't empty on load
+const generateInitialHistory = (rates) => {
+  const history = {};
+  Object.keys(rates).forEach(crop => {
+    let current = rates[crop];
+    const pastRates = [];
+    for(let i=0; i<10; i++) {
+      current = current * (1 + ((Math.random() * 0.06) - 0.03));
+      pastRates.unshift(current); 
+    }
+    pastRates.push(rates[crop]); 
+    history[crop] = pastRates;
+  });
+  return history;
+};
+
+// MINI GRAPH COMPONENT (No external libraries needed!)
+const Sparkline = ({ data }) => {
+  if (!data || data.length < 2) return null;
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+  const isUp = data[data.length - 1] >= data[data.length - 2];
+  const color = isUp ? '#4caf50' : '#f44336'; // Green if up, Red if down
+  
+  const points = data.map((val, i) => {
+    const x = (i / (data.length - 1)) * 80;
+    const y = 24 - ((val - min) / range) * 20 - 2; 
+    return `${x},${y}`;
+  }).join(' ');
+
+  return (
+    <svg viewBox="0 0 80 24" style={{ width: '70px', height: '24px', overflow: 'visible' }}>
+      <polyline fill="none" stroke={color} strokeWidth="2" points={points} strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+};
+
+// TRANSLATIONS
 const t = {
   en: {
     navDashboard: "📊 Dashboard", navProfile: "👤 My Profile", navCrops: "🌾 My Crops", navProcurement: "🛒 Procurement", navAi: "🤖 AI Insights", navHelp: "❓ Help", logout: "Log Out",
@@ -15,49 +60,26 @@ const t = {
     userDetails: "User Details", fullName: "Full Name:", emailAddr: "Email Address:", role: "Role:", farmManager: "Farm Manager", accountStatus: "Account Status:", verified: "Verified 🟢", editProfile: "Edit Profile Information",
     weather: "🌤️ Weather", weatherDesc: "Clear skies expected. 10% rain chance.", pestAlert: "🐛 Pest Alert", pestDesc: "No active threats detected in your area.",
     addCropTitle: "➕ Add New Crop Inventory", selectCrop: "-- Select Major Indian Crop --", weightKg: "Weight (KGs)", addCropBtn: "Add Crop", myCropInventory: "🌾 My Crop Inventory", emptyInventory: "Your inventory is currently empty.", lockedRate: "Locked Rate:", remove: "Remove",
-    liveCropMarket: "🌾 Live Crop Market Prices", cropName: "Crop Name", liveRate: "Live Rate", action: "Action", sellMarket: "Sell to Market", farmingSuppliesTitle: "🛒 Farming Supplies (Buy)", itemName: "Item Name", currentPrice: "Current Price", buySupplies: "Buy Supplies",
+    liveCropMarket: "🌾 Live Crop Market Prices", cropName: "Crop Name", liveRate: "Live Rate & Trend", action: "Action", sellMarket: "Sell to Market", farmingSuppliesTitle: "🛒 Farming Supplies (Buy)", itemName: "Item Name", currentPrice: "Current Price", buySupplies: "Buy Supplies",
     procurementApp: "Procurement Application", applyingFor: "Applying for:", quantity: "Quantity (KGs / Bags)", farmLocation: "Farm Location", prefDateTime: "Preferred Date & Time", confirmOrder: "Confirm Order", cancel: "Cancel",
     aiAnalysis: "🤖 FarmFlow AI Analysis", aiReport: "Weekly Insight Report generated:", aiTip1: "Nitrogen levels in your fields may be dropping. Recommended to apply Urea by Thursday.", aiTip2: "Market conditions suggest holding wheat sales for 2 weeks to maximize profit.", aiTip3: "Weather analysis shows low risk of pests for the next 7 days.",
     helpTitle: "Help & Guide", helpIntro: "Welcome to FarmFlow AI! Here is how to use your dashboard:", helpProfile: "Profile: View your registered account details and status.", helpCrops: "My Crops: Add your harvested crops, enter the weight, and see the estimated live market value.", helpProcurement: "Procurement: View live fluctuating market rates. You can apply to sell your crops or buy farming supplies.", helpAi: "AI Insights: Read weekly AI-generated advice to maximize your farm's profit and health."
   },
-  hi: {
-    navDashboard: "📊 डैशबोर्ड", navProfile: "👤 मेरी प्रोफ़ाइल", navCrops: "🌾 मेरी फसलें", navProcurement: "🛒 खरीद", navAi: "🤖 एआई अंतर्दृष्टि", navHelp: "❓ सहायता", logout: "लॉग आउट",
-    module: "मॉड्यूल", subtitle: "अपने स्मार्ट कृषि कार्यों को आसानी से प्रबंधित करें।", liveMarket: "लाइव मार्केट सक्रिय",
-    userDetails: "उपयोगकर्ता विवरण", fullName: "पूरा नाम:", emailAddr: "ईमेल पता:", role: "भूमिका:", farmManager: "खेत प्रबंधक", accountStatus: "खाता स्थिति:", verified: "सत्यापित 🟢", editProfile: "प्रोफ़ाइल जानकारी संपादित करें",
-    weather: "🌤️ मौसम", weatherDesc: "आसमान साफ रहने की उम्मीद है। बारिश की 10% संभावना।", pestAlert: "🐛 कीट चेतावनी", pestDesc: "आपके क्षेत्र में कोई सक्रिय खतरा नहीं पाया गया।",
-    addCropTitle: "➕ नई फसल इन्वेंटरी जोड़ें", selectCrop: "-- भारतीय फसल चुनें --", weightKg: "वजन (किलो)", addCropBtn: "फसल जोड़ें", myCropInventory: "🌾 मेरी फसल इन्वेंटरी", emptyInventory: "आपकी इन्वेंटरी वर्तमान में खाली है।", lockedRate: "लॉक्ड दर:", remove: "हटाएं",
-    liveCropMarket: "🌾 लाइव फसल बाजार मूल्य", cropName: "फसल का नाम", liveRate: "लाइव दर", action: "कार्रवाई", sellMarket: "बाजार में बेचें", farmingSuppliesTitle: "🛒 कृषि आपूर्ति (खरीदें)", itemName: "वस्तु का नाम", currentPrice: "वर्तमान मूल्य", buySupplies: "आपूर्ति खरीदें",
-    procurementApp: "खरीद आवेदन", applyingFor: "इसके लिए आवेदन:", quantity: "मात्रा (किलो / बैग)", farmLocation: "खेत का स्थान", prefDateTime: "पसंदीदा तिथि और समय", confirmOrder: "ऑर्डर की पुष्टि करें", cancel: "रद्द करें",
-    aiAnalysis: "🤖 FarmFlow AI विश्लेषण", aiReport: "साप्ताहिक अंतर्दृष्टि रिपोर्ट जनरेट की गई:", aiTip1: "आपके खेतों में नाइट्रोजन का स्तर गिर सकता है। गुरुवार तक यूरिया लगाने की सलाह दी जाती है।", aiTip2: "बाजार की स्थिति अधिकतम लाभ के लिए गेहूं की बिक्री 2 सप्ताह तक रोकने का सुझाव देती है।", aiTip3: "मौसम विश्लेषण अगले 7 दिनों तक कीटों के कम जोखिम को दर्शाता है।",
-    helpTitle: "सहायता और मार्गदर्शन", helpIntro: "FarmFlow AI में आपका स्वागत है! यहाँ बताया गया है कि अपने डैशबोर्ड का उपयोग कैसे करें:", helpProfile: "प्रोफ़ाइल: अपने पंजीकृत खाते का विवरण और स्थिति देखें।", helpCrops: "मेरी फसलें: अपनी काटी गई फसलें जोड़ें, वजन दर्ज करें, और अनुमानित लाइव बाजार मूल्य देखें।", helpProcurement: "खरीद: लाइव बाजार दरें देखें। आप अपनी फसल बेचने या कृषि आपूर्ति खरीदने के लिए आवेदन कर सकते हैं।", helpAi: "एआई अंतर्दृष्टि: अपने खेत के मुनाफे को अधिकतम करने के लिए एआई-जनित सलाह पढ़ें।"
-  },
-  ta: {
-    navDashboard: "📊 டாஷ்போர்டு", navProfile: "👤 என் சுயவிவரம்", navCrops: "🌾 என் பயிர்கள்", navProcurement: "🛒 கொள்முதல்", navAi: "🤖 AI ஆலோசனைகள்", navHelp: "❓ உதவி", logout: "வெளியேறு",
-    module: "பிரிவு", subtitle: "உங்கள் பண்ணை செயல்பாடுகளை எளிதாக நிர்வகிக்கவும்.", liveMarket: "நேரடி சந்தை செயலில் உள்ளது",
-    userDetails: "பயனர் விவரங்கள்", fullName: "முழு பெயர்:", emailAddr: "மின்னஞ்சல்:", role: "பங்கு:", farmManager: "பண்ணை மேலாளர்", accountStatus: "கணக்கு நிலை:", verified: "சரிபார்க்கப்பட்டது 🟢", editProfile: "சுயவிவரத்தைத் திருத்துக",
-    weather: "🌤️ வானிலை", weatherDesc: "தெளிவான வானம். 10% மழை வாய்ப்பு.", pestAlert: "🐛 பூச்சி எச்சரிக்கை", pestDesc: "உங்கள் பகுதியில் எந்த அச்சுறுத்தலும் இல்லை.",
-    addCropTitle: "➕ புதிய பயிர் சேர்ப்பது", selectCrop: "-- இந்திய பயிரைத் தேர்ந்தெடுக்கவும் --", weightKg: "எடை (கிலோ)", addCropBtn: "பயிரைச் சேர்", myCropInventory: "🌾 என் பயிர் இருப்பு", emptyInventory: "உங்கள் இருப்பு காலியாக உள்ளது.", lockedRate: "பூட்டப்பட்ட விலை:", remove: "நீக்கு",
-    liveCropMarket: "🌾 நேரடி பயிர் சந்தை விலைகள்", cropName: "பயிர் பெயர்", liveRate: "நேரடி விலை", action: "செயல்", sellMarket: "சந்தையில் விற்க", farmingSuppliesTitle: "🛒 விவசாய பொருட்கள் (வாங்க)", itemName: "பொருள் பெயர்", currentPrice: "தற்போதைய விலை", buySupplies: "வாங்கு",
-    procurementApp: "கொள்முதல் விண்ணப்பம்", applyingFor: "விண்ணப்பிப்பது:", quantity: "அளவு (கிலோ / பைகள்)", farmLocation: "பண்ணை இடம்", prefDateTime: "தேதி மற்றும் நேரம்", confirmOrder: "உறுதி செய்", cancel: "ரத்து செய்",
-    aiAnalysis: "🤖 FarmFlow AI பகுப்பாய்வு", aiReport: "வாராந்திர அறிக்கை:", aiTip1: "நைட்ரஜன் அளவுகள் குறையக்கூடும். வியாழக்கிழமைக்குள் யூரியா பயன்படுத்த பரிந்துரைக்கப்படுகிறது.", aiTip2: "லாபத்தை அதிகரிக்க கோதுமை விற்பனையை 2 வாரங்களுக்கு தாமதப்படுத்தவும்.", aiTip3: "அடுத்த 7 நாட்களுக்கு பூச்சிகள் தாக்கும் அபாயம் குறைவு.",
-    helpTitle: "உதவி மற்றும் வழிகாட்டி", helpIntro: "FarmFlow AI-க்கு உங்களை வரவேற்கிறோம்! டாஷ்போர்டை எவ்வாறு பயன்படுத்துவது:", helpProfile: "சுயவிவரம்: உங்கள் கணக்கு விவரங்கள் மற்றும் நிலையைப் பார்க்கவும்.", helpCrops: "என் பயிர்கள்: உங்கள் அறுவடை பயிர்களைச் சேர்க்கவும், நேரடி சந்தை மதிப்பை அறியவும்.", helpProcurement: "கொள்முதல்: நேரடி சந்தை விலைகளை காணுங்கள். விற்க அல்லது வாங்க விண்ணப்பிக்கலாம்.", helpAi: "AI ஆலோசனைகள்: லாபத்தை அதிகரிக்க AI ஆலோசனைகளைப் படியுங்கள்."
-  }
+  // (Assuming identical translation objects for 'hi' and 'ta' as your previous code to save space, but kept structure identical)
+  hi: { navDashboard: "📊 डैशबोर्ड", navProfile: "👤 मेरी प्रोफ़ाइल", navCrops: "🌾 मेरी फसलें", navProcurement: "🛒 खरीद", navAi: "🤖 एआई अंतर्दृष्टि", navHelp: "❓ सहायता", logout: "लॉग आउट", module: "मॉड्यूल", subtitle: "अपने स्मार्ट कृषि कार्यों को आसानी से प्रबंधित करें।", liveMarket: "लाइव मार्केट सक्रिय", userDetails: "उपयोगकर्ता विवरण", fullName: "पूरा नाम:", emailAddr: "ईमेल पता:", role: "भूमिका:", farmManager: "खेत प्रबंधक", accountStatus: "खाता स्थिति:", verified: "सत्यापित 🟢", editProfile: "प्रोफ़ाइल जानकारी संपादित करें", weather: "🌤️ मौसम", weatherDesc: "आसमान साफ रहने की उम्मीद है। बारिश की 10% संभावना।", pestAlert: "🐛 कीट चेतावनी", pestDesc: "आपके क्षेत्र में कोई सक्रिय खतरा नहीं पाया गया।", addCropTitle: "➕ नई फसल इन्वेंटरी जोड़ें", selectCrop: "-- भारतीय फसल चुनें --", weightKg: "वजन (किलो)", addCropBtn: "फसल जोड़ें", myCropInventory: "🌾 मेरी फसल इन्वेंटरी", emptyInventory: "आपकी इन्वेंटरी वर्तमान में खाली है।", lockedRate: "लॉक्ड दर:", remove: "हटाएं", liveCropMarket: "🌾 लाइव फसल बाजार मूल्य", cropName: "फसल का नाम", liveRate: "लाइव दर और रुझान", action: "कार्रवाई", sellMarket: "बाजार में बेचें", farmingSuppliesTitle: "🛒 कृषि आपूर्ति (खरीदें)", itemName: "वस्तु का नाम", currentPrice: "वर्तमान मूल्य", buySupplies: "आपूर्ति खरीदें", procurementApp: "खरीद आवेदन", applyingFor: "इसके लिए आवेदन:", quantity: "मात्रा (किलो / बैग)", farmLocation: "खेत का स्थान", prefDateTime: "पसंदीदा तिथि और समय", confirmOrder: "ऑर्डर की पुष्टि करें", cancel: "रद्द करें", aiAnalysis: "🤖 FarmFlow AI विश्लेषण", aiReport: "साप्ताहिक अंतर्दृष्टि रिपोर्ट जनरेट की गई:", aiTip1: "आपके खेतों में नाइट्रोजन का स्तर गिर सकता है। गुरुवार तक यूरिया लगाने की सलाह दी जाती है।", aiTip2: "बाजार की स्थिति अधिकतम लाभ के लिए गेहूं की बिक्री 2 सप्ताह तक रोकने का सुझाव देती है।", aiTip3: "मौसम विश्लेषण अगले 7 दिनों तक कीटों के कम जोखिम को दर्शाता है।", helpTitle: "सहायता और मार्गदर्शन", helpIntro: "FarmFlow AI में आपका स्वागत है! यहाँ बताया गया है कि अपने डैशबोर्ड का उपयोग कैसे करें:", helpProfile: "प्रोफ़ाइल: अपने पंजीकृत खाते का विवरण और स्थिति देखें।", helpCrops: "मेरी फसलें: अपनी काटी गई फसलें जोड़ें, वजन दर्ज करें, और अनुमानित लाइव बाजार मूल्य देखें।", helpProcurement: "खरीद: लाइव बाजार दरें देखें। आप अपनी फसल बेचने या कृषि आपूर्ति खरीदने के लिए आवेदन कर सकते हैं।", helpAi: "एआई अंतर्दृष्टि: अपने खेत के मुनाफे को अधिकतम करने के लिए एआई-जनित सलाह पढ़ें।" },
+  ta: { navDashboard: "📊 டாஷ்போர்டு", navProfile: "👤 என் சுயவிவரம்", navCrops: "🌾 என் பயிர்கள்", navProcurement: "🛒 கொள்முதல்", navAi: "🤖 AI ஆலோசனைகள்", navHelp: "❓ உதவி", logout: "வெளியேறு", module: "பிரிவு", subtitle: "உங்கள் பண்ணை செயல்பாடுகளை எளிதாக நிர்வகிக்கவும்.", liveMarket: "நேரடி சந்தை செயலில் உள்ளது", userDetails: "பயனர் விவரங்கள்", fullName: "முழு பெயர்:", emailAddr: "மின்னஞ்சல்:", role: "பங்கு:", farmManager: "பண்ணை மேலாளர்", accountStatus: "கணக்கு நிலை:", verified: "சரிபார்க்கப்பட்டது 🟢", editProfile: "சுயவிவரத்தைத் திருத்துக", weather: "🌤️ வானிலை", weatherDesc: "தெளிவான வானம். 10% மழை வாய்ப்பு.", pestAlert: "🐛 பூச்சி எச்சரிக்கை", pestDesc: "உங்கள் பகுதியில் எந்த அச்சுறுத்தலும் இல்லை.", addCropTitle: "➕ புதிய பயிர் சேர்ப்பது", selectCrop: "-- இந்திய பயிரைத் தேர்ந்தெடுக்கவும் --", weightKg: "எடை (கிலோ)", addCropBtn: "பயிரைச் சேர்", myCropInventory: "🌾 என் பயிர் இருப்பு", emptyInventory: "உங்கள் இருப்பு காலியாக உள்ளது.", lockedRate: "பூட்டப்பட்ட விலை:", remove: "நீக்கு", liveCropMarket: "🌾 நேரடி பயிர் சந்தை விலைகள்", cropName: "பயிர் பெயர்", liveRate: "நேரடி விலை & போக்கு", action: "செயல்", sellMarket: "சந்தையில் விற்க", farmingSuppliesTitle: "🛒 விவசாய பொருட்கள் (வாங்க)", itemName: "பொருள் பெயர்", currentPrice: "தற்போதைய விலை", buySupplies: "வாங்கு", procurementApp: "கொள்முதல் விண்ணப்பம்", applyingFor: "விண்ணப்பிப்பது:", quantity: "அளவு (கிலோ / பைகள்)", farmLocation: "பண்ணை இடம்", prefDateTime: "தேதி மற்றும் நேரம்", confirmOrder: "உறுதி செய்", cancel: "ரத்து செய்", aiAnalysis: "🤖 FarmFlow AI பகுப்பாய்வு", aiReport: "வாராந்திர அறிக்கை:", aiTip1: "நைட்ரஜன் அளவுகள் குறையக்கூடும். வியாழக்கிழமைக்குள் யூரியா பயன்படுத்த பரிந்துரைக்கப்படுகிறது.", aiTip2: "லாபத்தை அதிகரிக்க கோதுமை விற்பனையை 2 வாரங்களுக்கு தாமதப்படுத்தவும்.", aiTip3: "அடுத்த 7 நாட்களுக்கு பூச்சிகள் தாக்கும் அபாயம் குறைவு.", helpTitle: "உதவி மற்றும் வழிகாட்டி", helpIntro: "FarmFlow AI-க்கு உங்களை வரவேற்கிறோம்! டாஷ்போர்டை எவ்வாறு பயன்படுத்துவது:", helpProfile: "சுயவிவரம்: உங்கள் கணக்கு விவரங்கள் மற்றும் நிலையைப் பார்க்கவும்.", helpCrops: "என் பயிர்கள்: உங்கள் அறுவடை பயிர்களைச் சேர்க்கவும், நேரடி சந்தை மதிப்பை அறியவும்.", helpProcurement: "கொள்முதல்: நேரடி சந்தை விலைகளை காணுங்கள். விற்க அல்லது வாங்க விண்ணப்பிக்கலாம்.", helpAi: "AI ஆலோசனைகள்: லாபத்தை அதிகரிக்க AI ஆலோசனைகளைப் படியுங்கள்." }
 };
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [lang, setLang] = useState('en'); 
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // SIDEBAR TOGGLE STATE
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); 
   
   const l = t[lang];
 
-  const [marketRates, setMarketRates] = useState({
-    "Rice (Paddy)": 22.50, "Wheat": 25.00, "Maize (Corn)": 20.00,
-    "Cotton": 70.00, "Sugarcane": 3.15, "Soybean": 46.00,
-    "Mustard": 52.00, "Bajra (Pearl Millet)": 24.50, "Groundnut": 65.00,
-    "Tur (Pigeon Pea)": 110.00, "Onion": 28.00, "Potato": 18.00
-  });
+  const [marketRates, setMarketRates] = useState(initialRates);
+  const [marketHistory, setMarketHistory] = useState(() => generateInitialHistory(initialRates));
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -68,6 +90,17 @@ const Dashboard = () => {
         const changePercent = (Math.random() * 0.04) - 0.02; 
         let newPrice = newRates[randomCrop] * (1 + changePercent);
         newRates[randomCrop] = Number(newPrice.toFixed(2));
+        
+        // Update the graph history
+        setMarketHistory(prevHistory => {
+          const updatedHistory = { ...prevHistory };
+          const cropHistory = [...updatedHistory[randomCrop]];
+          cropHistory.push(newRates[randomCrop]);
+          if (cropHistory.length > 15) cropHistory.shift(); // Keep only the last 15 points
+          updatedHistory[randomCrop] = cropHistory;
+          return updatedHistory;
+        });
+
         return newRates;
       });
     }, 4000); 
@@ -139,7 +172,6 @@ const Dashboard = () => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', borderBottom: '2px solid #e0e0e0', paddingBottom: '20px' }}>
           
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-            {/* THREE BARS MENU TOGGLE BUTTON */}
             <button 
               onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
               style={{ fontSize: '30px', background: 'transparent', border: 'none', cursor: 'pointer', color: '#2c3e50', padding: '0', display: 'flex', alignItems: 'center' }}
@@ -265,7 +297,13 @@ const Dashboard = () => {
                   {Object.keys(marketRates).map(crop => (
                     <tr key={crop} style={{ borderBottom: '1px solid #eee' }}>
                       <td style={{ padding: '15px 10px' }}><strong>{crop}</strong></td>
-                      <td style={{ padding: '15px 10px', color: '#2e7d32', fontWeight: 'bold' }}>₹{marketRates[crop].toFixed(2)} / kg</td>
+                      
+                      {/* NEW LIVE RATE AND MINI GRAPH COLUMN */}
+                      <td style={{ padding: '15px 10px', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                        <span style={{ color: '#2e7d32', fontWeight: 'bold', minWidth: '90px' }}>₹{marketRates[crop].toFixed(2)} / kg</span>
+                        <Sparkline data={marketHistory[crop]} />
+                      </td>
+                      
                       <td style={{ padding: '15px 10px' }}><button onClick={() => setOrderingItem(crop)} style={{ padding: '8px 15px', backgroundColor: '#4caf50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>{l.sellMarket}</button></td>
                     </tr>
                   ))}
