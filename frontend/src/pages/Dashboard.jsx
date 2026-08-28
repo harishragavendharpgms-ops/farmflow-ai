@@ -28,7 +28,6 @@ const Sparkline = ({ data }) => {
   );
 };
 
-// Translations (Truncated for readability, uses same dictionary as before)
 const t = {
   en: { navDashboard: "📊 Dashboard", navProfile: "👤 My Profile", navCrops: "🌾 My Crops", navProcurement: "🛒 Procurement", navAi: "🤖 AI Insights", navHelp: "❓ Help", logout: "Log Out", module: "Module", subtitle: "Manage your smart farm operations seamlessly.", liveMarket: "Live Market Active", userDetails: "User Details", fullName: "Full Name:", emailAddr: "Email Address:", role: "Role:", farmManager: "Farm Manager", accountStatus: "Account Status:", verified: "Verified 🟢", weather: "🌤️ Weather", weatherDesc: "Clear skies expected. 10% rain chance.", pestAlert: "🐛 Pest Alert", pestDesc: "No active threats detected in your area.", addCropTitle: "➕ Add New Crop Inventory", selectCrop: "-- Select Major Indian Crop --", weightKg: "Weight (KGs)", addCropBtn: "Add Crop", myCropInventory: "🌾 My Crop Inventory", emptyInventory: "Your inventory is currently empty.", lockedRate: "Locked Rate:", remove: "Remove", liveCropMarket: "🌾 Live Crop Market Prices", cropName: "Crop Name", pastRates: "Past Rates", liveRate: "Live Rate & Trend", action: "Action", sellMarket: "Sell to Market", farmingSuppliesTitle: "🛒 Farming Supplies (Buy)", itemName: "Item Name", currentPrice: "Current Price", buySupplies: "Buy Supplies", procurementApp: "Procurement Application", applyingFor: "Applying for:", quantity: "Quantity (KGs / Bags)", farmLocation: "Farm Location", confirmOrder: "Confirm Order", cancel: "Cancel", upcomingProcurements: "📦 Upcoming Procurements", noActiveOrders: "No active orders at the moment.", aiAnalysis: "🤖 FarmFlow AI Analysis", aiReport: "Weekly Insight Report generated:", aiTip1: "Nitrogen levels in your fields may be dropping. Recommended to apply Urea by Thursday.", aiTip2: "Market conditions suggest holding wheat sales for 2 weeks to maximize profit.", aiTip3: "Weather analysis shows low risk of pests for the next 7 days.", helpTitle: "Help & Guide", helpIntro: "Welcome to FarmFlow AI! Here is how to use your dashboard:", helpProfile: "Profile: View your registered account details and status.", helpCrops: "My Crops: Add your harvested crops, enter the weight, and see the estimated live market value.", helpProcurement: "Procurement: View live fluctuating market rates. You can apply to sell your crops or buy farming supplies.", helpAi: "AI Insights: Read weekly AI-generated advice to maximize your farm's profit and health." },
   hi: { navDashboard: "📊 डैशबोर्ड", navProfile: "👤 मेरी प्रोफ़ाइल", navCrops: "🌾 मेरी फसलें", navProcurement: "🛒 खरीद", navAi: "🤖 एआई अंतर्दृष्टि", navHelp: "❓ सहायता", logout: "लॉग आउट", module: "मॉड्यूल", subtitle: "अपने स्मार्ट कृषि कार्यों को आसानी से प्रबंधित करें।", liveMarket: "लाइव मार्केट सक्रिय", userDetails: "उपयोगकर्ता विवरण", fullName: "पूरा नाम:", emailAddr: "ईमेल पता:", role: "भूमिका:", farmManager: "खेत प्रबंधक", accountStatus: "खाता स्थिति:", verified: "सत्यापित 🟢", weather: "🌤️ मौसम", weatherDesc: "आसमान साफ रहने की उम्मीद है। बारिश की 10% संभावना।", pestAlert: "🐛 कीट चेतावनी", pestDesc: "आपके क्षेत्र में कोई सक्रिय खतरा नहीं पाया गया।", addCropTitle: "➕ नई फसल इन्वेंटरी जोड़ें", selectCrop: "-- भारतीय फसल चुनें --", weightKg: "वजन (किलो)", addCropBtn: "फसल जोड़ें", myCropInventory: "🌾 मेरी फसल इन्वेंटरी", emptyInventory: "आपकी इन्वेंटरी वर्तमान में खाली है।", lockedRate: "लॉक्ड दर:", remove: "हटाएं", liveCropMarket: "🌾 लाइव फसल बाजार मूल्य", cropName: "फसल का नाम", pastRates: "पिछली दरें", liveRate: "लाइव दर और रुझान", action: "कार्रवाई", sellMarket: "बाजार में बेचें", farmingSuppliesTitle: "🛒 कृषि आपूर्ति (खरीदें)", itemName: "वस्तु का नाम", currentPrice: "वर्तमान मूल्य", buySupplies: "आपूर्ति खरीदें", procurementApp: "खरीद आवेदन", applyingFor: "इसके लिए आवेदन:", quantity: "मात्रा (किलो / बैग)", farmLocation: "खेत का स्थान", confirmOrder: "ऑर्डर की पुष्टि करें", cancel: "रद्द करें", upcomingProcurements: "📦 आगामी खरीद", noActiveOrders: "इस समय कोई सक्रिय आदेश नहीं है।", aiAnalysis: "🤖 FarmFlow AI विश्लेषण", aiReport: "साप्ताहिक अंतर्दृष्टि रिपोर्ट जनरेट की गई:", aiTip1: "आपके खेतों में नाइट्रोजन का स्तर गिर सकता है। गुरुवार तक यूरिया लगाने की सलाह दी जाती है।", aiTip2: "बाजार की स्थिति अधिकतम लाभ के लिए गेहूं की बिक्री 2 सप्ताह तक रोकने का सुझाव देती है।", aiTip3: "मौसम विश्लेषण अगले 7 दिनों तक कीटों के कम जोखिम को दर्शाता है।", helpTitle: "सहायता और मार्गदर्शन", helpIntro: "FarmFlow AI में आपका स्वागत है! यहाँ बताया गया है कि अपने डैशबोर्ड का उपयोग कैसे करें:", helpProfile: "प्रोफ़ाइल: अपने पंजीकृत खाते का विवरण और स्थिति देखें।", helpCrops: "मेरी फसलें: अपनी काटी गई फसलें जोड़ें, वजन दर्ज करें, और अनुमानित लाइव बाजार मूल्य देखें।", helpProcurement: "खरीद: लाइव बाजार दरें देखें। आप अपनी फसल बेचने या कृषि आपूर्ति खरीदने के लिए आवेदन कर सकते हैं।", helpAi: "एआई अंतर्दृष्टि: अपने खेत के मुनाफे को अधिकतम करने के लिए एआई-जनित सलाह पढ़ें।" },
@@ -44,7 +43,19 @@ const Dashboard = () => {
 
   const [marketRates, setMarketRates] = useState(initialRates);
   const [marketHistory, setMarketHistory] = useState(() => generateInitialHistory(initialRates));
-  const [activeOrders, setActiveOrders] = useState([]);
+  
+  // Load active orders from localStorage
+  const [activeOrders, setActiveOrders] = useState(() => {
+    return JSON.parse(localStorage.getItem('farmflow_orders') || '[]');
+  });
+
+  // Sync with Officer changes every 2 seconds
+  useEffect(() => {
+    const syncInterval = setInterval(() => {
+      setActiveOrders(JSON.parse(localStorage.getItem('farmflow_orders') || '[]'));
+    }, 2000);
+    return () => clearInterval(syncInterval);
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -67,7 +78,6 @@ const Dashboard = () => {
 
   const [userProfile, setUserProfile] = useState({ name: 'Farmer', email: '' });
   useEffect(() => {
-    // Check both local (remembered) and session (temporary) storage
     const savedUser = localStorage.getItem('farmflow_user') || sessionStorage.getItem('farmflow_user');
     if (savedUser) setUserProfile(JSON.parse(savedUser));
   }, []);
@@ -89,7 +99,12 @@ const Dashboard = () => {
       id: Date.now(), item: orderingItem, quantity: orderDetails.quantity, location: orderDetails.location,
       datetime: `${orderDetails.date} | ${orderDetails.time}`, status: 'Pending'
     };
-    setActiveOrders([...activeOrders, newOrder]);
+    
+    // Save to state AND localStorage so Officer can see it
+    const updatedOrders = [...activeOrders, newOrder];
+    setActiveOrders(updatedOrders);
+    localStorage.setItem('farmflow_orders', JSON.stringify(updatedOrders));
+
     alert(`Success! Application submitted for ${orderDetails.quantity}kg/bags of ${orderingItem}.`);
     setOrderingItem(null); setOrderDetails({ location: '', date: '', time: '', quantity: '' });
   };
@@ -100,6 +115,8 @@ const Dashboard = () => {
     setMyCrops([...myCrops, { id: Date.now(), name: newCrop.name, weightKg: parseFloat(newCrop.weightKg), ratePerKg: marketRates[newCrop.name] }]);
     setNewCrop({ name: '', weightKg: '' }); 
   };
+
+  const handleDeleteCrop = (idToRemove) => setMyCrops(myCrops.filter(c => c.id !== idToRemove));
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f0f4f8', fontFamily: "'Segoe UI', sans-serif" }}>
@@ -183,9 +200,9 @@ const Dashboard = () => {
               {activeOrders.length === 0 ? (<p style={{ color: '#777', fontStyle: 'italic' }}>{l.noActiveOrders}</p>) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
                   {activeOrders.map(order => (
-                    <div key={order.id} style={{ padding: '15px', borderLeft: '4px solid #2196f3', backgroundColor: '#f9f9f9', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div key={order.id} style={{ padding: '15px', borderLeft: `4px solid ${order.status === 'Approved' ? '#4caf50' : order.status === 'Rejected' ? '#f44336' : '#2196f3'}`, backgroundColor: '#f9f9f9', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div><strong style={{ display: 'block', fontSize: '18px', color: '#2c3e50' }}>{order.item}</strong><span style={{ color: '#555' }}>{order.quantity} Units • {order.datetime}</span><span style={{ display: 'block', color: '#777', fontSize: '14px', marginTop: '5px' }}>📍 {order.location}</span></div>
-                      <span style={{ padding: '5px 10px', backgroundColor: '#e3f2fd', color: '#1976d2', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold' }}>{order.status}</span>
+                      <span style={{ padding: '5px 10px', backgroundColor: order.status === 'Approved' ? '#e8f5e9' : order.status === 'Rejected' ? '#ffebee' : '#e3f2fd', color: order.status === 'Approved' ? '#2e7d32' : order.status === 'Rejected' ? '#c62828' : '#1976d2', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold' }}>{order.status}</span>
                     </div>
                   ))}
                 </div>
@@ -270,7 +287,7 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* PROCUREMENT FORM (Updated with strict Date & Time inputs) */}
+        {/* PROCUREMENT FORM */}
         {activeTab === 'procurement' && orderingItem && (
           <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px', maxWidth: '500px' }}>
             <h3 style={{ color: '#2c3e50', marginBottom: '10px' }}>{l.procurementApp}</h3>
