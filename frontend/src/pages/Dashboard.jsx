@@ -47,12 +47,11 @@ const t = {
 const Dashboard = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [lang, setLang] = useState('en'); // GLOBAL LANGUAGE STATE
+  const [lang, setLang] = useState('en'); 
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false); // SIDEBAR TOGGLE STATE
   
-  // Helper to easily get translated text
   const l = t[lang];
 
-  // LIVE MARKET STATE
   const [marketRates, setMarketRates] = useState({
     "Rice (Paddy)": 22.50, "Wheat": 25.00, "Maize (Corn)": 20.00,
     "Cotton": 70.00, "Sugarcane": 3.15, "Soybean": 46.00,
@@ -108,8 +107,19 @@ const Dashboard = () => {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f0f4f8', fontFamily: "'Segoe UI', sans-serif" }}>
       
-      {/* SIDEBAR */}
-      <div style={{ width: '250px', backgroundColor: '#1e392a', color: 'white', padding: '30px 20px', display: 'flex', flexDirection: 'column' }}>
+      {/* COLLAPSIBLE SIDEBAR */}
+      <div style={{ 
+          width: isSidebarOpen ? '250px' : '0px', 
+          padding: isSidebarOpen ? '30px 20px' : '30px 0px',
+          opacity: isSidebarOpen ? 1 : 0,
+          overflow: 'hidden', 
+          transition: 'all 0.3s ease',
+          backgroundColor: '#1e392a', 
+          color: 'white', 
+          display: 'flex', 
+          flexDirection: 'column',
+          whiteSpace: 'nowrap'
+        }}>
         <h2 style={{ color: '#4caf50', margin: '0 0 40px 0', fontSize: '24px' }}>🌱 FarmFlow AI</h2>
         <nav style={{ display: 'flex', flexDirection: 'column', gap: '20px', flexGrow: 1 }}>
           <div onClick={() => {setActiveTab('dashboard'); setOrderingItem(null);}} style={{ color: activeTab === 'dashboard' ? '#fff' : '#a0b2a6', fontWeight: activeTab === 'dashboard' ? 'bold' : 'normal', cursor: 'pointer' }}>{l.navDashboard}</div>
@@ -123,19 +133,29 @@ const Dashboard = () => {
       </div>
 
       {/* MAIN CONTENT AREA */}
-      <div style={{ flexGrow: 1, padding: '40px' }}>
+      <div style={{ flexGrow: 1, padding: '40px', transition: 'all 0.3s ease' }}>
         
-        {/* GLOBAL HEADER WITH LANGUAGE SELECTOR */}
+        {/* GLOBAL HEADER WITH TOGGLE AND LANGUAGE SELECTOR */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px', borderBottom: '2px solid #e0e0e0', paddingBottom: '20px' }}>
-          <div>
-            <h1 style={{ margin: 0, color: '#2c3e50', fontSize: '32px' }}>
-              {activeTab === 'profile' ? l.navProfile.substring(2) : activeTab === 'help' ? l.navHelp.substring(2) : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} {l.module}
-            </h1>
-            <p style={{ color: '#7f8c8d', fontSize: '16px', marginTop: '8px' }}>{l.subtitle}</p>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+            {/* THREE DOTS MENU TOGGLE BUTTON */}
+            <button 
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)} 
+              style={{ fontSize: '30px', background: 'transparent', border: 'none', cursor: 'pointer', color: '#2c3e50', padding: '0', display: 'flex', alignItems: 'center' }}
+            >
+              ⋮
+            </button>
+            
+            <div>
+              <h1 style={{ margin: 0, color: '#2c3e50', fontSize: '32px' }}>
+                {activeTab === 'profile' ? l.navProfile.substring(2) : activeTab === 'help' ? l.navHelp.substring(2) : activeTab.charAt(0).toUpperCase() + activeTab.slice(1)} {l.module}
+              </h1>
+              <p style={{ color: '#7f8c8d', fontSize: '16px', margin: '8px 0 0 0' }}>{l.subtitle}</p>
+            </div>
           </div>
           
           <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
-            {/* NEW: Global Language Toggle */}
             <div style={{ display: 'flex', gap: '5px', backgroundColor: 'white', padding: '5px', borderRadius: '8px', boxShadow: '0 2px 5px rgba(0,0,0,0.05)' }}>
               <button onClick={() => setLang('en')} style={{ padding: '5px 10px', backgroundColor: lang === 'en' ? '#2196f3' : 'transparent', color: lang === 'en' ? 'white' : '#555', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>EN</button>
               <button onClick={() => setLang('hi')} style={{ padding: '5px 10px', backgroundColor: lang === 'hi' ? '#2196f3' : 'transparent', color: lang === 'hi' ? 'white' : '#555', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }}>HI</button>
