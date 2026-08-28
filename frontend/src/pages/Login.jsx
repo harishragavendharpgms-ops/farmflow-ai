@@ -1,59 +1,52 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { useNavigate, Link } from 'react-router-dom';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const Login = () => {
-  const [formData, setFormData] = useState({ email: '', password: '' });
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
   const navigate = useNavigate();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
 
-  // If already logged in, send them straight to the dashboard
-  useEffect(() => {
-    if (localStorage.getItem('farmflow_user')) {
-      navigate('/dashboard');
-    }
-  }, [navigate]);
-
-  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
-
-  const handleSubmit = async (e) => {
+  const handleLogin = (e) => {
     e.preventDefault();
-    setLoading(true); setMessage('');
-    try {
-      const response = await axios.post("https://farmflow-ai-84t0.onrender.com/login", formData);
-      setMessage(`Welcome back, ${response.data.name}! Redirecting...`);
-      
-      // Save login info to the browser
-      localStorage.setItem('farmflow_user', JSON.stringify({ name: response.data.name, email: response.data.email }));
-      
-      setTimeout(() => navigate('/dashboard'), 1500);
-    } catch (err) {
-      setMessage(`Error: ${err.response?.data?.detail || "Could not connect."}`);
-      setLoading(false);
+    
+    const userData = { name: 'Farmer User', email: email };
+    
+    // Core logic for Remember Me
+    if (rememberMe) {
+      localStorage.setItem('farmflow_user', JSON.stringify(userData));
+    } else {
+      sessionStorage.setItem('farmflow_user', JSON.stringify(userData));
     }
+    
+    navigate('/dashboard');
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f0f4f8', fontFamily: 'sans-serif' }}>
-      <div style={{ padding: '40px', backgroundColor: 'white', borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.1)', width: '100%', maxWidth: '400px', textAlign: 'center' }}>
-        <h2 style={{ color: '#2e7d32', margin: '0 0 10px 0' }}>Welcome Back</h2>
-        <p style={{ color: '#777', marginBottom: '30px' }}>Log in to your FarmFlow dashboard</p>
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', backgroundColor: '#f0f4f8', fontFamily: "'Segoe UI', sans-serif" }}>
+      <div style={{ backgroundColor: 'white', padding: '40px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', width: '100%', maxWidth: '400px' }}>
+        <h2 style={{ color: '#2e7d32', textAlign: 'center', marginBottom: '30px' }}>🌱 FarmFlow AI Login</h2>
         
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-          <input type="email" name="email" placeholder="Email Address" required onChange={handleChange} style={{ padding: '12px', border: '1px solid #ddd', borderRadius: '6px' }} />
-          <input type="password" name="password" placeholder="Password" required onChange={handleChange} style={{ padding: '12px', border: '1px solid #ddd', borderRadius: '6px' }} />
+        <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div>
+            <label style={{ display: 'block', marginBottom: '5px', color: '#555', fontWeight: 'bold' }}>Email Address</label>
+            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} style={{ width: '100%', padding: '12px', border: '1px solid #ccc', borderRadius: '6px', boxSizing: 'border-box' }} placeholder="Enter your email" />
+          </div>
           
-          <button type="submit" disabled={loading} style={{ padding: '14px', backgroundColor: loading ? '#ccc' : '#2e7d32', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px', marginTop: '10px' }}>
-            {loading ? 'Logging in...' : 'Log In'}
+          <div>
+            <label style={{ display: 'block', marginBottom: '5px', color: '#555', fontWeight: 'bold' }}>Password</label>
+            <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} style={{ width: '100%', padding: '12px', border: '1px solid #ccc', borderRadius: '6px', boxSizing: 'border-box' }} placeholder="Enter your password" />
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <input type="checkbox" id="remember" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} style={{ cursor: 'pointer', width: '18px', height: '18px' }} />
+            <label htmlFor="remember" style={{ color: '#555', cursor: 'pointer' }}>Save login info</label>
+          </div>
+
+          <button type="submit" style={{ padding: '14px', backgroundColor: '#4caf50', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px', marginTop: '10px' }}>
+            Log In
           </button>
         </form>
-
-        {message && <p style={{ marginTop: '15px', color: message.includes('Error') ? '#e74c3c' : '#27ae60', fontWeight: 'bold' }}>{message}</p>}
-        
-        <p style={{ marginTop: '20px', color: '#555' }}>
-          Don't have an account? <Link to="/register" style={{ color: '#2e7d32', textDecoration: 'none', fontWeight: 'bold' }}>Register here</Link>
-        </p>
       </div>
     </div>
   );
