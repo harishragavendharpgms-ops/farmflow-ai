@@ -7,6 +7,7 @@ const VAODashboard = () => {
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [userProfile, setUserProfile] = useState({});
+  const [modalImage, setModalImage] = useState(null); // State for image preview modal
 
   useEffect(() => {
     const savedUser = localStorage.getItem('farmflow_user') || sessionStorage.getItem('farmflow_user');
@@ -40,7 +41,7 @@ const VAODashboard = () => {
       await updateDoc(doc(db, 'orders', order.id), { 
         status: 'VAO Verified', 
         vaoSignature: eSignature,
-        documentUrl: order.documentUrl // Explicitly preserves the document link for the officer
+        documentUrl: order.documentUrl 
       });
       alert("Document successfully E-Signed and sent to Procurement Officer!");
     } catch (error) { 
@@ -85,9 +86,12 @@ const VAODashboard = () => {
                   <td style={{ padding: '15px 10px' }}>
                     No: <strong>{order.pattaChitta}</strong> <br/>
                     {order.documentUrl && (
-                      <a href={order.documentUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', marginTop: '5px', backgroundColor: '#e3f2fd', color: '#1976d2', padding: '4px 8px', borderRadius: '4px', textDecoration: 'none', fontSize: '11px', fontWeight: 'bold' }}>
+                      <button 
+                        onClick={() => setModalImage(order.documentUrl)} 
+                        style={{ marginTop: '5px', backgroundColor: '#e3f2fd', color: '#1976d2', border: 'none', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}
+                      >
                         👁️ View Document
-                      </a>
+                      </button>
                     )}
                   </td>
                   <td style={{ padding: '15px 10px' }}>
@@ -101,6 +105,21 @@ const VAODashboard = () => {
           </table>
         )}
       </div>
+
+      {/* Image Preview Modal Popup */}
+      {modalImage && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
+          <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', maxWidth: '90%', maxHeight: '90%', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: '0 5px 25px rgba(0,0,0,0.3)' }}>
+            <h3 style={{ margin: '0 0 15px 0', color: '#2c3e50' }}>Patta / Chitta Document Preview</h3>
+            <div style={{ maxWidth: '100%', maxHeight: '70vh', overflow: 'auto', marginBottom: '15px' }}>
+              <img src={modalImage} alt="Patta Document" style={{ width: '100%', height: 'auto', display: 'block', borderRadius: '6px' }} />
+            </div>
+            <button onClick={() => setModalImage(null)} style={{ padding: '8px 20px', backgroundColor: '#d32f2f', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>
+              Close Preview
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
