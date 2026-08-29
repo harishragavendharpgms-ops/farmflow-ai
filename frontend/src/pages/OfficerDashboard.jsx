@@ -8,7 +8,7 @@ const OfficerDashboard = () => {
   const [orders, setOrders] = useState([]);
   const [userProfile, setUserProfile] = useState({});
   const [modalImage, setModalImage] = useState(null); 
-  const [timeSlots, setTimeSlots] = useState({}); // Track time slot input per order
+  const [slotInputs, setSlotInputs] = useState({}); // Tracks date and time input per order
 
   useEffect(() => {
     const savedUser = localStorage.getItem('farmflow_user') || sessionStorage.getItem('farmflow_user');
@@ -38,21 +38,28 @@ const OfficerDashboard = () => {
     return () => unsub();
   }, [userProfile]);
 
-  const handleTimeSlotChange = (orderId, value) => {
-    setTimeSlots(prev => ({ ...prev, [orderId]: value }));
+  const handleInputChange = (orderId, field, value) => {
+    setSlotInputs(prev => ({
+      ...prev,
+      [orderId]: {
+        date: field === 'date' ? value : (prev[orderId]?.date || ''),
+        time: field === 'time' ? value : (prev[orderId]?.time || '')
+      }
+    }));
   };
 
   const handleSaveTimeSlot = async (id) => {
-    const slot = timeSlots[id];
-    if (!slot) {
-      alert("Please enter a valid time slot first.");
+    const input = slotInputs[id];
+    if (!input || !input.date || !input.time) {
+      alert("Please select a date and enter the time manually.");
       return;
     }
+    const combinedSlot = `${input.date} at ${input.time}`;
     try {
       await updateDoc(doc(db, 'orders', id), { 
-        datetime: slot 
+        datetime: combinedSlot 
       });
-      alert(`Time slot successfully assigned: ${slot}`);
+      alert(`Time slot successfully assigned: ${combinedSlot}`);
     } catch (error) {
       console.error(error);
       alert("Failed to assign time slot.");
@@ -89,12 +96,12 @@ const OfficerDashboard = () => {
         {orders.length === 0 ? (
           <p style={{ color: '#777', fontStyle: 'italic' }}>No verified applications pending procurement in your jurisdiction.</p>
         ) : (
-          <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse', minWidth: '700px' }}>
+          <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse', minWidth: '750px' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid #eee' }}>
                 <th style={{ padding: '12px 10px' }}>Farmer & Crop</th>
                 <th style={{ padding: '12px 10px' }}>Location & Document</th>
-                <th style={{ padding: '12px 10px' }}>Assign Time Slot</th>
+                <th style={{ padding: '12px 10px' }}>Schedule Date & Manual Time</th>
                 <th style={{ padding: '12px 10px' }}>Action</th>
               </tr>
             </thead>
@@ -117,20 +124,26 @@ const OfficerDashboard = () => {
                     )}
                   </td>
                   <td style={{ padding: '15px 10px' }}>
-                    <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                       <input 
-                        type="text" 
-                        placeholder="e.g. Mon 10:00 AM" 
-                        defaultValue={order.datetime !== 'TBD by Officer' ? order.datetime : ''}
-                        onChange={(e) => handleTimeSlotChange(order.id, e.target.value)}
-                        style={{ padding: '6px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '12px', width: '130px' }}
+                        type="date" 
+                        onChange={(e) => handleInputChange(order.id, 'date', e.target.value)}
+                        style={{ padding: '5px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '12px', width: '150px' }}
                       />
-                      <button 
-                        onClick={() => handleSaveTimeSlot(order.id)} 
-                        style={{ padding: '6px 10px', background: '#1976d2', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}
-                      >
-                        Set Slot
-                      </button>
+                      <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+                        <input 
+                          type="text" 
+                          placeholder="Type time (e.g. 10:30 AM)" 
+                          onChange={(e) => handleInputChange(order.id, 'time', e.target.value)}
+                          style={{ padding: '5px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '12px', width: '150px' }}
+                        />
+                        <button 
+                          onClick={() => handleSaveTimeSlot(order.id)} 
+                          style={{ padding: '6px 10px', background: '#1976d2', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}
+                        >
+                          Set
+                        </button>
+                      </div>
                     </div>
                     {order.datetime && order.datetime !== 'TBD by Officer' && (
                       <span style={{ display: 'block', fontSize: '11px', color: '#2e7d32', marginTop: '4px', fontWeight: 'bold' }}>Current: {order.datetime}</span>
