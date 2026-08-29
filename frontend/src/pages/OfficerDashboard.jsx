@@ -7,7 +7,8 @@ const OfficerDashboard = () => {
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [userProfile, setUserProfile] = useState({});
-  const [modalImage, setModalImage] = useState(null); // State for image preview modal
+  const [modalImage, setModalImage] = useState(null); 
+  const [timeSlots, setTimeSlots] = useState({}); // Track time slot input per order
 
   useEffect(() => {
     const savedUser = localStorage.getItem('farmflow_user') || sessionStorage.getItem('farmflow_user');
@@ -18,7 +19,6 @@ const OfficerDashboard = () => {
   useEffect(() => {
     if (!userProfile.zone) return; 
 
-    // Fetch verified orders for this officer's zone
     const q = query(
       collection(db, 'orders'), 
       where('zone', '==', userProfile.zone)
@@ -27,7 +27,6 @@ const OfficerDashboard = () => {
     const unsub = onSnapshot(q, (snap) => {
       const allZoneOrders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       
-      // Filter strictly by the officer's assigned sub-place (if applicable) and ensure VAO verified status
       const filtered = allZoneOrders.filter(o => {
         const matchesSubPlace = userProfile.subPlace ? o.subPlace === userProfile.subPlace : true;
         return matchesSubPlace && o.status === 'VAO Verified';
@@ -38,6 +37,27 @@ const OfficerDashboard = () => {
 
     return () => unsub();
   }, [userProfile]);
+
+  const handleTimeSlotChange = (orderId, value) => {
+    setTimeSlots(prev => ({ ...prev, [orderId]: value }));
+  };
+
+  const handleSaveTimeSlot = async (id) => {
+    const slot = timeSlots[id];
+    if (!slot) {
+      alert("Please enter a valid time slot first.");
+      return;
+    }
+    try {
+      await updateDoc(doc(db, 'orders', id), { 
+        datetime: slot 
+      });
+      alert(`Time slot successfully assigned: ${slot}`);
+    } catch (error) {
+      console.error(error);
+      alert("Failed to assign time slot.");
+    }
+  };
 
   const handleProcure = async (id) => {
     try {
@@ -64,17 +84,17 @@ const OfficerDashboard = () => {
         <button onClick={handleLogout} style={{ background: '#ff6b6b', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>Log Out</button>
       </div>
 
-      <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
+      <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', overflowX: 'auto' }}>
         <h3 style={{ color: '#2e7d32', marginTop: 0 }}>Ready for Procurement (VAO Verified)</h3>
         {orders.length === 0 ? (
           <p style={{ color: '#777', fontStyle: 'italic' }}>No verified applications pending procurement in your jurisdiction.</p>
         ) : (
-          <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
+          <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse', minWidth: '700px' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid #eee' }}>
                 <th style={{ padding: '12px 10px' }}>Farmer & Crop</th>
                 <th style={{ padding: '12px 10px' }}>Location & Document</th>
-                <th style={{ padding: '12px 10px' }}>VAO Signature</th>
+                <th style={{ padding: '12px 10px' }}>Assign Time Slot</th>
                 <th style={{ padding: '12px 10px' }}>Action</th>
               </tr>
             </thead>
@@ -96,8 +116,25 @@ const OfficerDashboard = () => {
                       </button>
                     )}
                   </td>
-                  <td style={{ padding: '15px 10px', fontSize: '12px', color: '#7b1fa2' }}>
-                    {order.vaoSignature || 'Verified'}
+                  <td style={{ padding: '15px 10px' }}>
+                    <div style={{ display: 'flex', gap: '5px', alignItems: 'center' }}>
+                      <input 
+                        type="text" 
+                        placeholder="e.g. Mon 10:00 AM" 
+                        defaultValue={order.datetime !== 'TBD by Officer' ? order.datetime : ''}
+                        onChange={(e) => handleTimeSlotChange(order.id, e.target.value)}
+                        style={{ padding: '6px', border: '1px solid #ddd', borderRadius: '4px', fontSize: '12px', width: '130px' }}
+                      />
+                      <button 
+                        onClick={() => handleSaveTimeSlot(order.id)} 
+                        style={{ padding: '6px 10px', background: '#1976d2', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}
+                      >
+                        Set Slot
+                      </button>
+                    </div>
+                    {order.datetime && order.datetime !== 'TBD by Officer' && (
+                      <span style={{ display: 'block', fontSize: '11px', color: '#2e7d32', marginTop: '4px', fontWeight: 'bold' }}>Current: {order.datetime}</span>
+                    )}
                   </td>
                   <td style={{ padding: '15px 10px' }}>
                     <button onClick={() => handleProcure(order.id)} style={{ padding: '8px 15px', background: '#2e7d32', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px' }}>
