@@ -43,15 +43,14 @@ const Dashboard = () => {
 
   const [marketRates, setMarketRates] = useState(initialRates);
   const [marketHistory, setMarketHistory] = useState(() => generateInitialHistory(initialRates));
-  const [activeOrders, setActiveOrders] = useState(() => JSON.parse(localStorage.getItem('farmflow_orders') || '[]'));
+  const [activeOrders, setActiveOrders] = useState([]);
 
+  // Load orders safely on mount
   useEffect(() => {
-    const syncInterval = setInterval(() => {
-      setActiveOrders(JSON.parse(localStorage.getItem('farmflow_orders') || '[]'));
-    }, 2000);
-    return () => clearInterval(syncInterval);
-  }, []);
+    setActiveOrders(JSON.parse(localStorage.getItem('farmflow_orders') || '[]'));
+  }, [activeTab]); // Refreshes when you click tabs
 
+  // Market rate simulation
   useEffect(() => {
     const interval = setInterval(() => {
       setMarketRates(prevRates => {
@@ -91,15 +90,24 @@ const Dashboard = () => {
   const submitOrder = (e) => {
     e.preventDefault();
     const newOrder = {
-      id: Date.now(), item: orderingItem, quantity: orderDetails.quantity, location: orderDetails.location,
-      datetime: `${orderDetails.date} | ${orderDetails.time}`, status: 'Pending'
+      id: Date.now(), 
+      item: orderingItem, 
+      quantity: orderDetails.quantity, 
+      location: orderDetails.location,
+      datetime: `${orderDetails.date} | ${orderDetails.time}`, 
+      status: 'Pending'
     };
-    const updatedOrders = [...activeOrders, newOrder];
-    setActiveOrders(updatedOrders);
+    
+    // BULLETPROOF SAVE: Read direct from LocalStorage right before saving
+    const existingOrders = JSON.parse(localStorage.getItem('farmflow_orders') || '[]');
+    const updatedOrders = [...existingOrders, newOrder];
+    
     localStorage.setItem('farmflow_orders', JSON.stringify(updatedOrders));
+    setActiveOrders(updatedOrders);
 
     alert(`Success! Application submitted for ${orderDetails.quantity}kg/bags of ${orderingItem}.`);
-    setOrderingItem(null); setOrderDetails({ location: '', date: '', time: '', quantity: '' });
+    setOrderingItem(null); 
+    setOrderDetails({ location: '', date: '', time: '', quantity: '' });
   };
 
   const handleAddCrop = (e) => {
