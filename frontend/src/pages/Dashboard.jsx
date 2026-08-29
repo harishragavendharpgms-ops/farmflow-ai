@@ -142,6 +142,10 @@ const Dashboard = () => {
 
   const handleDeleteCrop = (idToRemove) => setMyCrops(myCrops.filter(c => c.id !== idToRemove));
 
+  // Find the selected crop in the user's inventory to enforce a maximum sell weight
+  const savedCropData = myCrops.find(c => c.name === orderingItem);
+  const maxAvailableQuantity = savedCropData ? savedCropData.weightKg : undefined;
+
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f0f4f8', fontFamily: "'Segoe UI', sans-serif", position: 'relative', overflowX: 'hidden' }}>
       
@@ -283,12 +287,26 @@ const Dashboard = () => {
                     const history = marketHistory[crop] || [];
                     const p1 = history.length > 1 ? history[history.length - 2].toFixed(2) : '-';
                     const p2 = history.length > 2 ? history[history.length - 3].toFixed(2) : '-';
+                    
+                    // NEW: Check if the user has added this crop to their inventory
+                    const isCropSaved = myCrops.some(c => c.name === crop);
+
                     return (
                     <tr key={crop} style={{ borderBottom: '1px solid #eee' }}>
                       <td style={{ padding: '12px 8px', fontSize: '14px' }}><strong>{crop}</strong></td>
                       <td style={{ padding: '12px 8px', color: '#7f8c8d', fontSize: '13px' }}>₹{p1} <span style={{ color: '#ccc' }}>|</span> ₹{p2}</td>
                       <td style={{ padding: '12px 8px', display: 'flex', alignItems: 'center', gap: '10px' }}><span style={{ color: '#2e7d32', fontWeight: 'bold', fontSize: '13px', minWidth: '70px' }}>₹{marketRates[crop].toFixed(2)}</span><Sparkline data={history} /></td>
-                      <td style={{ padding: '12px 8px' }}><button onClick={() => setOrderingItem(crop)} style={{ padding: '6px 12px', backgroundColor: '#4caf50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px' }}>{l.sellMarket}</button></td>
+                      <td style={{ padding: '12px 8px' }}>
+                        {/* NEW: Disable the sell button if they don't have the crop saved */}
+                        <button 
+                          disabled={!isCropSaved}
+                          onClick={() => setOrderingItem(crop)} 
+                          title={!isCropSaved ? "Add this to 'My Crops' first to sell it." : ""}
+                          style={{ padding: '6px 12px', backgroundColor: isCropSaved ? '#4caf50' : '#e0e0e0', color: isCropSaved ? 'white' : '#999', border: 'none', borderRadius: '4px', cursor: isCropSaved ? 'pointer' : 'not-allowed', fontWeight: 'bold', fontSize: '12px' }}
+                        >
+                          {l.sellMarket}
+                        </button>
+                      </td>
                     </tr>
                   )})}
                 </tbody>
@@ -318,7 +336,17 @@ const Dashboard = () => {
             <h3 style={{ color: '#2c3e50', marginBottom: '8px', fontSize: '18px' }}>{l.procurementApp}</h3>
             <p style={{ color: '#777', marginBottom: '15px', fontSize: '14px' }}>{l.applyingFor} <strong style={{ color: '#2e7d32', fontSize: '16px' }}>{orderingItem}</strong></p>
             <form onSubmit={submitOrder} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <input type="number" required placeholder={l.quantity} value={orderDetails.quantity} onChange={(e) => setOrderDetails({...orderDetails, quantity: e.target.value})} style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px' }} />
+              
+              {/* NEW: Limit the quantity they can type to the max weight they have in inventory */}
+              <input 
+                type="number" 
+                required 
+                max={maxAvailableQuantity} 
+                placeholder={maxAvailableQuantity ? `${l.quantity} (Max: ${maxAvailableQuantity}kg)` : l.quantity} 
+                value={orderDetails.quantity} 
+                onChange={(e) => setOrderDetails({...orderDetails, quantity: e.target.value})} 
+                style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px' }} 
+              />
               
               <select required value={orderDetails.zone} onChange={(e) => setOrderDetails({...orderDetails, zone: e.target.value})} style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px' }}>
                 <option value="">{l.selectZone}</option>
