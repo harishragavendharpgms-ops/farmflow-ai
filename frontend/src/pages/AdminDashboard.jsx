@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { db } from '../firebase';
+import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -13,20 +15,35 @@ const AdminDashboard = () => {
     navigate('/login');
   };
 
-  const createOfficer = (e) => {
+  const createOfficer = async (e) => {
     e.preventDefault();
-    const users = JSON.parse(localStorage.getItem('farmflow_users') || '[]');
     
-    if (users.find(u => u.email === officerEmail)) {
-      alert('An account with this email already exists!');
-      return;
-    }
+    try {
+      // Check if this email already exists in Firebase
+      const q = query(collection(db, 'users'), where('email', '==', officerEmail));
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        alert('An account with this email already exists!');
+        return;
+      }
 
-    const newOfficer = { name: officerName, email: officerEmail, password: officerPassword, role: 'officer' };
-    localStorage.setItem('farmflow_users', JSON.stringify([...users, newOfficer]));
-    
-    alert(`Officer ${officerName} successfully created!`);
-    setOfficerName(''); setOfficerEmail(''); setOfficerPassword('');
+      // Save new Officer to Firebase
+      await addDoc(collection(db, 'users'), {
+        name: officerName,
+        email: officerEmail,
+        password: officerPassword, 
+        role: 'officer',
+        createdAt: new Date().toISOString()
+      });
+      
+      alert(`Officer ${officerName} successfully created!`);
+      setOfficerName(''); setOfficerEmail(''); setOfficerPassword('');
+      
+    } catch (error) {
+      console.error("Error creating officer: ", error);
+      alert("Failed to create officer account.");
+    }
   };
 
   return (

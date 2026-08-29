@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { db } from '../firebase';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -7,36 +9,47 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
 
-  // Seed default admin and mock database on first load
-  useEffect(() => {
-    const existingUsers = JSON.parse(localStorage.getItem('farmflow_users') || '[]');
-    if (existingUsers.length === 0) {
-      localStorage.setItem('farmflow_users', JSON.stringify([
-        { name: 'System Admin', email: 'admin@farmflow.com', password: 'admin123', role: 'admin' }
-      ]));
-    }
-  }, []);
-
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    const users = JSON.parse(localStorage.getItem('farmflow_users') || '[]');
-    
-    // Check if user exists in our local "database" (Admin or Officer)
-    const existingUser = users.find(u => u.email === email && u.password === password);
-    
-    // If not found, default to a standard Farmer for demo purposes
-    const userData = existingUser || { name: 'Farmer User', email: email, role: 'farmer' };
 
-    if (rememberMe) {
-      localStorage.setItem('farmflow_user', JSON.stringify(userData));
-    } else {
-      sessionStorage.setItem('farmflow_user', JSON.stringify(userData));
+    // 1. Check for Admin (Hardcoded default)
+    if (email === 'admin@farmflow.com' && password === 'admin123') {
+      const adminData = { name: 'System Admin', email, role: 'admin' };
+      sessionStorage.setItem('farmflow_user', JSON.stringify(adminData));
+      navigate('/admin');
+      return;
     }
-    
-    // Route based on role
-    if (userData.role === 'admin') navigate('/admin');
-    else if (userData.role === 'officer') navigate('/officer');
-    else navigate('/dashboard');
+
+    try {
+      // 2. Check Firebase for a registered Officer account
+      const q = query(collection(db, 'users'), where('email', '==', email), where('password', '==', password));
+      const querySnapshot = await getDocs(q);
+      
+      let userData;
+      
+      if (!querySnapshot.empty) {
+        // Officer Account Found in Cloud
+        userData = querySnapshot.docs[0].data();
+      } else {
+        // 3. If not Admin or Officer, default to Farmer
+        userData = { name: 'Farmer User', email: email, role: 'farmer' };
+      }
+
+      // Save session securely
+      if (rememberMe) {
+        localStorage.setItem('farmflow_user', JSON.stringify(userData));
+      } else {
+        sessionStorage.setItem('farmflow_user', JSON.stringify(userData));
+      }
+      
+      // Route based on role
+      if (userData.role === 'officer') navigate('/officer');
+      else navigate('/dashboard');
+
+    } catch (error) {
+      console.error("Error logging in: ", error);
+      alert("Login failed. Please try again.");
+    }
   };
 
   return (
