@@ -88,7 +88,14 @@ const OfficerDashboard = () => {
                   </td>
                   <td style={{ padding: '12px 10px', color: '#777', fontSize: '14px' }}>
                     📍 {order.address} <br/>
-                    <span style={{fontSize: '12px', color: '#d84315', fontWeight: 'bold'}}>📄 Patta: {order.pattaChitta || 'N/A'}</span>
+                    <span style={{fontSize: '12px', color: '#d84315', fontWeight: 'bold', display: 'block', margin: '4px 0'}}>📄 Patta: {order.pattaChitta || 'N/A'}</span>
+                    
+                    {/* NEW: View Document Button */}
+                    {order.documentUrl && (
+                      <a href={order.documentUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', backgroundColor: '#e3f2fd', color: '#1976d2', padding: '4px 8px', borderRadius: '4px', textDecoration: 'none', fontSize: '11px', fontWeight: 'bold' }}>
+                        👁️ View Document
+                      </a>
+                    )}
                   </td>
                   <td style={{ padding: '12px 10px' }}>
                     <span style={{ padding: '5px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', 
@@ -99,24 +106,20 @@ const OfficerDashboard = () => {
                     </span>
                   </td>
                   <td style={{ padding: '12px 10px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    
                     {order.status === 'Pending' && (
                       <>
                         <button onClick={() => updateOrderStatus(order.id, 'Approved')} style={{ padding: '6px 12px', backgroundColor: '#4caf50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px' }}>Approve</button>
                         <button onClick={() => updateOrderStatus(order.id, 'Rejected')} style={{ padding: '6px 12px', backgroundColor: '#f44336', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px' }}>Reject</button>
                       </>
                     )}
-                    
                     {order.status === 'Approved' && (
                       <button onClick={() => updateOrderStatus(order.id, 'Procured')} style={{ padding: '6px 12px', backgroundColor: '#2196f3', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px' }}>Mark Procured</button>
                     )}
-
                     {(order.status === 'Rejected' || order.status === 'Procured') && (
                       <span style={{ color: '#aaa', fontSize: '12px', fontStyle: 'italic', padding: '6px 0' }}>
                         {order.status === 'Procured' ? 'Completed ✅' : 'Reviewed'}
                       </span>
                     )}
-
                   </td>
                 </tr>
               ))}
