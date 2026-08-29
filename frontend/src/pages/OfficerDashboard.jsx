@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
-import { collection, query, orderBy, onSnapshot, doc, updateDoc } from 'firebase/firestore';
+import { collection, query, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 
 const OfficerDashboard = () => {
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
 
-  // FIREBASE REALTIME SYNC (READ)
   useEffect(() => {
-    const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+    // Fetch all orders for the officer to review
+    const q = query(collection(db, 'orders'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const ordersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      // Sort newest to oldest
+      ordersData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       setOrders(ordersData);
     });
     return () => unsubscribe();
@@ -23,7 +25,6 @@ const OfficerDashboard = () => {
     navigate('/login');
   };
 
-  // FIREBASE UPDATE STATUS
   const updateOrderStatus = async (id, newStatus) => {
     try {
       const orderRef = doc(db, 'orders', id);
@@ -53,7 +54,7 @@ const OfficerDashboard = () => {
           <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse', minWidth: '600px' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid #eee' }}>
-                <th style={{ padding: '12px 10px', fontSize: '14px' }}>Date & Time</th>
+                <th style={{ padding: '12px 10px', fontSize: '14px' }}>Date & Farmer</th>
                 <th style={{ padding: '12px 10px', fontSize: '14px' }}>Item (Qty)</th>
                 <th style={{ padding: '12px 10px', fontSize: '14px' }}>Location</th>
                 <th style={{ padding: '12px 10px', fontSize: '14px' }}>Status</th>
@@ -63,7 +64,10 @@ const OfficerDashboard = () => {
             <tbody>
               {orders.map(order => (
                 <tr key={order.id} style={{ borderBottom: '1px solid #eee' }}>
-                  <td style={{ padding: '12px 10px', color: '#555', fontSize: '14px' }}>{order.datetime}</td>
+                  <td style={{ padding: '12px 10px', color: '#555', fontSize: '14px' }}>
+                    {order.datetime} <br/>
+                    <span style={{fontSize: '12px', color: '#2196f3', fontWeight: 'bold'}}>{order.userEmail}</span>
+                  </td>
                   <td style={{ padding: '12px 10px', fontWeight: 'bold', color: '#2c3e50', fontSize: '14px' }}>{order.item} <br/><span style={{fontSize: '12px', color: '#777'}}>{order.quantity} Units</span></td>
                   <td style={{ padding: '12px 10px', color: '#777', fontSize: '14px' }}>📍 {order.location}</td>
                   <td style={{ padding: '12px 10px' }}>

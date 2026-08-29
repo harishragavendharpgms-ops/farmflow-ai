@@ -12,7 +12,6 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
 
-    // 1. Check for Admin (Hardcoded default)
     if (email === 'admin@farmflow.com' && password === 'admin123') {
       const adminData = { name: 'System Admin', email, role: 'admin' };
       sessionStorage.setItem('farmflow_user', JSON.stringify(adminData));
@@ -21,28 +20,26 @@ const Login = () => {
     }
 
     try {
-      // 2. Check Firebase for a registered Officer account
       const q = query(collection(db, 'users'), where('email', '==', email), where('password', '==', password));
       const querySnapshot = await getDocs(q);
       
       let userData;
       
       if (!querySnapshot.empty) {
-        // Officer Account Found in Cloud
         userData = querySnapshot.docs[0].data();
       } else {
-        // 3. If not Admin or Officer, default to Farmer
-        userData = { name: 'Farmer User', email: email, role: 'farmer' };
+        // Dynamically create name from email (e.g. rohit@gmail.com -> Rohit)
+        const namePart = email.split('@')[0];
+        const formattedName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
+        userData = { name: formattedName, email: email, role: 'farmer' };
       }
 
-      // Save session securely
       if (rememberMe) {
         localStorage.setItem('farmflow_user', JSON.stringify(userData));
       } else {
         sessionStorage.setItem('farmflow_user', JSON.stringify(userData));
       }
       
-      // Route based on role
       if (userData.role === 'officer') navigate('/officer');
       else navigate('/dashboard');
 
