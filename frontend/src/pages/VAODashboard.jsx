@@ -16,14 +16,30 @@ const VAODashboard = () => {
 
   useEffect(() => {
     if (!userProfile.zone) return; 
-    const q = query(collection(db, 'orders'), where('zone', '==', userProfile.zone));
-    const unsub = onSnapshot(q, (snap) => setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+    
+    // Filter orders matching both the officer's Zone and Sub-Place jurisdiction
+    const q = query(
+      collection(db, 'orders'), 
+      where('zone', '==', userProfile.zone)
+    );
+    
+    const unsub = onSnapshot(q, (snap) => {
+      const allZoneOrders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      
+      // If subPlace is defined on the officer profile, filter strictly by it as well
+      const filtered = userProfile.subPlace 
+        ? allZoneOrders.filter(o => !o.subPlace || o.subPlace === userProfile.subPlace)
+        : allZoneOrders;
+        
+      setOrders(filtered);
+    });
+
     return () => unsub();
-  }, [userProfile.zone]);
+  }, [userProfile]);
 
   const handleVerify = async (id) => {
     try {
-      const eSignature = `Digitally Verified by VAO ${userProfile.name} on ${new Date().toLocaleDateString()}`;
+      const eSignature = `Digitally Verified by VAO ${userProfile.name} (${userProfile.subPlace || userProfile.zone}) on ${new Date().toLocaleDateString()}`;
       await updateDoc(doc(db, 'orders', id), { 
         status: 'VAO Verified', 
         vaoSignature: eSignature 
@@ -42,7 +58,7 @@ const VAODashboard = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center', borderBottom: '2px solid #ddd', paddingBottom: '15px' }}>
         <div>
           <h2 style={{ color: '#2c3e50', margin: 0 }}>📝 VAO Dashboard</h2>
-          <p style={{ color: '#9c27b0', margin: '5px 0 0 0', fontWeight: 'bold' }}>👤 {userProfile.name} | 📍 Zone: {userProfile.zone}</p>
+          <p style={{ color: '#9c27b0', margin: '5px 0 0 0', fontWeight: 'bold' }}>👤 {userProfile.name} | 📍 Zone: {userProfile.zone} ({userProfile.subPlace || 'General Jurisdiction'})</p>
         </div>
         <button onClick={handleLogout} style={{ background: '#ff6b6b', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>Log Out</button>
       </div>
@@ -50,7 +66,7 @@ const VAODashboard = () => {
       <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
         <h3 style={{ color: '#2e7d32', marginTop: 0 }}>Pending Document Verifications</h3>
         {orders.filter(o => o.status === 'Pending VAO').length === 0 ? (
-          <p style={{ color: '#777', fontStyle: 'italic' }}>No pending applications requiring your verification.</p>
+          <p style={{ color: '#777', fontStyle: 'italic' }}>No pending applications requiring your verification in your jurisdiction.</p>
         ) : (
           <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
             <thead>
@@ -90,4 +106,4 @@ const VAODashboard = () => {
   );
 };
 
-export default VAODashboard; // Ensure this is the ONLY export and no <Router> is wrapping it
+export default VAODashboard;

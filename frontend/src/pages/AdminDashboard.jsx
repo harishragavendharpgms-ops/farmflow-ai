@@ -1,97 +1,147 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
-import { collection, addDoc, getDocs, query, where, onSnapshot, doc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, addDoc, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const [userName, setUserName] = useState('');
-  const [userEmail, setUserEmail] = useState('');
-  const [userPassword, setUserPassword] = useState('');
-  const [userRole, setUserRole] = useState('farmer');
-  const [userZone, setUserZone] = useState('');
+  const [users, setUsers] = useState([]);
+  const [orders, setOrders] = useState([]);
+  const [activeTab, setActiveTab] = useState('users');
   
-  const [usersList, setUsersList] = useState([]);
+  // Added subPlace to the new user state
+  const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'vao', zone: '', subPlace: '' });
 
   useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
-      setUsersList(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-    });
-    return () => unsubscribe();
-  }, []);
+    const savedUser = localStorage.getItem('farmflow_user') || sessionStorage.getItem('farmflow_user');
+    if (!savedUser) { navigate('/login'); return; }
+    fetchData();
+  }, [navigate]);
 
-  const officers = usersList.filter(user => user.role === 'officer');
-  const vaos = usersList.filter(user => user.role === 'vao');
-  const farmers = usersList.filter(user => user.role !== 'officer' && user.role !== 'vao');
+  const fetchData = async () => {
+    const userSnap = await getDocs(collection(db, 'users'));
+    setUsers(userSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
 
-  const handleLogout = () => { localStorage.removeItem('farmflow_user'); sessionStorage.removeItem('farmflow_user'); navigate('/login'); };
+    const orderSnap = await getDocs(collection(db, 'orders'));
+    setOrders(orderSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+  };
 
   const handleCreateUser = async (e) => {
     e.preventDefault();
     try {
-      const q = query(collection(db, 'users'), where('email', '==', userEmail.trim().toLowerCase()));
-      const snap = await getDocs(q);
-      if (!snap.empty) return alert('Email already exists!');
-
-      await addDoc(collection(db, 'users'), {
-        name: userName.trim(), email: userEmail.trim().toLowerCase(), password: userPassword, 
-        role: userRole, zone: (userRole === 'officer' || userRole === 'vao') ? userZone.trim() : '',
-        createdAt: new Date().toISOString()
-      });
-      alert(`User created successfully!`);
-      setUserName(''); setUserEmail(''); setUserPassword(''); setUserZone('');
-    } catch (error) { alert("Failed to create account."); }
+      await addDoc(collection(db, 'users'), newUser);
+      alert('User account created successfully with assigned zone & sub-place!');
+      setNewUser({ name: '', email: '', password: '', role: 'vao', zone: '', subPlace: '' });
+      fetchData();
+    } catch (err) {
+      console.error(err);
+      alert('Error creating user');
+    }
   };
 
-  const deleteUser = async (id, name) => {
-    if (window.confirm(`Delete ${name}?`)) await deleteDoc(doc(db, 'users', id));
+  const handleDeleteUser = async (id) => {
+    if (window.confirm("Are you sure you want to delete this user?")) {
+      await deleteDoc(doc(db, 'users', id));
+      fetchData();
+    }
   };
 
-  const renderTable = (title, data, color) => (
-    <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', marginBottom: '20px' }}>
-      <h3 style={{ color: color, marginTop: 0 }}>{title} ({data.length})</h3>
-      {data.length === 0 ? <p>No users found.</p> : (
-        <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
-          <thead><tr style={{ borderBottom: '2px solid #eee' }}><th>Name</th><th>Email</th><th>Zone</th><th>Actions</th></tr></thead>
-          <tbody>
-            {data.map(u => (
-              <tr key={u.id} style={{ borderBottom: '1px solid #eee' }}>
-                <td style={{ padding: '10px' }}>{u.name}</td><td style={{ padding: '10px' }}>{u.email}</td><td style={{ padding: '10px' }}>{u.zone || '-'}</td>
-                <td style={{ padding: '10px' }}><button onClick={() => deleteUser(u.id, u.name)} style={{ padding: '5px 10px', background: '#f44336', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>Delete</button></td>
+  const handleLogout = () => {
+    localStorage.clear(); sessionStorage.clear();
+    navigate('/login');
+  };
+
+  return (
+    <div style={{ minHeight: '100vh', backgroundColor: '#f0f4f8', padding: '20px', fontFamily: "'Segoe UI', sans-serif" }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', borderBottom: '2px solid #ddd', paddingBottom: '15px' }}>
+        <div>
+          <h1 style={{ color: '#2c3e50', margin: 0 }}>👑 Admin Control Panel</h1>
+          <p style={{ color: '#7f8c8d', margin: '5px 0 0 0' }}>Manage system users, zones, and monitor all farm procurements.</p>
+        </div>
+        <button onClick={handleLogout} style={{ padding: '10px 20px', backgroundColor: '#ff6b6b', color: 'white', border: 'none', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer' }}>Log Out</button>
+      </div>
+
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+        <button onClick={() => setActiveTab('users')} style={{ padding: '10px 20px', backgroundColor: activeTab === 'users' ? '#2e7d32' : 'white', color: activeTab === 'users' ? 'white' : '#333', border: '1px solid #ddd', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>Manage Users & Zones</button>
+        <button onClick={() => setActiveTab('orders')} style={{ padding: '10px 20px', backgroundColor: activeTab === 'orders' ? '#2e7d32' : 'white', color: activeTab === 'orders' ? 'white' : '#333', border: '1px solid #ddd', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>All System Orders ({orders.length})</button>
+      </div>
+
+      {activeTab === 'users' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
+            <h3 style={{ color: '#2c3e50', marginTop: 0 }}>Create Officer / VAO Account</h3>
+            <form onSubmit={handleCreateUser} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px' }}>
+              <input type="text" placeholder="Full Name" required value={newUser.name} onChange={e => setNewUser({...newUser, name: e.target.value})} style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '6px' }} />
+              <input type="email" placeholder="Email Address" required value={newUser.email} onChange={e => setNewUser({...newUser, email: e.target.value})} style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '6px' }} />
+              <input type="password" placeholder="Password" required value={newUser.password} onChange={e => setNewUser({...newUser, password: e.target.value})} style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '6px' }} />
+              <select value={newUser.role} onChange={e => setNewUser({...newUser, role: e.target.value})} style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '6px' }}>
+                <option value="vao">VAO (Verification Officer)</option>
+                <option value="officer">Procurement Officer</option>
+                <option value="farmer">Farmer</option>
+              </select>
+              <input type="text" placeholder="Zone (e.g., Trichy)" required value={newUser.zone} onChange={e => setNewUser({...newUser, zone: e.target.value})} style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '6px' }} />
+              <input type="text" placeholder="Sub-Place / Village (e.g., Mandaiyur)" required value={newUser.subPlace} onChange={e => setNewUser({...newUser, subPlace: e.target.value})} style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '6px' }} />
+              <button type="submit" style={{ gridColumn: '1 / -1', padding: '12px', backgroundColor: '#2e7d32', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>Create Account</button>
+            </form>
+          </div>
+
+          <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', overflowX: 'auto' }}>
+            <h3 style={{ color: '#2c3e50', marginTop: 0 }}>Existing Users</h3>
+            <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse', minWidth: '600px' }}>
+              <thead>
+                <tr style={{ borderBottom: '2px solid #eee' }}>
+                  <th style={{ padding: '10px' }}>Name</th>
+                  <th style={{ padding: '10px' }}>Email</th>
+                  <th style={{ padding: '10px' }}>Role</th>
+                  <th style={{ padding: '10px' }}>Zone & Sub-Place</th>
+                  <th style={{ padding: '10px' }}>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map(u => (
+                  <tr key={u.id} style={{ borderBottom: '1px solid #eee' }}>
+                    <td style={{ padding: '12px 10px' }}><strong>{u.name}</strong></td>
+                    <td style={{ padding: '12px 10px', color: '#555' }}>{u.email}</td>
+                    <td style={{ padding: '12px 10px' }}><span style={{ padding: '3px 8px', backgroundColor: '#e8f5e9', color: '#2e7d32', borderRadius: '12px', fontSize: '11px', fontWeight: 'bold' }}>{u.role.toUpperCase()}</span></td>
+                    <td style={{ padding: '12px 10px' }}>{u.zone ? `📍 ${u.zone} / ${u.subPlace || 'General'}` : 'N/A'}</td>
+                    <td style={{ padding: '12px 10px' }}>
+                      <button onClick={() => handleDeleteUser(u.id)} style={{ padding: '5px 10px', backgroundColor: '#ffebee', color: '#c62828', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '11px' }}>Delete</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'orders' && (
+        <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', overflowX: 'auto' }}>
+          <h3 style={{ color: '#2c3e50', marginTop: 0 }}>All System Procurements</h3>
+          <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse', minWidth: '600px' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid #eee' }}>
+                <th style={{ padding: '10px' }}>Farmer Email</th>
+                <th style={{ padding: '10px' }}>Crop & Quantity</th>
+                <th style={{ padding: '10px' }}>Zone / Sub-Place</th>
+                <th style={{ padding: '10px' }}>Status</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {orders.map(o => (
+                <tr key={o.id} style={{ borderBottom: '1px solid #eee' }}>
+                  <td style={{ padding: '12px 10px' }}>{o.userEmail}</td>
+                  <td style={{ padding: '12px 10px' }}><strong>{o.item}</strong> ({o.quantity}kg)</td>
+                  <td style={{ padding: '12px 10px' }}>{o.zone} {o.subPlace ? `(${o.subPlace})` : ''}</td>
+                  <td style={{ padding: '12px 10px' }}><span style={{ fontWeight: 'bold', color: '#1976d2' }}>{o.status}</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );
-
-  return (
-    <div style={{ minHeight: '100vh', backgroundColor: '#f0f4f8', padding: '40px', fontFamily: "'Segoe UI', sans-serif" }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
-        <h1 style={{ margin: 0 }}>🛡️ Admin Panel</h1><button onClick={handleLogout} style={{ background: '#ff6b6b', color: 'white', border: 'none', padding: '10px 20px', borderRadius: '5px', cursor: 'pointer' }}>Log Out</button>
-      </div>
-
-      <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px', marginBottom: '30px', maxWidth: '500px' }}>
-        <h3 style={{ marginTop: 0 }}>Create User Account</h3>
-        <form onSubmit={handleCreateUser} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-          <input type="text" required placeholder="Full Name" value={userName} onChange={(e) => setUserName(e.target.value)} style={{ padding: '10px', border: '1px solid #ccc' }} />
-          <input type="email" required placeholder="Email Address" value={userEmail} onChange={(e) => setUserEmail(e.target.value)} style={{ padding: '10px', border: '1px solid #ccc' }} />
-          <select value={userRole} onChange={(e) => setUserRole(e.target.value)} style={{ padding: '10px', border: '1px solid #ccc' }}>
-            <option value="farmer">Farmer (User)</option>
-            <option value="officer">Procurement Officer</option>
-            <option value="vao">VAO (Verification Officer)</option>
-          </select>
-          {(userRole === 'officer' || userRole === 'vao') && <input type="text" required placeholder="Assigned Zone" value={userZone} onChange={(e) => setUserZone(e.target.value)} style={{ padding: '10px', border: '1px solid #ccc' }} />}
-          <input type="password" required placeholder="Password" value={userPassword} onChange={(e) => setUserPassword(e.target.value)} style={{ padding: '10px', border: '1px solid #ccc' }} />
-          <button type="submit" style={{ padding: '12px', background: '#2e7d32', color: 'white', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}>Create Account</button>
-        </form>
-      </div>
-
-      {renderTable('Manage VAOs', vaos, '#9c27b0')}
-      {renderTable('Manage Officers', officers, '#1976d2')}
-      {renderTable('Manage Farmers', farmers, '#2e7d32')}
-    </div>
-  );
 };
+
 export default AdminDashboard;
