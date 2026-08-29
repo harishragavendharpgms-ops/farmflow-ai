@@ -76,9 +76,7 @@ const Dashboard = () => {
     setOrderDetails(prev => ({ ...prev, zone, subPlace: '' }));
     
     const matchingUsers = vaoUsers.filter(v => v.zone === zone);
-    const subPlaces = matchingUsers.map(v => 
-      v.subPlace || v.sub_place || v.subZone || v.sub_zone || v.village || v.location
-    ).filter(Boolean);
+    const subPlaces = matchingUsers.map(v => v.subPlace).filter(Boolean);
 
     setAvailableSubPlaces([...new Set(subPlaces)]);
   };

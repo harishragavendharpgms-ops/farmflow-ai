@@ -29,7 +29,7 @@ const AdminDashboard = () => {
     e.preventDefault();
     try {
       await addDoc(collection(db, 'users'), newUser);
-      alert('User account created successfully!');
+      alert('User account created successfully with assigned zone & sub-place!');
       setNewUser({ name: '', email: '', password: '', role: 'vao', zone: '', subPlace: '' });
       fetchData();
     } catch (err) {
@@ -50,7 +50,6 @@ const AdminDashboard = () => {
     navigate('/login');
   };
 
-  // Categorize users by role
   const farmers = users.filter(u => u.role === 'farmer');
   const vaos = users.filter(u => u.role === 'vao');
   const officers = users.filter(u => u.role === 'officer');
@@ -65,7 +64,6 @@ const AdminDashboard = () => {
         <button onClick={handleLogout} style={{ padding: '10px 20px', backgroundColor: '#ff6b6b', color: 'white', border: 'none', borderRadius: '5px', fontWeight: 'bold', cursor: 'pointer' }}>Log Out</button>
       </div>
 
-      {/* Sub-navigation tabs for separation */}
       <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' }}>
         <button onClick={() => setActiveTab('create')} style={{ padding: '10px 20px', backgroundColor: activeTab === 'create' ? '#2e7d32' : 'white', color: activeTab === 'create' ? 'white' : '#333', border: '1px solid #ddd', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>➕ Create Account</button>
         <button onClick={() => setActiveTab('farmers')} style={{ padding: '10px 20px', backgroundColor: activeTab === 'farmers' ? '#2e7d32' : 'white', color: activeTab === 'farmers' ? 'white' : '#333', border: '1px solid #ddd', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>🌾 Farmers ({farmers.length})</button>
@@ -86,24 +84,16 @@ const AdminDashboard = () => {
               <option value="officer">Procurement Officer</option>
               <option value="farmer">Farmer</option>
             </select>
-            <input type="text" placeholder="Zone (e.g., Trichy)" value={newUser.zone} onChange={e => setNewUser({...newUser, zone: e.target.value})} style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '6px' }} />
-            <input type="text" placeholder="Sub-Place / Village (e.g., Mandaiyur)" value={newUser.subPlace} onChange={e => setNewUser({...newUser, subPlace: e.target.value})} style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '6px' }} />
+            <input type="text" placeholder="Zone (e.g., Trichy)" required value={newUser.zone} onChange={e => setNewUser({...newUser, zone: e.target.value})} style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '6px' }} />
+            <input type="text" placeholder="Sub-Place / Village (e.g., Mandaiyur)" required value={newUser.subPlace} onChange={e => setNewUser({...newUser, subPlace: e.target.value})} style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '6px' }} />
             <button type="submit" style={{ gridColumn: '1 / -1', padding: '12px', backgroundColor: '#2e7d32', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>Create Account</button>
           </form>
         </div>
       )}
 
-      {activeTab === 'farmers' && (
-        <UserTable title="Registered Farmers" list={farmers} onDelete={handleDeleteUser} />
-      )}
-
-      {activeTab === 'vaos' && (
-        <UserTable title="Village Administrative Officers (VAOs)" list={vaos} onDelete={handleDeleteUser} showZone={true} />
-      )}
-
-      {activeTab === 'officers' && (
-        <UserTable title="Procurement Officers" list={officers} onDelete={handleDeleteUser} showZone={true} />
-      )}
+      {activeTab === 'farmers' && <UserTable title="Registered Farmers" list={farmers} onDelete={handleDeleteUser} />}
+      {activeTab === 'vaos' && <UserTable title="Village Administrative Officers (VAOs)" list={vaos} onDelete={handleDeleteUser} showZone={true} />}
+      {activeTab === 'officers' && <UserTable title="Procurement Officers" list={officers} onDelete={handleDeleteUser} showZone={true} />}
 
       {activeTab === 'orders' && (
         <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', overflowX: 'auto' }}>
@@ -134,7 +124,6 @@ const AdminDashboard = () => {
   );
 };
 
-// Reusable table helper component for neat separation
 const UserTable = ({ title, list, onDelete, showZone = false }) => (
   <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', overflowX: 'auto' }}>
     <h3 style={{ color: '#2c3e50', marginTop: 0 }}>{title} ({list.length})</h3>
