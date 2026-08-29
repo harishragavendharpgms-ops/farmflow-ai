@@ -25,17 +25,14 @@ const Login = () => {
       const q = query(collection(db, 'users'), where('email', '==', email), where('password', '==', password));
       const querySnapshot = await getDocs(q);
       
-      let userData;
-      
-      if (!querySnapshot.empty) {
-        // User Found in Cloud
-        userData = querySnapshot.docs[0].data();
-      } else {
-        // 3. If not found, dynamically create name from email (e.g. rohit@gmail.com -> Rohit) and default to farmer
-        const namePart = email.split('@')[0];
-        const formattedName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
-        userData = { name: formattedName, email: email, role: 'farmer' };
+      // STRICT CHECK: Block login if account doesn't exist
+      if (querySnapshot.empty) {
+        alert("Account not found or incorrect password. Please register first.");
+        return;
       }
+
+      // User Found in Cloud
+      const userData = querySnapshot.docs[0].data();
 
       // Save session securely
       if (rememberMe) {
