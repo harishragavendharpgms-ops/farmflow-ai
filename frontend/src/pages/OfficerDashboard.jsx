@@ -7,7 +7,6 @@ const OfficerDashboard = () => {
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [userProfile, setUserProfile] = useState({});
-  const [slotData, setSlotData] = useState({});
 
   useEffect(() => {
     const savedUser = localStorage.getItem('farmflow_user') || sessionStorage.getItem('farmflow_user');
@@ -17,76 +16,94 @@ const OfficerDashboard = () => {
 
   useEffect(() => {
     if (!userProfile.zone) return; 
-    const q = query(collection(db, 'orders'), where('zone', '==', userProfile.zone));
-    const unsub = onSnapshot(q, (snap) => setOrders(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
-    return () => unsub();
-  }, [userProfile.zone]);
 
-  const handleApproveWithSlot = async (id) => {
-    if (!slotData[id]?.date || !slotData[id]?.time) return alert("Please select Date and Time first.");
+    // Fetch verified orders for this officer's zone
+    const q = query(
+      collection(db, 'orders'), 
+      where('zone', '==', userProfile.zone)
+    );
+
+    const unsub = onSnapshot(q, (snap) => {
+      const allZoneOrders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      
+      // Filter strictly by the officer's assigned sub-place (if applicable) and ensure VAO verified status
+      const filtered = allZoneOrders.filter(o => {
+        const matchesSubPlace = userProfile.subPlace ? o.subPlace === userProfile.subPlace : true;
+        return matchesSubPlace && o.status === 'VAO Verified';
+      });
+
+      setOrders(filtered);
+    });
+
+    return () => unsub();
+  }, [userProfile]);
+
+  const handleProcure = async (id) => {
     try {
       await updateDoc(doc(db, 'orders', id), { 
-        status: 'Approved',
-        datetime: `${slotData[id].date} | ${slotData[id].time}`
+        status: 'Procured',
+        procuredAt: new Date().toISOString()
       });
-    } catch (error) { alert("Failed to approve."); }
+      alert("Crop successfully marked as Procured!");
+    } catch (error) { 
+      console.error(error);
+      alert("Failed to update procurement status."); 
+    }
   };
 
-  const updateStatus = async (id, status) => {
-    await updateDoc(doc(db, 'orders', id), { status });
-  };
+  const handleLogout = () => { localStorage.clear(); sessionStorage.clear(); navigate('/login'); };
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f0f4f8', padding: '20px', fontFamily: "'Segoe UI', sans-serif" }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px' }}>
-        <h2>📋 Officer Dashboard - Zone: {userProfile.zone}</h2>
-        <button onClick={() => { localStorage.clear(); navigate('/login'); }} style={{ background: '#ff6b6b', color: 'white', padding: '10px', border: 'none', borderRadius: '5px' }}>Log Out</button>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center', borderBottom: '2px solid #ddd', paddingBottom: '15px' }}>
+        <div>
+          <h2 style={{ color: '#2c3e50', margin: 0 }}>🛡️ Procurement Officer Dashboard</h2>
+          <p style={{ color: '#2e7d32', margin: '5px 0 0 0', fontWeight: 'bold' }}>👤 {userProfile.name} | 📍 Zone: {userProfile.zone} ({userProfile.subPlace || 'General Jurisdiction'})</p>
+        </div>
+        <button onClick={handleLogout} style={{ background: '#ff6b6b', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>Log Out</button>
       </div>
 
-      <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px' }}>
-        <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
-          <thead><tr style={{ borderBottom: '2px solid #eee' }}><th>Application</th><th>VAO Status</th><th>Action / Set Slot</th></tr></thead>
-          <tbody>
-            {orders.map(order => (
-              <tr key={order.id} style={{ borderBottom: '1px solid #eee' }}>
-                <td style={{ padding: '15px 10px' }}>
-                  <strong>{order.item} ({order.quantity}kg)</strong><br/>{order.userEmail}
-                </td>
-                <td style={{ padding: '15px 10px' }}>
-                  {order.status === 'Pending VAO' ? (
-                    <span style={{ color: '#f57c00' }}>⏳ Waiting for VAO</span>
-                  ) : (
-                    <div>
-                      <span style={{ color: '#4caf50', fontWeight: 'bold' }}>✅ {order.status}</span><br/>
-                      <small style={{ color: '#9c27b0' }}>{order.vaoSignature}</small>
-                      {order.documentUrl && <><br/><a href={order.documentUrl} target="_blank" style={{ fontSize: '11px' }}>View Doc</a></>}
-                    </div>
-                  )}
-                </td>
-                <td style={{ padding: '15px 10px' }}>
-                  
-                  {order.status === 'VAO Verified' && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                      <input type="date" onChange={e => setSlotData({...slotData, [order.id]: {...slotData[order.id], date: e.target.value}})} style={{ padding: '5px' }} />
-                      <select onChange={e => setSlotData({...slotData, [order.id]: {...slotData[order.id], time: e.target.value}})} style={{ padding: '5px' }}>
-                        <option value="">-- Time --</option><option value="09:00 - 12:00">Morning</option><option value="12:00 - 17:00">Afternoon</option>
-                      </select>
-                      <button onClick={() => handleApproveWithSlot(order.id)} style={{ background: '#4caf50', color: 'white', padding: '5px', border: 'none', cursor: 'pointer' }}>Approve & Set Slot</button>
-                    </div>
-                  )}
-
-                  {order.status === 'Approved' && (
-                    <button onClick={() => updateStatus(order.id, 'Procured')} style={{ background: '#2196f3', color: 'white', padding: '8px', border: 'none', cursor: 'pointer' }}>Mark Procured</button>
-                  )}
-
-                  {order.status === 'Procured' && <span style={{ color: '#aaa' }}>Completed</span>}
-                </td>
+      <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
+        <h3 style={{ color: '#2e7d32', marginTop: 0 }}>Ready for Procurement (VAO Verified)</h3>
+        {orders.length === 0 ? (
+          <p style={{ color: '#777', fontStyle: 'italic' }}>No verified applications pending procurement in your jurisdiction.</p>
+        ) : (
+          <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid #eee' }}>
+                <th style={{ padding: '12px 10px' }}>Farmer & Crop</th>
+                <th style={{ padding: '12px 10px' }}>Location & Sub-Place</th>
+                <th style={{ padding: '12px 10px' }}>VAO Signature</th>
+                <th style={{ padding: '12px 10px' }}>Action</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {orders.map(order => (
+                <tr key={order.id} style={{ borderBottom: '1px solid #eee' }}>
+                  <td style={{ padding: '15px 10px' }}>
+                    <strong>{order.item} ({order.quantity}kg)</strong><br/>
+                    <span style={{ fontSize: '12px', color: '#2196f3' }}>{order.userEmail}</span>
+                  </td>
+                  <td style={{ padding: '15px 10px' }}>
+                    📍 <strong>{order.zone}</strong> / <span style={{ color: '#2e7d32' }}>{order.subPlace || 'General'}</span><br/>
+                    <span style={{ fontSize: '12px', color: '#666' }}>{order.address}</span>
+                  </td>
+                  <td style={{ padding: '15px 10px', fontSize: '12px', color: '#7b1fa2' }}>
+                    {order.vaoSignature || 'Verified'}
+                  </td>
+                  <td style={{ padding: '15px 10px' }}>
+                    <button onClick={() => handleProcure(order.id)} style={{ padding: '8px 15px', background: '#2e7d32', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px' }}>
+                      📦 Complete Procurement
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );
 };
+
 export default OfficerDashboard;
