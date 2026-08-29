@@ -55,13 +55,12 @@ const Dashboard = () => {
     if (savedUser) setUserProfile(JSON.parse(savedUser));
   }, []);
 
-  // Fetch VAO/Officer users to populate zones and sub-places dynamically
   useEffect(() => {
     const fetchVAOs = async () => {
       try {
         const q = query(collection(db, 'users'), where('role', 'in', ['vao', 'officer']));
         const querySnapshot = await getDocs(q);
-        const usersList = querySnapshot.docs.map(doc => doc.data());
+        const usersList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         setVaoUsers(usersList);
         
         const zones = usersList.map(v => v.zone).filter(Boolean);
@@ -75,13 +74,15 @@ const Dashboard = () => {
 
   const handleZoneChange = (zone) => {
     setOrderDetails(prev => ({ ...prev, zone, subPlace: '' }));
-    // Check subPlace, subZone, or village property names flexibly
+    
     const matchingUsers = vaoUsers.filter(v => v.zone === zone);
-    const subPlaces = matchingUsers.map(v => v.subPlace || v.subZone || v.village).filter(Boolean);
+    const subPlaces = matchingUsers.map(v => 
+      v.subPlace || v.sub_place || v.subZone || v.sub_zone || v.village || v.location
+    ).filter(Boolean);
+
     setAvailableSubPlaces([...new Set(subPlaces)]);
   };
 
-  // Sync Orders and Permanent Crops from Firestore
   useEffect(() => {
     if (!userProfile.email) return;
 
