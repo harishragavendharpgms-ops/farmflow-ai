@@ -17,7 +17,6 @@ const VAODashboard = () => {
   useEffect(() => {
     if (!userProfile.zone) return; 
     
-    // Filter orders matching both the officer's Zone and Sub-Place jurisdiction
     const q = query(
       collection(db, 'orders'), 
       where('zone', '==', userProfile.zone)
@@ -25,8 +24,6 @@ const VAODashboard = () => {
     
     const unsub = onSnapshot(q, (snap) => {
       const allZoneOrders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      
-      // If subPlace is defined on the officer profile, filter strictly by it as well
       const filtered = userProfile.subPlace 
         ? allZoneOrders.filter(o => !o.subPlace || o.subPlace === userProfile.subPlace)
         : allZoneOrders;
@@ -37,14 +34,15 @@ const VAODashboard = () => {
     return () => unsub();
   }, [userProfile]);
 
-  const handleVerify = async (id) => {
+  const handleVerify = async (order) => {
     try {
       const eSignature = `Digitally Verified by VAO ${userProfile.name} (${userProfile.subPlace || userProfile.zone}) on ${new Date().toLocaleDateString()}`;
-      await updateDoc(doc(db, 'orders', id), { 
+      await updateDoc(doc(db, 'orders', order.id), { 
         status: 'VAO Verified', 
-        vaoSignature: eSignature 
+        vaoSignature: eSignature,
+        documentUrl: order.documentUrl // Explicitly preserves the document link for the officer
       });
-      alert("Document successfully E-Signed and sent to Officer!");
+      alert("Document successfully E-Signed and sent to Procurement Officer!");
     } catch (error) { 
       console.error(error);
       alert("Failed to verify."); 
@@ -71,7 +69,7 @@ const VAODashboard = () => {
           <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid #eee' }}>
-                <th style={{ padding: '12px 10px' }}>Farmer & Item</th>
+                <th style={{ padding: '12px 10px' }}>Farmer & Location</th>
                 <th style={{ padding: '12px 10px' }}>Patta Details</th>
                 <th style={{ padding: '12px 10px' }}>Action</th>
               </tr>
@@ -81,7 +79,8 @@ const VAODashboard = () => {
                 <tr key={order.id} style={{ borderBottom: '1px solid #eee' }}>
                   <td style={{ padding: '15px 10px' }}>
                     <strong>{order.item} ({order.quantity}kg)</strong><br/>
-                    <span style={{ fontSize: '12px', color: '#2196f3' }}>{order.userEmail}</span>
+                    <span style={{ fontSize: '12px', color: '#2196f3' }}>{order.userEmail}</span><br/>
+                    <span style={{ fontSize: '12px', color: '#2e7d32', fontWeight: 'bold' }}>📍 {order.zone} / {order.subPlace || 'General'}</span>
                   </td>
                   <td style={{ padding: '15px 10px' }}>
                     No: <strong>{order.pattaChitta}</strong> <br/>
@@ -92,7 +91,7 @@ const VAODashboard = () => {
                     )}
                   </td>
                   <td style={{ padding: '15px 10px' }}>
-                    <button onClick={() => handleVerify(order.id)} style={{ padding: '8px 15px', background: '#9c27b0', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px' }}>
+                    <button onClick={() => handleVerify(order)} style={{ padding: '8px 15px', background: '#9c27b0', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold', fontSize: '12px' }}>
                       ✍️ E-Sign & Verify
                     </button>
                   </td>
