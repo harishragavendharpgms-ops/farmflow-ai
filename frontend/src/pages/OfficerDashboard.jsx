@@ -1,22 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { db } from '../firebase';
+import { collection, query, orderBy, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 
 const OfficerDashboard = () => {
   const navigate = useNavigate();
-  
-  // Load initial orders
-  const [orders, setOrders] = useState(() => {
-    const saved = JSON.parse(localStorage.getItem('farmflow_orders') || '[]');
-    return saved.reverse(); // Show newest orders at the top
-  });
+  const [orders, setOrders] = useState([]);
 
-  // Auto-sync every 2 seconds to catch orders made in other tabs
+  // FIREBASE REALTIME SYNC (READ)
   useEffect(() => {
-    const syncInterval = setInterval(() => {
-      const savedOrders = JSON.parse(localStorage.getItem('farmflow_orders') || '[]');
-      setOrders(savedOrders.reverse());
-    }, 2000);
-    return () => clearInterval(syncInterval);
+    const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const ordersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setOrders(ordersData);
+    });
+    return () => unsubscribe();
   }, []);
 
   const handleLogout = () => {
@@ -25,25 +23,27 @@ const OfficerDashboard = () => {
     navigate('/login');
   };
 
-  const updateOrderStatus = (id, newStatus) => {
-    // Read the absolute latest data before updating to prevent bugs
-    const currentOrders = JSON.parse(localStorage.getItem('farmflow_orders') || '[]');
-    const updatedOrders = currentOrders.map(order => order.id === id ? { ...order, status: newStatus } : order);
-    
-    localStorage.setItem('farmflow_orders', JSON.stringify(updatedOrders));
-    setOrders([...updatedOrders].reverse());
+  // FIREBASE UPDATE STATUS
+  const updateOrderStatus = async (id, newStatus) => {
+    try {
+      const orderRef = doc(db, 'orders', id);
+      await updateDoc(orderRef, {
+        status: newStatus
+      });
+    } catch (error) {
+      console.error("Error updating order: ", error);
+      alert("Failed to update status. Please try again.");
+    }
   };
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#f0f4f8', padding: '20px', fontFamily: "'Segoe UI', sans-serif" }}>
       
-      {/* HEADER */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', borderBottom: '2px solid #ddd', paddingBottom: '20px', flexWrap: 'wrap', gap: '15px' }}>
         <h1 style={{ color: '#2c3e50', margin: 0, fontSize: '24px' }}>📋 Officer Procurement Dashboard</h1>
         <button onClick={handleLogout} style={{ padding: '10px 20px', backgroundColor: '#ff6b6b', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>Log Out</button>
       </div>
 
-      {/* ORDERS TABLE */}
       <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', overflowX: 'auto' }}>
         <h3 style={{ margin: '0 0 20px 0', color: '#2e7d32', fontSize: '18px' }}>Pending Farmer Applications</h3>
         
