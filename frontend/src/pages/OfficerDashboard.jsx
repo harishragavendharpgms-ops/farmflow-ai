@@ -8,7 +8,6 @@ const OfficerDashboard = () => {
   const [orders, setOrders] = useState([]);
   const [userProfile, setUserProfile] = useState({ name: '', zone: '', email: '' });
 
-  // 1. Load Officer Profile on Startup
   useEffect(() => {
     const savedUser = localStorage.getItem('farmflow_user') || sessionStorage.getItem('farmflow_user');
     if (savedUser) {
@@ -18,17 +17,13 @@ const OfficerDashboard = () => {
     }
   }, [navigate]);
 
-  // 2. Fetch ONLY Orders Matching Their Zone
   useEffect(() => {
-    // Prevent fetching if zone hasn't loaded yet
     if (!userProfile.zone) return; 
 
-    // SECURITY FILTER: Only grab orders where the 'zone' matches this officer's 'zone'
     const q = query(collection(db, 'orders'), where('zone', '==', userProfile.zone));
     
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const ordersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      // Sort newest to oldest
       ordersData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       setOrders(ordersData);
     });
@@ -71,12 +66,12 @@ const OfficerDashboard = () => {
         {orders.length === 0 ? (
           <p style={{ fontStyle: 'italic', color: '#777', margin: 0 }}>No orders found for your assigned zone.</p>
         ) : (
-          <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse', minWidth: '600px' }}>
+          <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse', minWidth: '700px' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid #eee' }}>
                 <th style={{ padding: '12px 10px', fontSize: '14px' }}>Date & Farmer</th>
                 <th style={{ padding: '12px 10px', fontSize: '14px' }}>Item (Qty)</th>
-                <th style={{ padding: '12px 10px', fontSize: '14px' }}>Specific Address</th>
+                <th style={{ padding: '12px 10px', fontSize: '14px' }}>Location & Patta Chitta</th>
                 <th style={{ padding: '12px 10px', fontSize: '14px' }}>Status</th>
                 <th style={{ padding: '12px 10px', fontSize: '14px' }}>Actions</th>
               </tr>
@@ -91,7 +86,10 @@ const OfficerDashboard = () => {
                   <td style={{ padding: '12px 10px', fontWeight: 'bold', color: '#2c3e50', fontSize: '14px' }}>
                     {order.item} <br/><span style={{fontSize: '12px', color: '#777'}}>{order.quantity} Units</span>
                   </td>
-                  <td style={{ padding: '12px 10px', color: '#777', fontSize: '14px' }}>📍 {order.address}</td>
+                  <td style={{ padding: '12px 10px', color: '#777', fontSize: '14px' }}>
+                    📍 {order.address} <br/>
+                    <span style={{fontSize: '12px', color: '#d84315', fontWeight: 'bold'}}>📄 Patta: {order.pattaChitta || 'N/A'}</span>
+                  </td>
                   <td style={{ padding: '12px 10px' }}>
                     <span style={{ padding: '5px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', 
                       backgroundColor: order.status === 'Pending' ? '#fff3cd' : order.status === 'Approved' ? '#d4edda' : '#f8d7da',
