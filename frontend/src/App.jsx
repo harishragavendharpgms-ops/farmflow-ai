@@ -6,7 +6,7 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import OfficerDashboard from './pages/OfficerDashboard';
 import AdminDashboard from './pages/AdminDashboard';
-import VAODashboard from './pages/VAODashboard'; // <-- 1. IMPORT IT HERE
+import VAODashboard from './pages/VAODashboard';
 
 function App() {
   return (
@@ -18,7 +18,7 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/officer" element={<OfficerDashboard />} />
         <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/vao" element={<VAODashboard />} />     {/* <-- 2. ADD THE ROUTE HERE */}
+        <Route path="/vao" element={<VAODashboard />} />
       </Routes>
     </Router>
   );
