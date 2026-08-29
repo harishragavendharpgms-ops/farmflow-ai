@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { db } from '../firebase';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 
@@ -12,6 +12,7 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
 
+    // 1. Check for Admin (Hardcoded default)
     if (email === 'admin@farmflow.com' && password === 'admin123') {
       const adminData = { name: 'System Admin', email, role: 'admin' };
       sessionStorage.setItem('farmflow_user', JSON.stringify(adminData));
@@ -20,26 +21,30 @@ const Login = () => {
     }
 
     try {
+      // 2. Check Firebase for a registered user (Officer or Farmer)
       const q = query(collection(db, 'users'), where('email', '==', email), where('password', '==', password));
       const querySnapshot = await getDocs(q);
       
       let userData;
       
       if (!querySnapshot.empty) {
+        // User Found in Cloud
         userData = querySnapshot.docs[0].data();
       } else {
-        // Dynamically create name from email (e.g. rohit@gmail.com -> Rohit)
+        // 3. If not found, dynamically create name from email (e.g. rohit@gmail.com -> Rohit) and default to farmer
         const namePart = email.split('@')[0];
         const formattedName = namePart.charAt(0).toUpperCase() + namePart.slice(1);
         userData = { name: formattedName, email: email, role: 'farmer' };
       }
 
+      // Save session securely
       if (rememberMe) {
         localStorage.setItem('farmflow_user', JSON.stringify(userData));
       } else {
         sessionStorage.setItem('farmflow_user', JSON.stringify(userData));
       }
       
+      // Route based on role
       if (userData.role === 'officer') navigate('/officer');
       else navigate('/dashboard');
 
@@ -71,6 +76,10 @@ const Login = () => {
             Log In
           </button>
         </form>
+        
+        <p style={{ textAlign: 'center', marginTop: '20px', color: '#555' }}>
+          Don't have an account? <Link to="/register" style={{ color: '#2e7d32', fontWeight: 'bold', textDecoration: 'none' }}>Register Here</Link>
+        </p>
       </div>
     </div>
   );
