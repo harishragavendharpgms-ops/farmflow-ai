@@ -12,7 +12,6 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
 
-    // 1. Check for Admin
     if (email === 'admin@farmflow.com' && password === 'admin123') {
       const adminData = { name: 'System Admin', email, role: 'admin' };
       sessionStorage.setItem('farmflow_user', JSON.stringify(adminData));
@@ -21,17 +20,14 @@ const Login = () => {
     }
 
     try {
-      // 2. Query Firebase for the Email ONLY (Prevents database index errors)
-      const q = query(collection(db, 'users'), where('email', '==', email));
+      const q = query(collection(db, 'users'), where('email', '==', email.trim().toLowerCase()));
       const querySnapshot = await getDocs(q);
       
-      // STRICT CHECK: Is the email in the database?
       if (querySnapshot.empty) {
         alert("Account not found. Please register first.");
         return;
       }
 
-      // 3. Get user data and verify password manually
       const userData = querySnapshot.docs[0].data();
 
       if (userData.password !== password) {
@@ -39,15 +35,12 @@ const Login = () => {
         return;
       }
 
-      // Save session securely
-      if (rememberMe) {
-        localStorage.setItem('farmflow_user', JSON.stringify(userData));
-      } else {
-        sessionStorage.setItem('farmflow_user', JSON.stringify(userData));
-      }
+      if (rememberMe) localStorage.setItem('farmflow_user', JSON.stringify(userData));
+      else sessionStorage.setItem('farmflow_user', JSON.stringify(userData));
       
-      // Route based on role
+      // Route based on 3 roles now
       if (userData.role === 'officer') navigate('/officer');
+      else if (userData.role === 'vao') navigate('/vao');
       else navigate('/dashboard');
 
     } catch (error) {
@@ -59,32 +52,16 @@ const Login = () => {
   return (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', backgroundColor: '#f0f4f8', fontFamily: "'Segoe UI', sans-serif" }}>
       <div style={{ backgroundColor: 'white', padding: '40px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', width: '100%', maxWidth: '400px' }}>
-        <h2 style={{ color: '#2e7d32', textAlign: 'center', marginBottom: '30px' }}>🌱 FarmFlow AI Login</h2>
-        
+        <h2 style={{ color: '#2e7d32', textAlign: 'center', marginBottom: '30px' }}>🌱 FarmFlow Login</h2>
         <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div>
-            <label style={{ display: 'block', marginBottom: '5px', color: '#555', fontWeight: 'bold' }}>Email Address</label>
-            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} style={{ width: '100%', padding: '12px', border: '1px solid #ccc', borderRadius: '6px', boxSizing: 'border-box' }} placeholder="Enter your email" />
-          </div>
-          <div>
-            <label style={{ display: 'block', marginBottom: '5px', color: '#555', fontWeight: 'bold' }}>Password</label>
-            <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} style={{ width: '100%', padding: '12px', border: '1px solid #ccc', borderRadius: '6px', boxSizing: 'border-box' }} placeholder="Enter your password" />
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <input type="checkbox" id="remember" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} style={{ cursor: 'pointer', width: '18px', height: '18px' }} />
-            <label htmlFor="remember" style={{ color: '#555', cursor: 'pointer' }}>Save login info</label>
-          </div>
-          <button type="submit" style={{ padding: '14px', backgroundColor: '#4caf50', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px', marginTop: '10px' }}>
-            Log In
-          </button>
+          <div><label style={{ display: 'block', marginBottom: '5px', color: '#555', fontWeight: 'bold' }}>Email Address</label><input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} style={{ width: '100%', padding: '12px', border: '1px solid #ccc', borderRadius: '6px', boxSizing: 'border-box' }} /></div>
+          <div><label style={{ display: 'block', marginBottom: '5px', color: '#555', fontWeight: 'bold' }}>Password</label><input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} style={{ width: '100%', padding: '12px', border: '1px solid #ccc', borderRadius: '6px', boxSizing: 'border-box' }} /></div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}><input type="checkbox" id="remember" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} style={{ cursor: 'pointer', width: '18px', height: '18px' }} /><label htmlFor="remember" style={{ color: '#555', cursor: 'pointer' }}>Save login info</label></div>
+          <button type="submit" style={{ padding: '14px', backgroundColor: '#4caf50', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px' }}>Log In</button>
         </form>
-        
-        <p style={{ textAlign: 'center', marginTop: '20px', color: '#555' }}>
-          Don't have an account? <Link to="/register" style={{ color: '#2e7d32', fontWeight: 'bold', textDecoration: 'none' }}>Register Here</Link>
-        </p>
+        <p style={{ textAlign: 'center', marginTop: '20px', color: '#555' }}>Don't have an account? <Link to="/register" style={{ color: '#2e7d32', fontWeight: 'bold', textDecoration: 'none' }}>Register Here</Link></p>
       </div>
     </div>
   );
 };
-
 export default Login;
