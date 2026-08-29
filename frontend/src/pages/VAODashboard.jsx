@@ -90,4 +90,4 @@ const VAODashboard = () => {
   );
 };
 
-export default VAODashboard;
+export default VAODashboard; // Ensure this is the ONLY export and no <Router> is wrapping it
