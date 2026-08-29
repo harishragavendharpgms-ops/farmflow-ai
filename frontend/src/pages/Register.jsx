@@ -1,61 +1,64 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { db } from '../firebase';
+import { collection, addDoc, getDocs, query, where } from 'firebase/firestore';
 
 const Register = () => {
-  const [formData, setFormData] = useState({ name: '', email: '', phone: '', password: '' });
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState('');
   const navigate = useNavigate();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
-  // If already logged in, send them straight to the dashboard
-  useEffect(() => {
-    if (localStorage.getItem('farmflow_user')) {
-      navigate('/dashboard');
-    }
-  }, [navigate]);
-
-  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
-
-  const handleSubmit = async (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
-    setLoading(true); setMessage('');
-    
     try {
-      const response = await axios.post("https://farmflow-ai-84t0.onrender.com/register", formData);
-      setMessage(`Success! Account created.`);
+      // 1. Check if email already exists in Firebase
+      const q = query(collection(db, 'users'), where('email', '==', email));
+      const querySnapshot = await getDocs(q);
       
-      // Save login info to the browser
-      localStorage.setItem('farmflow_user', JSON.stringify({ email: response.data.email, name: formData.name }));
-      
-      setTimeout(() => navigate('/dashboard'), 1500);
-    } catch (err) {
-      setMessage(`Error: ${err.response?.data?.detail || err.message}`);
-      setLoading(false);
+      if (!querySnapshot.empty) {
+        alert('This email is already registered. Please log in.');
+        return;
+      }
+
+      // 2. Save Farmer to Firebase 'users' collection
+      await addDoc(collection(db, 'users'), {
+        name: name,
+        email: email,
+        password: password,
+        role: 'farmer', 
+        createdAt: new Date().toISOString()
+      });
+
+      alert('Registration successful! You can now log in.');
+      navigate('/login');
+    } catch (error) {
+      console.error("Registration error: ", error);
+      alert("Failed to register. Please check your connection.");
     }
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f0f4f8', fontFamily: 'sans-serif' }}>
-      <div style={{ padding: '40px', backgroundColor: 'white', borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.1)', width: '100%', maxWidth: '400px', textAlign: 'center' }}>
-        <h2 style={{ color: '#2e7d32', margin: '0 0 10px 0' }}>Create Account</h2>
-        <p style={{ color: '#777', marginBottom: '30px' }}>Join FarmFlow AI today</p>
-        
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-          <input type="text" name="name" placeholder="Full Name" required onChange={handleChange} style={{ padding: '12px', border: '1px solid #ddd', borderRadius: '6px' }} />
-          <input type="email" name="email" placeholder="Email Address" required onChange={handleChange} style={{ padding: '12px', border: '1px solid #ddd', borderRadius: '6px' }} />
-          <input type="tel" name="phone" placeholder="Phone Number" required onChange={handleChange} style={{ padding: '12px', border: '1px solid #ddd', borderRadius: '6px' }} />
-          <input type="password" name="password" placeholder="Password" required onChange={handleChange} style={{ padding: '12px', border: '1px solid #ddd', borderRadius: '6px' }} />
-          
-          <button type="submit" disabled={loading} style={{ padding: '14px', backgroundColor: loading ? '#ccc' : '#2e7d32', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px', marginTop: '10px' }}>
-            {loading ? 'Processing...' : 'Register'}
-          </button>
+    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh', backgroundColor: '#f0f4f8', fontFamily: "'Segoe UI', sans-serif" }}>
+      <div style={{ backgroundColor: 'white', padding: '40px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.1)', width: '100%', maxWidth: '400px' }}>
+        <h2 style={{ color: '#2e7d32', textAlign: 'center', marginBottom: '30px' }}>🌱 Farmer Registration</h2>
+        <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div>
+            <label style={{ display: 'block', marginBottom: '5px', color: '#555', fontWeight: 'bold' }}>Full Name</label>
+            <input type="text" required value={name} onChange={(e) => setName(e.target.value)} style={{ width: '100%', padding: '12px', border: '1px solid #ccc', borderRadius: '6px', boxSizing: 'border-box' }} placeholder="Enter your full name" />
+          </div>
+          <div>
+            <label style={{ display: 'block', marginBottom: '5px', color: '#555', fontWeight: 'bold' }}>Email Address</label>
+            <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} style={{ width: '100%', padding: '12px', border: '1px solid #ccc', borderRadius: '6px', boxSizing: 'border-box' }} placeholder="Enter your email" />
+          </div>
+          <div>
+            <label style={{ display: 'block', marginBottom: '5px', color: '#555', fontWeight: 'bold' }}>Password</label>
+            <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} style={{ width: '100%', padding: '12px', border: '1px solid #ccc', borderRadius: '6px', boxSizing: 'border-box' }} placeholder="Create a password" />
+          </div>
+          <button type="submit" style={{ padding: '14px', backgroundColor: '#2e7d32', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '16px', marginTop: '10px' }}>Register</button>
         </form>
-
-        {message && <p style={{ marginTop: '15px', color: message.includes('Error') ? '#e74c3c' : '#27ae60', fontWeight: 'bold' }}>{message}</p>}
-        
-        <p style={{ marginTop: '20px', color: '#555' }}>
-          Already have an account? <Link to="/login" style={{ color: '#2e7d32', textDecoration: 'none', fontWeight: 'bold' }}>Log in here</Link>
+        <p style={{ textAlign: 'center', marginTop: '20px', color: '#555' }}>
+          Already have an account? <Link to="/login" style={{ color: '#2e7d32', fontWeight: 'bold', textDecoration: 'none' }}>Log In</Link>
         </p>
       </div>
     </div>
