@@ -23,8 +23,9 @@ const AdminDashboard = () => {
     return () => unsubscribe();
   }, []);
 
+  // THE FIX: Catch 'farmer', 'farm manager', or ANY legacy role that isn't an officer
   const officers = usersList.filter(user => user.role === 'officer');
-  const farmers = usersList.filter(user => user.role === 'farmer');
+  const farmers = usersList.filter(user => user.role !== 'officer');
 
   const handleLogout = () => {
     localStorage.removeItem('farmflow_user');
@@ -78,8 +79,8 @@ const AdminDashboard = () => {
       await updateDoc(userRef, {
         name: editingUser.name,
         email: editingUser.email,
-        role: editingUser.role,
-        zone: editingUser.role === 'officer' ? (editingUser.zone || '') : '' // Clear zone if changed to farmer
+        role: editingUser.role, // Will save as standard 'farmer' or 'officer'
+        zone: editingUser.role === 'officer' ? (editingUser.zone || '') : '' 
       });
       setEditingUser(null);
       alert("User updated successfully!");
@@ -101,7 +102,8 @@ const AdminDashboard = () => {
               <input type="text" required value={editingUser.name} onChange={(e) => setEditingUser({...editingUser, name: e.target.value})} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }} />
               <input type="email" required value={editingUser.email} onChange={(e) => setEditingUser({...editingUser, email: e.target.value})} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }} />
               
-              <select required value={editingUser.role} onChange={(e) => setEditingUser({...editingUser, role: e.target.value})} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}>
+              {/* This dropdown snaps legacy 'farm manager' roles into the correct 'farmer' role */}
+              <select required value={editingUser.role === 'officer' ? 'officer' : 'farmer'} onChange={(e) => setEditingUser({...editingUser, role: e.target.value})} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }}>
                 <option value="farmer">Farmer</option>
                 <option value="officer">Officer</option>
               </select>
@@ -178,6 +180,7 @@ const AdminDashboard = () => {
                 <tr style={{ borderBottom: '2px solid #eee' }}>
                   <th style={{ padding: '12px 10px' }}>Name</th>
                   <th style={{ padding: '12px 10px' }}>Email</th>
+                  <th style={{ padding: '12px 10px' }}>Role</th>
                   <th style={{ padding: '12px 10px' }}>Actions</th>
                 </tr>
               </thead>
@@ -186,6 +189,11 @@ const AdminDashboard = () => {
                   <tr key={user.id} style={{ borderBottom: '1px solid #eee' }}>
                     <td style={{ padding: '12px 10px', fontWeight: 'bold', color: '#2c3e50' }}>{user.name}</td>
                     <td style={{ padding: '12px 10px', color: '#555' }}>{user.email}</td>
+                    <td style={{ padding: '12px 10px' }}>
+                      <span style={{ padding: '4px 8px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold', backgroundColor: '#e8f5e9', color: '#2e7d32' }}>
+                        {String(user.role).toUpperCase()}
+                      </span>
+                    </td>
                     <td style={{ padding: '12px 10px', display: 'flex', gap: '8px' }}>
                       <button onClick={() => setEditingUser(user)} style={{ padding: '6px 12px', backgroundColor: '#2196f3', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>Edit</button>
                       <button onClick={() => deleteUser(user.id, user.name)} style={{ padding: '6px 12px', backgroundColor: '#f44336', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>Delete</button>
