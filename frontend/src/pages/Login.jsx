@@ -12,7 +12,7 @@ const Login = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
 
-    // 1. Check for Admin (Hardcoded default)
+    // 1. Check for Admin
     if (email === 'admin@farmflow.com' && password === 'admin123') {
       const adminData = { name: 'System Admin', email, role: 'admin' };
       sessionStorage.setItem('farmflow_user', JSON.stringify(adminData));
@@ -21,18 +21,23 @@ const Login = () => {
     }
 
     try {
-      // 2. Check Firebase for a registered user (Officer or Farmer)
-      const q = query(collection(db, 'users'), where('email', '==', email), where('password', '==', password));
+      // 2. Query Firebase for the Email ONLY (Prevents database index errors)
+      const q = query(collection(db, 'users'), where('email', '==', email));
       const querySnapshot = await getDocs(q);
       
-      // STRICT CHECK: Block login if account doesn't exist
+      // STRICT CHECK: Is the email in the database?
       if (querySnapshot.empty) {
-        alert("Account not found or incorrect password. Please register first.");
+        alert("Account not found. Please register first.");
         return;
       }
 
-      // User Found in Cloud
+      // 3. Get user data and verify password manually
       const userData = querySnapshot.docs[0].data();
+
+      if (userData.password !== password) {
+        alert("Incorrect password. Please try again.");
+        return;
+      }
 
       // Save session securely
       if (rememberMe) {
@@ -47,7 +52,7 @@ const Login = () => {
 
     } catch (error) {
       console.error("Error logging in: ", error);
-      alert("Login failed. Please try again.");
+      alert("Login failed. Check your internet connection and try again.");
     }
   };
 
