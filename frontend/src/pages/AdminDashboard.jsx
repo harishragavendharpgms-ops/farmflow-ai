@@ -8,6 +8,7 @@ const AdminDashboard = () => {
   const [officerName, setOfficerName] = useState('');
   const [officerEmail, setOfficerEmail] = useState('');
   const [officerPassword, setOfficerPassword] = useState('');
+  const [officerZone, setOfficerZone] = useState('');
 
   const handleLogout = () => {
     localStorage.removeItem('farmflow_user');
@@ -17,9 +18,7 @@ const AdminDashboard = () => {
 
   const createOfficer = async (e) => {
     e.preventDefault();
-    
     try {
-      // Check if this email already exists in Firebase
       const q = query(collection(db, 'users'), where('email', '==', officerEmail));
       const querySnapshot = await getDocs(q);
       
@@ -28,17 +27,17 @@ const AdminDashboard = () => {
         return;
       }
 
-      // Save new Officer to Firebase
       await addDoc(collection(db, 'users'), {
         name: officerName,
         email: officerEmail,
         password: officerPassword, 
         role: 'officer',
+        zone: officerZone, // Assign the Zone to the Officer
         createdAt: new Date().toISOString()
       });
       
-      alert(`Officer ${officerName} successfully created!`);
-      setOfficerName(''); setOfficerEmail(''); setOfficerPassword('');
+      alert(`Officer ${officerName} successfully created for ${officerZone}!`);
+      setOfficerName(''); setOfficerEmail(''); setOfficerPassword(''); setOfficerZone('');
       
     } catch (error) {
       console.error("Error creating officer: ", error);
@@ -58,6 +57,14 @@ const AdminDashboard = () => {
         <form onSubmit={createOfficer} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
           <input type="text" required placeholder="Officer Full Name" value={officerName} onChange={(e) => setOfficerName(e.target.value)} style={{ padding: '12px', border: '1px solid #ccc', borderRadius: '6px' }} />
           <input type="email" required placeholder="Officer Email" value={officerEmail} onChange={(e) => setOfficerEmail(e.target.value)} style={{ padding: '12px', border: '1px solid #ccc', borderRadius: '6px' }} />
+          <select required value={officerZone} onChange={(e) => setOfficerZone(e.target.value)} style={{ padding: '12px', border: '1px solid #ccc', borderRadius: '6px' }}>
+            <option value="">-- Assign a Zone --</option>
+            <option value="North Zone">North Zone</option>
+            <option value="South Zone">South Zone</option>
+            <option value="East Zone">East Zone</option>
+            <option value="West Zone">West Zone</option>
+            <option value="Central Zone">Central Zone</option>
+          </select>
           <input type="password" required placeholder="Temporary Password" value={officerPassword} onChange={(e) => setOfficerPassword(e.target.value)} style={{ padding: '12px', border: '1px solid #ccc', borderRadius: '6px' }} />
           <button type="submit" style={{ padding: '14px', backgroundColor: '#2e7d32', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', marginTop: '10px' }}>Register Officer</button>
         </form>
