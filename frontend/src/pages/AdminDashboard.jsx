@@ -6,38 +6,31 @@ import { collection, addDoc, getDocs, query, where, onSnapshot, doc, deleteDoc, 
 const AdminDashboard = () => {
   const navigate = useNavigate();
   
-  // Create Officer State
   const [officerName, setOfficerName] = useState('');
   const [officerEmail, setOfficerEmail] = useState('');
   const [officerPassword, setOfficerPassword] = useState('');
   const [officerZone, setOfficerZone] = useState('');
   
-  // Users List & Edit State
   const [usersList, setUsersList] = useState([]);
   const [editingUser, setEditingUser] = useState(null);
 
-  // Fetch ALL users (Farmers & Officers) in real-time
+  // Fetch ALL users in real-time
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, 'users'), (snapshot) => {
       const users = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      // Sort so officers appear at the top
-      users.sort((a, b) => {
-        if (a.role === 'officer' && b.role !== 'officer') return -1;
-        if (a.role !== 'officer' && b.role === 'officer') return 1;
-        return 0;
-      });
       setUsersList(users);
     });
     return () => unsubscribe();
   }, []);
+
+  const officers = usersList.filter(user => user.role === 'officer');
+  const farmers = usersList.filter(user => user.role === 'farmer');
 
   const handleLogout = () => {
     localStorage.removeItem('farmflow_user');
     sessionStorage.removeItem('farmflow_user');
     navigate('/login');
   };
-
-  // --- CRUD OPERATIONS ---
 
   const createOfficer = async (e) => {
     e.preventDefault();
@@ -86,7 +79,7 @@ const AdminDashboard = () => {
         name: editingUser.name,
         email: editingUser.email,
         role: editingUser.role,
-        zone: editingUser.zone || ''
+        zone: editingUser.role === 'officer' ? (editingUser.zone || '') : '' // Clear zone if changed to farmer
       });
       setEditingUser(null);
       alert("User updated successfully!");
@@ -114,7 +107,7 @@ const AdminDashboard = () => {
               </select>
 
               {editingUser.role === 'officer' && (
-                <input type="text" required placeholder="Assigned Zone" value={editingUser.zone} onChange={(e) => setEditingUser({...editingUser, zone: e.target.value})} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }} />
+                <input type="text" required placeholder="Assigned Zone" value={editingUser.zone || ''} onChange={(e) => setEditingUser({...editingUser, zone: e.target.value})} style={{ padding: '10px', borderRadius: '6px', border: '1px solid #ccc' }} />
               )}
 
               <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
@@ -140,42 +133,59 @@ const AdminDashboard = () => {
           <form onSubmit={createOfficer} style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
             <input type="text" required placeholder="Officer Full Name" value={officerName} onChange={(e) => setOfficerName(e.target.value)} style={{ padding: '12px', border: '1px solid #ccc', borderRadius: '6px' }} />
             <input type="email" required placeholder="Officer Email" value={officerEmail} onChange={(e) => setOfficerEmail(e.target.value)} style={{ padding: '12px', border: '1px solid #ccc', borderRadius: '6px' }} />
-            
             <input type="text" required placeholder="Location / Zone (e.g., North Zone)" value={officerZone} onChange={(e) => setOfficerZone(e.target.value)} style={{ padding: '12px', border: '1px solid #ccc', borderRadius: '6px' }} />
-            
             <input type="password" required placeholder="Temporary Password" value={officerPassword} onChange={(e) => setOfficerPassword(e.target.value)} style={{ padding: '12px', border: '1px solid #ccc', borderRadius: '6px' }} />
             <button type="submit" style={{ padding: '14px', backgroundColor: '#2e7d32', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer', marginTop: '10px' }}>Register Officer</button>
           </form>
         </div>
 
-        {/* USER MANAGEMENT TABLE */}
+        {/* OFFICERS TABLE */}
         <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', overflowX: 'auto' }}>
-          <h3 style={{ color: '#2c3e50', marginBottom: '20px', marginTop: 0 }}>Manage All Users</h3>
-          
-          {usersList.length === 0 ? (
-            <p style={{ color: '#777', fontStyle: 'italic' }}>No users found in database.</p>
-          ) : (
+          <h3 style={{ color: '#1976d2', marginBottom: '20px', marginTop: 0 }}>Manage Officers</h3>
+          {officers.length === 0 ? <p style={{ color: '#777', fontStyle: 'italic' }}>No officers found.</p> : (
             <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse', minWidth: '700px' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid #eee' }}>
                   <th style={{ padding: '12px 10px' }}>Name</th>
                   <th style={{ padding: '12px 10px' }}>Email</th>
-                  <th style={{ padding: '12px 10px' }}>Role</th>
                   <th style={{ padding: '12px 10px' }}>Zone</th>
                   <th style={{ padding: '12px 10px' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {usersList.map(user => (
+                {officers.map(user => (
                   <tr key={user.id} style={{ borderBottom: '1px solid #eee' }}>
                     <td style={{ padding: '12px 10px', fontWeight: 'bold', color: '#2c3e50' }}>{user.name}</td>
                     <td style={{ padding: '12px 10px', color: '#555' }}>{user.email}</td>
-                    <td style={{ padding: '12px 10px' }}>
-                      <span style={{ padding: '4px 8px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold', backgroundColor: user.role === 'officer' ? '#e3f2fd' : '#e8f5e9', color: user.role === 'officer' ? '#1976d2' : '#2e7d32' }}>
-                        {user.role.toUpperCase()}
-                      </span>
-                    </td>
                     <td style={{ padding: '12px 10px', color: '#777' }}>{user.zone || '-'}</td>
+                    <td style={{ padding: '12px 10px', display: 'flex', gap: '8px' }}>
+                      <button onClick={() => setEditingUser(user)} style={{ padding: '6px 12px', backgroundColor: '#2196f3', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>Edit</button>
+                      <button onClick={() => deleteUser(user.id, user.name)} style={{ padding: '6px 12px', backgroundColor: '#f44336', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>Delete</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        {/* FARMERS TABLE */}
+        <div style={{ backgroundColor: 'white', padding: '30px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', overflowX: 'auto' }}>
+          <h3 style={{ color: '#2e7d32', marginBottom: '20px', marginTop: 0 }}>Manage Farmers (Users)</h3>
+          {farmers.length === 0 ? <p style={{ color: '#777', fontStyle: 'italic' }}>No farmers found.</p> : (
+            <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse', minWidth: '700px' }}>
+              <thead>
+                <tr style={{ borderBottom: '2px solid #eee' }}>
+                  <th style={{ padding: '12px 10px' }}>Name</th>
+                  <th style={{ padding: '12px 10px' }}>Email</th>
+                  <th style={{ padding: '12px 10px' }}>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {farmers.map(user => (
+                  <tr key={user.id} style={{ borderBottom: '1px solid #eee' }}>
+                    <td style={{ padding: '12px 10px', fontWeight: 'bold', color: '#2c3e50' }}>{user.name}</td>
+                    <td style={{ padding: '12px 10px', color: '#555' }}>{user.email}</td>
                     <td style={{ padding: '12px 10px', display: 'flex', gap: '8px' }}>
                       <button onClick={() => setEditingUser(user)} style={{ padding: '6px 12px', backgroundColor: '#2196f3', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>Edit</button>
                       <button onClick={() => deleteUser(user.id, user.name)} style={{ padding: '6px 12px', backgroundColor: '#f44336', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>Delete</button>
