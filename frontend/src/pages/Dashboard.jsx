@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
-import { collection, addDoc, onSnapshot, query, where, getDocs } from 'firebase/firestore';
+import { collection, addDoc, onSnapshot, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore';
 
 const initialRates = { "Rice (Paddy)": 22.50, "Wheat": 25.00, "Maize (Corn)": 20.00, "Cotton": 70.00, "Sugarcane": 3.15, "Soybean": 46.00, "Mustard": 52.00, "Bajra (Pearl Millet)": 24.50, "Groundnut": 65.00, "Tur (Pigeon Pea)": 110.00, "Onion": 28.00, "Potato": 18.00 };
 
@@ -55,14 +55,16 @@ const Dashboard = () => {
     if (savedUser) setUserProfile(JSON.parse(savedUser));
   }, []);
 
+  // Fetch VAO/Officer users to populate zones and sub-places dynamically
   useEffect(() => {
     const fetchVAOs = async () => {
       try {
-        const q = query(collection(db, 'users'), where('role', '==', 'vao'));
+        const q = query(collection(db, 'users'), where('role', 'in', ['vao', 'officer']));
         const querySnapshot = await getDocs(q);
-        const vaos = querySnapshot.docs.map(doc => doc.data());
-        setVaoUsers(vaos);
-        const zones = vaos.map(v => v.zone).filter(Boolean);
+        const usersList = querySnapshot.docs.map(doc => doc.data());
+        setVaoUsers(usersList);
+        
+        const zones = usersList.map(v => v.zone).filter(Boolean);
         setAvailableZones([...new Set(zones)]);
       } catch (error) {
         console.error("Error fetching locations: ", error);
@@ -72,21 +74,31 @@ const Dashboard = () => {
   }, []);
 
   const handleZoneChange = (zone) => {
-    setOrderDetails({...orderDetails, zone, subPlace: ''});
-    const subPlaces = vaoUsers.filter(v => v.zone === zone).map(v => v.subPlace).filter(Boolean);
+    setOrderDetails(prev => ({ ...prev, zone, subPlace: '' }));
+    // Check subPlace, subZone, or village property names flexibly
+    const matchingUsers = vaoUsers.filter(v => v.zone === zone);
+    const subPlaces = matchingUsers.map(v => v.subPlace || v.subZone || v.village).filter(Boolean);
     setAvailableSubPlaces([...new Set(subPlaces)]);
   };
 
+  // Sync Orders and Permanent Crops from Firestore
   useEffect(() => {
     if (!userProfile.email) return;
 
-    const q = query(collection(db, 'orders'), where('userEmail', '==', userProfile.email));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const qOrders = query(collection(db, 'orders'), where('userEmail', '==', userProfile.email));
+    const unsubOrders = onSnapshot(qOrders, (snapshot) => {
       const ordersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       ordersData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       setActiveOrders(ordersData);
     });
-    return () => unsubscribe();
+
+    const qCrops = query(collection(db, 'crops'), where('userEmail', '==', userProfile.email));
+    const unsubCrops = onSnapshot(qCrops, (snapshot) => {
+      const cropsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setMyCrops(cropsData);
+    });
+
+    return () => { unsubOrders(); unsubCrops(); };
   }, [userProfile.email]);
 
   useEffect(() => {
@@ -122,7 +134,6 @@ const Dashboard = () => {
 
   const submitOrder = async (e) => {
     e.preventDefault();
-    
     if (pattaFile && pattaFile.size > 500 * 1024) {
       alert("File is too large! Please upload an image under 500KB.");
       return; 
@@ -165,14 +176,30 @@ const Dashboard = () => {
     }
   };
 
-  const handleAddCrop = (e) => {
+  const handleAddCrop = async (e) => {
     e.preventDefault();
     if (!newCrop.name || !newCrop.weightKg) return;
-    setMyCrops([...myCrops, { id: Date.now(), name: newCrop.name, weightKg: parseFloat(newCrop.weightKg), ratePerKg: marketRates[newCrop.name] }]);
-    setNewCrop({ name: '', weightKg: '' }); 
+    try {
+      await addDoc(collection(db, 'crops'), {
+        userEmail: userProfile.email,
+        name: newCrop.name,
+        weightKg: parseFloat(newCrop.weightKg),
+        ratePerKg: marketRates[newCrop.name],
+        createdAt: new Date().toISOString()
+      });
+      setNewCrop({ name: '', weightKg: '' });
+    } catch (err) {
+      console.error("Error adding crop:", err);
+    }
   };
 
-  const handleDeleteCrop = (idToRemove) => setMyCrops(myCrops.filter(c => c.id !== idToRemove));
+  const handleDeleteCrop = async (idToRemove) => {
+    try {
+      await deleteDoc(doc(db, 'crops', idToRemove));
+    } catch (err) {
+      console.error("Error deleting crop:", err);
+    }
+  };
 
   const savedCropData = myCrops.find(c => c.name === orderingItem);
   const maxAvailableQuantity = savedCropData ? savedCropData.weightKg : undefined;
@@ -388,7 +415,6 @@ const Dashboard = () => {
                 )}
               </select>
 
-              {/* Selectable Sub-Place / Village Dropdown */}
               <select required value={orderDetails.subPlace} onChange={(e) => setOrderDetails({...orderDetails, subPlace: e.target.value})} style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px' }}>
                 <option value="">{l.selectSubPlace}</option>
                 {availableSubPlaces.map(sub => <option key={sub} value={sub}>{sub}</option>)}
