@@ -6,24 +6,33 @@ import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/f
 const OfficerDashboard = () => {
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
-  const [userProfile, setUserProfile] = useState({ name: '', zone: '' });
+  const [userProfile, setUserProfile] = useState({ name: '', zone: '', email: '' });
 
+  // 1. Load Officer Profile on Startup
   useEffect(() => {
     const savedUser = localStorage.getItem('farmflow_user') || sessionStorage.getItem('farmflow_user');
-    if (savedUser) setUserProfile(JSON.parse(savedUser));
-  }, []);
+    if (savedUser) {
+      setUserProfile(JSON.parse(savedUser));
+    } else {
+      navigate('/login');
+    }
+  }, [navigate]);
 
+  // 2. Fetch ONLY Orders Matching Their Zone
   useEffect(() => {
-    if (!userProfile.zone) return; // Wait until zone is loaded
+    // Prevent fetching if zone hasn't loaded yet
+    if (!userProfile.zone) return; 
 
-    // Only fetch orders that match this officer's assigned zone
+    // SECURITY FILTER: Only grab orders where the 'zone' matches this officer's 'zone'
     const q = query(collection(db, 'orders'), where('zone', '==', userProfile.zone));
+    
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const ordersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       // Sort newest to oldest
       ordersData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
       setOrders(ordersData);
     });
+    
     return () => unsubscribe();
   }, [userProfile.zone]);
 
@@ -39,7 +48,7 @@ const OfficerDashboard = () => {
       await updateDoc(orderRef, { status: newStatus });
     } catch (error) {
       console.error("Error updating order: ", error);
-      alert("Failed to update status.");
+      alert("Failed to update status. Please try again.");
     }
   };
 
@@ -49,7 +58,9 @@ const OfficerDashboard = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', borderBottom: '2px solid #ddd', paddingBottom: '20px', flexWrap: 'wrap', gap: '15px' }}>
         <div>
           <h1 style={{ color: '#2c3e50', margin: 0, fontSize: '24px' }}>📋 Officer Dashboard</h1>
-          <p style={{ color: '#4caf50', margin: '5px 0 0 0', fontWeight: 'bold' }}>Assigned Region: {userProfile.zone}</p>
+          <p style={{ color: '#4caf50', margin: '5px 0 0 0', fontWeight: 'bold' }}>
+            👤 {userProfile.name} | 📍 Assigned Region: {userProfile.zone || 'Loading...'}
+          </p>
         </div>
         <button onClick={handleLogout} style={{ padding: '10px 20px', backgroundColor: '#ff6b6b', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>Log Out</button>
       </div>
@@ -58,7 +69,7 @@ const OfficerDashboard = () => {
         <h3 style={{ margin: '0 0 20px 0', color: '#2e7d32', fontSize: '18px' }}>Pending Applications in {userProfile.zone}</h3>
         
         {orders.length === 0 ? (
-          <p style={{ fontStyle: 'italic', color: '#777', margin: 0 }}>No orders found for your zone.</p>
+          <p style={{ fontStyle: 'italic', color: '#777', margin: 0 }}>No orders found for your assigned zone.</p>
         ) : (
           <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse', minWidth: '600px' }}>
             <thead>
@@ -77,7 +88,9 @@ const OfficerDashboard = () => {
                     {order.datetime} <br/>
                     <span style={{fontSize: '12px', color: '#2196f3', fontWeight: 'bold'}}>{order.userEmail}</span>
                   </td>
-                  <td style={{ padding: '12px 10px', fontWeight: 'bold', color: '#2c3e50', fontSize: '14px' }}>{order.item} <br/><span style={{fontSize: '12px', color: '#777'}}>{order.quantity} Units</span></td>
+                  <td style={{ padding: '12px 10px', fontWeight: 'bold', color: '#2c3e50', fontSize: '14px' }}>
+                    {order.item} <br/><span style={{fontSize: '12px', color: '#777'}}>{order.quantity} Units</span>
+                  </td>
                   <td style={{ padding: '12px 10px', color: '#777', fontSize: '14px' }}>📍 {order.address}</td>
                   <td style={{ padding: '12px 10px' }}>
                     <span style={{ padding: '5px 10px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold', 
