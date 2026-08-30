@@ -8,7 +8,7 @@ const OfficerDashboard = () => {
   const [orders, setOrders] = useState([]);
   const [userProfile, setUserProfile] = useState({});
   const [modalImage, setModalImage] = useState(null); 
-  const [slotInputs, setSlotInputs] = useState({}); // Tracks date and time input per order
+  const [slotInputs, setSlotInputs] = useState({}); 
 
   useEffect(() => {
     const savedUser = localStorage.getItem('farmflow_user') || sessionStorage.getItem('farmflow_user');
@@ -110,7 +110,9 @@ const OfficerDashboard = () => {
                 <tr key={order.id} style={{ borderBottom: '1px solid #eee' }}>
                   <td style={{ padding: '15px 10px' }}>
                     <strong>{order.item} ({order.quantity}kg)</strong><br/>
-                    <span style={{ fontSize: '12px', color: '#2196f3' }}>{order.userEmail}</span>
+                    <span style={{ fontSize: '13px', color: '#2c3e50', fontWeight: 'bold' }}>👤 {order.userName || 'Farmer'}</span><br/>
+                    <span style={{ fontSize: '12px', color: '#2196f3' }}>✉️ {order.userEmail}</span><br/>
+                    <span style={{ fontSize: '12px', color: '#e67e22', fontWeight: 'bold' }}>📞 {order.userPhone || 'N/A'}</span>
                   </td>
                   <td style={{ padding: '15px 10px' }}>
                     📍 <strong>{order.zone}</strong> / <span style={{ color: '#2e7d32' }}>{order.subPlace || 'General'}</span><br/>
@@ -161,7 +163,6 @@ const OfficerDashboard = () => {
         )}
       </div>
 
-      {/* Image Preview Modal Popup */}
       {modalImage && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
           <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', maxWidth: '90%', maxHeight: '90%', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: '0 5px 25px rgba(0,0,0,0.3)' }}>

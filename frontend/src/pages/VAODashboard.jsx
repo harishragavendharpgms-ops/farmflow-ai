@@ -7,7 +7,7 @@ const VAODashboard = () => {
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [userProfile, setUserProfile] = useState({});
-  const [modalImage, setModalImage] = useState(null); // State for image preview modal
+  const [modalImage, setModalImage] = useState(null); 
 
   useEffect(() => {
     const savedUser = localStorage.getItem('farmflow_user') || sessionStorage.getItem('farmflow_user');
@@ -80,8 +80,10 @@ const VAODashboard = () => {
                 <tr key={order.id} style={{ borderBottom: '1px solid #eee' }}>
                   <td style={{ padding: '15px 10px' }}>
                     <strong>{order.item} ({order.quantity}kg)</strong><br/>
-                    <span style={{ fontSize: '12px', color: '#2196f3' }}>{order.userEmail}</span><br/>
-                    <span style={{ fontSize: '12px', color: '#2e7d32', fontWeight: 'bold' }}>📍 {order.zone} / {order.subPlace || 'General'}</span>
+                    <span style={{ fontSize: '13px', color: '#2c3e50', fontWeight: 'bold' }}>👤 {order.userName || 'Farmer'}</span><br/>
+                    <span style={{ fontSize: '12px', color: '#2196f3' }}>✉️ {order.userEmail}</span><br/>
+                    <span style={{ fontSize: '12px', color: '#e67e22', fontWeight: 'bold' }}>📞 {order.userPhone || 'N/A'}</span><br/>
+                    <span style={{ fontSize: '12px', color: '#2e7d32', fontWeight: 'bold', display: 'inline-block', marginTop: '4px' }}>📍 {order.zone} / {order.subPlace || 'General'}</span>
                   </td>
                   <td style={{ padding: '15px 10px' }}>
                     No: <strong>{order.pattaChitta}</strong> <br/>
@@ -106,7 +108,6 @@ const VAODashboard = () => {
         )}
       </div>
 
-      {/* Image Preview Modal Popup */}
       {modalImage && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
           <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', maxWidth: '90%', maxHeight: '90%', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: '0 5px 25px rgba(0,0,0,0.3)' }}>
