@@ -28,10 +28,20 @@ const Sparkline = ({ data }) => {
   );
 };
 
+const getWeatherMeta = (code) => {
+  if (code === 0) return { label: "Clear sky", icon: "☀️" };
+  if (code > 0 && code < 4) return { label: "Partly cloudy", icon: "⛅" };
+  if (code >= 45 && code < 50) return { label: "Foggy / Misty", icon: "🌫️" };
+  if (code >= 50 && code < 80) return { label: "Rainy", icon: "🌧️" };
+  if (code >= 80 && code < 90) return { label: "Showers", icon: "🌦️" };
+  if (code >= 90) return { label: "Thunderstorm", icon: "⛈️" };
+  return { label: "Clear", icon: "🌤️" };
+};
+
 const t = {
   en: { navDashboard: "📊 Dashboard", navProfile: "👤 My Profile", navCrops: "🌾 My Crops", navProcurement: "🛒 Procurement", navAi: "🤖 AI Insights", navHelp: "❓ Help", logout: "Log Out", module: "Module", subtitle: "Manage your smart farm operations seamlessly.", liveMarket: "Live Market Active", userDetails: "User Details", fullName: "Full Name:", emailAddr: "Email Address:", phoneNumber: "Phone Number:", role: "Role:", farmManager: "Farmer", accountStatus: "Account Status:", verified: "Verified 🟢", weather: "🌤️ Local Weather", pestAlert: "🐛 Pest Alert", pestDesc: "No active threats detected in your area.", addCropTitle: "➕ Add New Crop Inventory", selectCrop: "-- Select Major Indian Crop --", weightKg: "Weight (KGs)", addCropBtn: "Add Crop", myCropInventory: "🌾 My Crop Inventory", emptyInventory: "Your inventory is currently empty.", lockedRate: "Locked Rate:", remove: "Remove", liveCropMarket: "🌾 Live Crop Market Prices", cropName: "Crop Name", pastRates: "Past Rates", liveRate: "Live Rate & Trend", action: "Action", sellMarket: "Sell to Market", procurementApp: "Procurement Application", applyingFor: "Applying for:", quantity: "Quantity (KGs / Bags)", selectZone: "-- Select Active Zone --", selectSubPlace: "-- Select Sub-Place / Village --", farmAddress: "Specific Farm Address", pattaChitta: "Patta / Chitta Document Number", uploadDoc: "Upload Patta/Chitta (JPG/PDF, Max 500KB)", confirmOrder: "Submit to VAO", cancel: "Cancel", upcomingProcurements: "📦 Upcoming Procurements", noActiveOrders: "No active orders at the moment.", aiAnalysis: "🤖 AI Analysis", aiReport: "Weekly Insight Report generated:", aiTip1: "Nitrogen levels in your fields may be dropping. Recommended to apply Urea by Thursday.", aiTip2: "Market conditions suggest holding wheat sales for 2 weeks to maximize profit.", aiTip3: "Weather analysis shows low risk of pests for the next 7 days.", helpTitle: "Help & Guide", helpIntro: "Welcome to FarmFlow AI! Here is how to use your dashboard:", helpProfile: "Profile: View your registered account details and status.", helpCrops: "My Crops: Add your harvested crops, enter the weight, and see the estimated live market value.", helpProcurement: "Procurement: View live fluctuating market rates. You can apply to sell your crops or buy farming supplies.", helpAi: "AI Insights: Read weekly AI-generated advice to maximize your farm's profit and health." },
   hi: { navDashboard: "📊 डैशबोर्ड", navProfile: "👤 मेरी प्रोफ़ाइल", navCrops: "🌾 मेरी फसलें", navProcurement: "🛒 खरीद", navAi: "🤖 एआई अंतर्दृष्टि", navHelp: "❓ सहायता", logout: "लॉग आउट", module: "मॉड्यूल", subtitle: "अपने स्मार्ट कृषि कार्यों को आसानी से प्रबंधित करें।", liveMarket: "लाइव मार्केट सक्रिय", userDetails: "उपयोगकर्ता विवरण", fullName: "पूरा नाम:", emailAddr: "ईमेल पता:", phoneNumber: "फ़ोन नंबर:", role: "भूमिका:", farmManager: "किसान", accountStatus: "खाता स्थिति:", verified: "सत्यापित 🟢", weather: "🌤️ स्थानीय मौसम", pestAlert: "🐛 कीट चेतावनी", pestDesc: "आपके क्षेत्र में कोई सक्रिय खतरा नहीं पाया गया।", addCropTitle: "➕ नई फसल इन्वेंटरी जोड़ें", selectCrop: "-- भारतीय फसल चुनें --", weightKg: "वजन (किलो)", addCropBtn: "फसल जोड़ें", myCropInventory: "🌾 मेरी फसल इन्वेंटरी", emptyInventory: "आपकी इन्वेंटरी वर्तमान में खाली है।", lockedRate: "लॉक्ड दर:", remove: "हटाएं", liveCropMarket: "🌾 लाइव फसल बाजार मूल्य", cropName: "फसल का नाम", pastRates: "पिछली दरें", liveRate: "लाइव दर और रुझान", action: "कार्रवाई", sellMarket: "बाजार में बेचें", procurementApp: "खरीद आवेदन", applyingFor: "इसके लिए आवेदन:", quantity: "मात्रा (किलो / बैग)", selectZone: "-- सक्रिय ज़ोन चुनें --", selectSubPlace: "-- उप-स्थान चुनें --", farmAddress: "विशिष्ट खेत का पता", pattaChitta: "पट्टा / चिट्टा दस्तावेज़ संख्या", uploadDoc: "पट्टा/चिट्टा अपलोड करें (JPG/PDF, Max 500KB)", confirmOrder: "VAO को सबमिट करें", cancel: "रद्द करें", upcomingProcurements: "📦 आगामी खरीद", noActiveOrders: "इस समय कोई सक्रिय आदेश नहीं है।", aiAnalysis: "🤖 AI विश्लेषण", aiReport: "साप्ताहिक अंतर्दृष्टि रिपोर्ट जनरेट की गई:", aiTip1: "आपके खेतों में नाइट्रोजन का स्तर गिर सकता है। गुरुवार तक यूरिया लगाने की सलाह दी जाती है।", aiTip2: "बाजार की स्थिति अधिकतम लाभ के लिए गेहूं की बिक्री 2 सप्ताह तक रोकने का सुझाव देती है।", aiTip3: "मौसम विश्लेषण अगले 7 दिनों तक कीटों के कम जोखिम को दर्शाता है।", helpTitle: "सहायता और मार्गदर्शन", helpIntro: "FarmFlow AI में आपका स्वागत है! यहाँ बताया गया है कि अपने डैशबोर्ड का उपयोग कैसे करें:", helpProfile: "प्रोफ़ाइल: अपने पंजीकृत खाते का विवरण और स्थिति देखें।", helpCrops: "मेरी फसलें: अपनी काटी गई फसलें जोड़ें, वजन दर्ज करें, और अनुमानित लाइव बाजार मूल्य देखें।", helpProcurement: "खरीद: लाइव बाजार दरें देखें। आप अपनी फसल बेचने या कृषि आपूर्ति खरीदने के लिए आवेदन कर सकते हैं।", helpAi: "एआई अंतर्दृष्टि: अपने खेत के मुनाफे को अधिकतम करने के लिए एआई-जनित सलाह पढ़ें।" },
-  ta: { navDashboard: "📊 டாஷ்போர்டு", navProfile: "👤 என் சுயவிவரம்", navCrops: "🌾 என் பயிர்கள்", navProcurement: "🛒 கொள்முதல்", navAi: "🤖 AI ஆலோசனைகள்", navHelp: "❓ உதவி", logout: "வெளியேறு", module: "பிரிவு", subtitle: "உங்கள் பண்ணை செயல்பாடுகளை எளிதாக நிர்வகிக்கவும்.", liveMarket: "நேரடி சந்தை செயலில் உள்ளது", userDetails: "பயனர் விவரங்கள்", fullName: "முழு பெயர்:", emailAddr: "மின்னஞ்சல்:", phoneNumber: "தொலைபேசி எண்:", role: "பங்கு:", farmManager: "விவசாயி", accountStatus: "கணக்கு நிலை:", verified: "சரிபார்க்கப்பட்டது 🟢", weather: "🌤️ உள்ளூர் வானிலை", pestAlert: "🐛 பூச்சி எச்சரிக்கை", pestDesc: "உங்கள் பகுதியில் எந்த அச்சுறுத்தலும் இல்லை.", addCropTitle: "➕ புதிய பயிர் சேர்ப்பது", selectCrop: "-- இந்திய பயிரைத் தேர்ந்தெடுக்கவும் --", weightKg: "எடை (கிலோ)", addCropBtn: "பயிரைச் சேர்", myCropInventory: "🌾 என் பயிர் இருப்பு", emptyInventory: "உங்கள் இருப்பு காலியாக உள்ளது.", lockedRate: "பூட்டப்பட்ட விலை:", remove: "நீக்கு", liveCropMarket: "🌾 நேரடி பயிர் சந்தை விலைகள்", cropName: "பயிர் பெயர்", pastRates: "கடந்த விலைகள்", liveRate: "நேரடி விலை & போக்கு", action: "செயல்", sellMarket: "சந்தையில் விற்க", procurementApp: "கொள்முதல் விண்ணப்பம்", applyingFor: "விண்ணப்பிப்பது:", quantity: "அளவு (கிலோ / பைகள்)", selectZone: "-- மண்டலத்தைத் தேர்ந்தெடுக்கவும் --", selectSubPlace: "-- கிராமத்தைத் தேர்ந்தெடுக்கவும் --", farmAddress: "குறிப்பிட்ட பண்ணை முகவரி", pattaChitta: "பட்டா / சிட்டா ஆவண எண்", uploadDoc: "பட்டா/சிட்டாவை பதிவேற்றவும் (JPG/PDF, Max 500KB)", confirmOrder: "VAO க்கு சமர்ப்பிக்கவும்", cancel: "ரத்து செய்", upcomingProcurements: "📦 வரவிருக்கும் கொள்முதல்", noActiveOrders: "தற்போது எந்த ஆர்டரும் இல்லை.", aiAnalysis: "🤖 AI பகுப்பாய்வு", aiReport: "வாராந்திர அறிக்கை:", aiTip1: "நைட்ரஜன் அளவுகள் குறையக்கூடும். வியாழக்கிழமைக்குள் யூரியா பயன்படுத்த பரிந்துரைக்கப்படுகிறது.", aiTip2: "லாபத்தை அதிகரிக்க கோதுமை விற்பனையை 2 வாரங்களுக்கு தாமதப்படுத்தவும்.", aiTip3: "அடுத்த 7 நாட்களுக்கு பூச்சிகள் தாக்கும் அபாயம் குறைவு.", helpTitle: "உதவி மற்றும் வழிகாட்டி", helpIntro: "FarmFlow AI-க்கு உங்களை வரவேற்கிறோம்! டாஷ்போர்டை எவ்வாறு பயன்படுத்துவது:", helpProfile: "சுயவிவரம்: உங்கள் கணக்கு விவரங்கள் மற்றும் நிலையைப் பார்க்கவும்.", helpCrops: "என் பயிர்கள்: உங்கள் அறுவடை பயிர்களைச் சேர்க்கவும், நேரடி சந்தை மதிப்பை அறியவும்.", helpProcurement: "கொள்முதல்: நேரடி சந்தை விலைகளை காணுங்கள். விற்க அல்லது வாங்க விண்ணப்பிக்கலாம்.", helpAi: "AI ஆலோசனைகள்: லாபத்தை அதிகரிக்க AI ஆலோசனைகளைப் படியுங்கள்." }
+  ta: { navDashboard: "📊 டாஷ்போர்டு", navProfile: "👤 என் சுயவிவரம்", navCrops: "🌾 என் பயிர்கள்", navProcurement: "🛒 கொள்முதல்", navAi: "🤖 AI ஆலோசனைகள்", navHelp: "❓ உதவி", logout: "வெளியேறு", module: "பிரிவு", subtitle: "உங்கள் பண்ணை செயல்பாடுகளை எளிதாக நிர்வகிக்கவும்.", liveMarket: "நேரடி சந்தை செயலில் உள்ளது", userDetails: "பயனர் விவரங்கள்", fullName: "முழு பெயர்:", emailAddr: "மின்னஞ்சல்:", phoneNumber: "தொலைபேசி எண்:", role: "பங்கு:", farmManager: "விவசாயி", accountStatus: "கணக்கு நிலை:", verified: "சரிபார்க்கப்பட்டது 🟢", weather: "🌤️ உள்ளூர் வானிலை", pestAlert: "🐛 பூச்சி எச்சரிக்கை", pestDesc: "உங்கள் பகுதியில் எந்த அச்சுறுத்தலும் இல்லை.", addCropTitle: "➕ புதிய பயிர் சேர்ப்பது", selectCrop: "-- இந்திய பயிரைத் தேர்ந்தெடுக்கவும் --", weightKg: "எடை (கிலோ)", addCropBtn: "பயிரைச் சேர்", myCropInventory: "🌾 என் பயிர் இருப்பு", emptyInventory: "உங்கள் இருப்பு காலியாக உள்ளது.", lockedRate: "பூட்டப்பட்ட விலை:", remove: "நீக்கு", liveCropMarket: "🌾 நேரடி பயிர் சந்தை விலைகள்", cropName: "பயிர் பெயர்", pastRates: "கடந்த விலைகள்", liveRate: "நேரடி விலை & போக்கு", action: "செயல்", sellMarket: "சந்தையில் விற்க", procurementApp: "கொள்முதல் விண்ணப்பம்", applyingFor: "விண்ணப்பிப்பது:", quantity: "அளவு (கிலோ / பைகள்)", selectZone: "-- மண்டலத்தைத் தேர்ந்தெடுக்கவும் --", selectSubPlace: "-- கிராமத்தைத் தேர்ந்தெடுக்கவும் --", farmAddress: "குறிப்பிட்ட பண்ணை முகவரி", pattaChitta: "பட்டா / சிட்டா ஆவண எண்", uploadDoc: "பட்டா/சிட்டாவை பதிவேற்றவும் (JPG/PDF, Max 500KB)", confirmOrder: "VAO க்கு சமர்ப்பிக்கவும்", cancel: "ரத்து செய்", upcomingProcurements: "📦 வரவிருக்கும் கொள்முதல்", noActiveOrders: "தற்போது எந்த ஆர்டரும் இல்லை.", aiAnalysis: "🤖 AI பகுப்பாய்வு", aiReport: "வாராந்திர அறிக்கை:", aiTip1: "நைட்ரஜன் அளவுகள் குறையக்கூடும். வியாழக்கிழமைக்குள் யூரியா பயன்படுத்த பரிந்துரைக்கப்படுகிறது.", aiTip2: "லாபத்தை அதிகரிக்க கோதுமை விற்பனையை 2 வாரங்களுக்கு தாமதப்படுத்தவும்.", aiTip3: "அடுத்த 7 நாட்களுக்கு பூச்சிகள் தாக்கும் அபாயம் குறைவு.", helpTitle: "உதவி மற்றும் வழிகாட்டி", helpIntro: "FarmFlow AI-க்கு உங்களை வரவேற்கிறோம்! டாஷ்போர்டை எவ்வாறு பயன்படுத்துவது:", helpProfile: "சுயவிவரம்: உங்கள் கணக்கு விவரங்கள் மற்றும் நிலையைப் பார்க்கவும்.", helpCrops: "என் பயிர்கள்: உங்கள் அறுவடை பயிர்களைச் சேர்க்கவும், நேரடி சந்தை மதிப்பை அறியவும்.", helpProcurement: "கொள்முதல்: நேரடி சந்தை விலைகளை காணுங்கள். விற்க அல்லது வாங்க விண்ணப்பிിക്കാം.", helpAi: "AI ஆலோசனைகள்: லாபத்தை அதிகரிக்க AI ஆலோசனைகளைப் படியுங்கள்." }
 };
 
 const Dashboard = () => {
@@ -49,13 +59,18 @@ const Dashboard = () => {
   const [availableZones, setAvailableZones] = useState([]);
   const [availableSubPlaces, setAvailableSubPlaces] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [weatherData, setWeatherData] = useState({ temp: '--', condition: 'Fetching location weather...', locationName: 'Detecting location...' });
+
+  // Weather States
+  const [weatherData, setWeatherData] = useState({ temp: '--', condition: 'Fetching location weather...', locationName: 'Detecting location...', icon: '🌤️' });
+  const [hourlyForecast, setHourlyForecast] = useState([]);
+  const [showWeatherModal, setShowWeatherModal] = useState(false);
 
   useEffect(() => {
     const savedUser = localStorage.getItem('farmflow_user') || sessionStorage.getItem('farmflow_user');
     if (savedUser) setUserProfile(JSON.parse(savedUser));
   }, []);
 
+  // Fetch Live Weather & 24h Hourly Forecast
   useEffect(() => {
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
@@ -63,30 +78,55 @@ const Dashboard = () => {
           const lat = position.coords.latitude;
           const lon = position.coords.longitude;
           try {
-            const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,precipitation`);
+            const weatherRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,precipitation&hourly=temperature_2m,weather_code,precipitation_probability&timezone=auto`);
             const weatherJson = await weatherRes.json();
+            
             const geoRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
             const geoJson = await geoRes.json();
             const locationString = geoJson.address.city || geoJson.address.town || geoJson.address.village || geoJson.address.state || "Your Location";
 
-            const code = weatherJson.current.weather_code;
-            let conditionText = "Clear skies";
-            if (code > 0 && code < 4) conditionText = "Partly cloudy";
-            else if (code >= 45 && code < 50) conditionText = "Foggy / Misty";
-            else if (code >= 50 && code < 80) conditionText = "Rain expected";
-            else if (code >= 80) conditionText = "Heavy rain / Storms";
+            const currentCode = weatherJson.current.weather_code;
+            const meta = getWeatherMeta(currentCode);
 
             setWeatherData({
-              temp: `${weatherJson.current.temperature_2m}°C`,
-              condition: `${locationString}: ${conditionText}. Humidity: ${weatherJson.current.relative_humidity_2m}%`,
-              locationName: locationString
+              temp: `${Math.round(weatherJson.current.temperature_2m)}°C`,
+              condition: `${locationString}: ${meta.label}. Humidity: ${weatherJson.current.relative_humidity_2m}%`,
+              locationName: locationString,
+              icon: meta.icon
             });
+
+            // Extract next 24 hours
+            if (weatherJson.hourly && weatherJson.hourly.time) {
+              const currentHourStr = new Date().toISOString().slice(0, 13);
+              let startIndex = weatherJson.hourly.time.findIndex(t => t.startsWith(currentHourStr));
+              if (startIndex === -1) startIndex = 0;
+              
+              const next24Hours = [];
+              for (let i = startIndex; i < Math.min(startIndex + 24, weatherJson.hourly.time.length); i++) {
+                const hourDate = new Date(weatherJson.hourly.time[i]);
+                const timeLabel = i === startIndex ? 'Now' : hourDate.toLocaleTimeString([], { hour: 'numeric', hour12: true });
+                const code = weatherJson.hourly.weather_code[i];
+                const hourMeta = getWeatherMeta(code);
+
+                next24Hours.push({
+                  time: timeLabel,
+                  temp: `${Math.round(weatherJson.hourly.temperature_2m[i])}°C`,
+                  rainProb: weatherJson.hourly.precipitation_probability ? weatherJson.hourly.precipitation_probability[i] : 0,
+                  icon: hourMeta.icon,
+                  label: hourMeta.label
+                });
+              }
+              setHourlyForecast(next24Hours);
+            }
+
           } catch (err) {
-            setWeatherData({ temp: '--', condition: 'Unable to load live weather.', locationName: 'GPS Error' });
+            console.error("Weather fetch failed", err);
+            setWeatherData({ temp: '--', condition: 'Unable to load live weather.', locationName: 'GPS Error', icon: '🌤️' });
           }
         },
         (error) => {
-          setWeatherData({ temp: 'N/A', condition: 'Location permission denied. Enable GPS to view local weather.', locationName: 'Location Disabled' });
+          console.warn("Geolocation permission denied", error);
+          setWeatherData({ temp: 'N/A', condition: 'Location permission denied. Click to enable GPS.', locationName: 'Location Disabled', icon: '📍' });
         }
       );
     }
@@ -300,15 +340,41 @@ const Dashboard = () => {
         {activeTab === 'dashboard' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px' }}>
-              <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
-                <h3 style={{ margin: '0 0 10px 0', color: '#2c3e50' }}>{l.weather} ({weatherData.temp})</h3>
-                <p style={{ margin: 0, color: '#555', fontSize: '14px', lineHeight: '1.5' }}>{weatherData.condition}</p>
+              
+              {/* Clickable Weather Card with Hourly Trigger */}
+              <div 
+                onClick={() => setShowWeatherModal(true)}
+                title="Click to view 24-hour detailed forecast"
+                style={{ 
+                  backgroundColor: 'white', 
+                  padding: '20px', 
+                  borderRadius: '12px', 
+                  boxShadow: '0 4px 15px rgba(0,0,0,0.05)', 
+                  cursor: 'pointer',
+                  border: '1px solid #e0e0e0',
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  position: 'relative',
+                  overflow: 'hidden'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-3px)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0px)'}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <h3 style={{ margin: 0, color: '#2c3e50', fontSize: '18px' }}>{weatherData.icon} {l.weather}</h3>
+                  <span style={{ fontSize: '20px', fontWeight: 'bold', color: '#2e7d32' }}>{weatherData.temp}</span>
+                </div>
+                <p style={{ margin: '0 0 8px 0', color: '#555', fontSize: '14px', lineHeight: '1.5' }}>{weatherData.condition}</p>
+                <span style={{ fontSize: '12px', color: '#1976d2', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  🔍 Tap for 24-Hour Forecast & Trend →
+                </span>
               </div>
+
               <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
                 <h3 style={{ margin: '0 0 10px 0', color: '#2c3e50' }}>{l.pestAlert}</h3>
                 <p style={{ margin: 0, color: '#555', fontSize: '14px' }}>{l.pestDesc}</p>
               </div>
             </div>
+
             <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px' }}>
               <h3 style={{ margin: '0 0 15px 0' }}>{l.upcomingProcurements}</h3>
               {activeOrders.length === 0 ? (<p style={{ color: '#777', fontStyle: 'italic', margin: 0 }}>{l.noActiveOrders}</p>) : (
@@ -453,6 +519,66 @@ const Dashboard = () => {
         )}
 
       </div>
+
+      {/* Google-Style 24-Hour Weather Forecast Modal */}
+      {showWeatherModal && (
+        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(0,0,0,0.65)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '15px', boxSizing: 'border-box' }}>
+          <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', maxWidth: '750px', width: '100%', padding: '25px', boxShadow: '0 10px 30px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div>
+                <h2 style={{ margin: '0 0 5px 0', color: '#2c3e50', fontSize: '22px' }}>📍 {weatherData.locationName}</h2>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span style={{ fontSize: '32px' }}>{weatherData.icon}</span>
+                  <span style={{ fontSize: '32px', fontWeight: 'bold', color: '#2c3e50' }}>{weatherData.temp}</span>
+                  <span style={{ color: '#666', fontSize: '16px', marginLeft: '5px' }}>{weatherData.condition.split(':')[1]?.split('.')[0]}</span>
+                </div>
+              </div>
+              <button onClick={() => setShowWeatherModal(false)} style={{ background: '#f5f5f5', border: 'none', borderRadius: '50%', width: '36px', height: '36px', cursor: 'pointer', fontWeight: 'bold', fontSize: '18px', color: '#666' }}>✕</button>
+            </div>
+
+            <div>
+              <h4 style={{ margin: '0 0 12px 0', color: '#555', fontSize: '14px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>24-Hour Forecast (Hourly)</h4>
+              
+              {/* Horizontally Scrollable Weather Timeline */}
+              <div style={{ display: 'flex', gap: '12px', overflowX: 'auto', paddingBottom: '10px', scrollbarWidth: 'thin' }}>
+                {hourlyForecast.length === 0 ? (
+                  <p style={{ color: '#777', fontStyle: 'italic' }}>Hourly forecast loading...</p>
+                ) : (
+                  hourlyForecast.map((hour, idx) => (
+                    <div key={idx} style={{ 
+                      flex: '0 0 85px', 
+                      display: 'flex', 
+                      flexDirection: 'column', 
+                      alignItems: 'center', 
+                      padding: '12px 8px', 
+                      backgroundColor: idx === 0 ? '#e8f5e9' : '#f9f9f9', 
+                      border: idx === 0 ? '1px solid #81c784' : '1px solid #eee', 
+                      borderRadius: '12px', 
+                      textAlign: 'center' 
+                    }}>
+                      <span style={{ fontSize: '12px', color: idx === 0 ? '#2e7d32' : '#666', fontWeight: idx === 0 ? 'bold' : 'normal' }}>{hour.time}</span>
+                      <span style={{ fontSize: '24px', margin: '6px 0' }}>{hour.icon}</span>
+                      <span style={{ fontSize: '15px', fontWeight: 'bold', color: '#2c3e50' }}>{hour.temp}</span>
+                      {hour.rainProb > 0 ? (
+                        <span style={{ fontSize: '11px', color: '#1976d2', fontWeight: 'bold', marginTop: '4px' }}>💧 {hour.rainProb}%</span>
+                      ) : (
+                        <span style={{ fontSize: '11px', color: '#aaa', marginTop: '4px' }}>0%</span>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+
+            <div style={{ borderTop: '1px solid #eee', paddingTop: '15px', display: 'flex', justifyContent: 'flex-end' }}>
+              <button onClick={() => setShowWeatherModal(false)} style={{ padding: '8px 20px', background: '#2e7d32', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>Close</button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
