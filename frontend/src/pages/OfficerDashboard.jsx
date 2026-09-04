@@ -121,11 +121,11 @@ const OfficerDashboard = () => {
                         onClick={() => setModalImage(order.documentUrl)} 
                         style={{ marginTop: '5px', backgroundColor: '#e3f2fd', color: '#1976d2', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold', display: 'block' }}
                       >
-                        👁️ View Document
+                        👁️ View Signed Certificate & Document
                       </button>
                     )}
 
-                    {/* Official Digital Signature Box Stamp */}
+                    {/* Official Digital Signature Box Stamp preview in table */}
                     {order.vaoSignatureDetails ? (
                       <div style={{ 
                         marginTop: '10px',
@@ -193,7 +193,7 @@ const OfficerDashboard = () => {
       {modalImage && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
           <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', width: '80%', maxWidth: '800px', height: '85vh', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: '0 5px 25px rgba(0,0,0,0.3)' }}>
-            <h3 style={{ margin: '0 0 15px 0', color: '#2c3e50' }}>Patta / Chitta Document Preview</h3>
+            <h3 style={{ margin: '0 0 15px 0', color: '#2c3e50' }}>Verified Patta & Chitta Certificate Preview</h3>
             
             <div style={{ width: '100%', flex: 1, overflow: 'hidden', marginBottom: '15px', borderRadius: '6px', border: '1px solid #ddd' }}>
               {modalImage.startsWith('data:application/pdf') || modalImage.toLowerCase().includes('.pdf') ? (
