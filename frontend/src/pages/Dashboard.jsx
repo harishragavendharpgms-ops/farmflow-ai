@@ -70,7 +70,7 @@ const Dashboard = () => {
     if (savedUser) setUserProfile(JSON.parse(savedUser));
   }, []);
 
-  // Fetch Live Weather & 24h Hourly Forecast (Aligned with current minute/hour)
+  // Fetch Live Weather & 24h Hourly Forecast (Aligned dynamically starting from current local hour)
   useEffect(() => {
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
@@ -95,12 +95,15 @@ const Dashboard = () => {
               icon: meta.icon
             });
 
-            // Dynamically match exact current hour for 24-hour rolling forecast
             if (weatherJson.hourly && weatherJson.hourly.time) {
               const now = new Date();
-              const currentHourIso = now.toISOString().slice(0, 13) + ":00"; // matches YYYY-MM-DDTHH:00
+              const currentHourNum = now.getHours(); // Local hour index
               
-              let startIndex = weatherJson.hourly.time.findIndex(t => t.startsWith(now.toISOString().slice(0, 13)));
+              let startIndex = weatherJson.hourly.time.findIndex(t => {
+                const tDate = new Date(t);
+                return tDate.getDate() === now.getDate() && tDate.getHours() === currentHourNum;
+              });
+
               if (startIndex === -1) startIndex = 0;
               
               const next24Hours = [];
@@ -167,24 +170,19 @@ const Dashboard = () => {
       const ordersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       ordersData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
-      // Check for newly procured orders to deduct from inventory
       for (const order of ordersData) {
         if (order.status === 'Procured' && !order.inventoryDeducted) {
-          // Find matching crop in inventory
           const matchingCrop = myCrops.find(c => c.name === order.item);
           if (matchingCrop) {
             const orderQty = parseFloat(order.quantity) || 0;
             const updatedWeight = matchingCrop.weightKg - orderQty;
 
             if (updatedWeight <= 0) {
-              // Delete crop if all quantity is procured
               await deleteDoc(doc(db, 'crops', matchingCrop.id));
             } else {
-              // Reduce crop quantity
               await updateDoc(doc(db, 'crops', matchingCrop.id), { weightKg: updatedWeight });
             }
           }
-          // Mark order as deducted so it doesn't run twice
           await updateDoc(doc(db, 'orders', order.id), { inventoryDeducted: true });
         }
       }
