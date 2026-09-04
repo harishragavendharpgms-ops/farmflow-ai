@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
-import { collection, addDoc, onSnapshot, query, where, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, onSnapshot, query, where, getDocs, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 
 const initialRates = { "Rice (Paddy)": 22.50, "Wheat": 25.00, "Maize (Corn)": 20.00, "Cotton": 70.00, "Sugarcane": 3.15, "Soybean": 46.00, "Mustard": 52.00, "Bajra (Pearl Millet)": 24.50, "Groundnut": 65.00, "Tur (Pigeon Pea)": 110.00, "Onion": 28.00, "Potato": 18.00 };
 
@@ -70,7 +70,7 @@ const Dashboard = () => {
     if (savedUser) setUserProfile(JSON.parse(savedUser));
   }, []);
 
-  // Fetch Live Weather & 24h Hourly Forecast
+  // Fetch Live Weather & 24h Hourly Forecast (Aligned with current minute/hour)
   useEffect(() => {
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
@@ -95,10 +95,12 @@ const Dashboard = () => {
               icon: meta.icon
             });
 
-            // Extract next 24 hours
+            // Dynamically match exact current hour for 24-hour rolling forecast
             if (weatherJson.hourly && weatherJson.hourly.time) {
-              const currentHourStr = new Date().toISOString().slice(0, 13);
-              let startIndex = weatherJson.hourly.time.findIndex(t => t.startsWith(currentHourStr));
+              const now = new Date();
+              const currentHourIso = now.toISOString().slice(0, 13) + ":00"; // matches YYYY-MM-DDTHH:00
+              
+              let startIndex = weatherJson.hourly.time.findIndex(t => t.startsWith(now.toISOString().slice(0, 13)));
               if (startIndex === -1) startIndex = 0;
               
               const next24Hours = [];
@@ -155,21 +157,48 @@ const Dashboard = () => {
     setAvailableSubPlaces([...new Set(subPlaces)]);
   };
 
+  const [myCrops, setMyCrops] = useState([]);
+
+  // Monitor orders and automatically deduct or delete inventory when status becomes Procured
   useEffect(() => {
     if (!userProfile.email) return;
     const qOrders = query(collection(db, 'orders'), where('userEmail', '==', userProfile.email));
-    const unsubOrders = onSnapshot(qOrders, (snapshot) => {
+    const unsubOrders = onSnapshot(qOrders, async (snapshot) => {
       const ordersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       ordersData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+      // Check for newly procured orders to deduct from inventory
+      for (const order of ordersData) {
+        if (order.status === 'Procured' && !order.inventoryDeducted) {
+          // Find matching crop in inventory
+          const matchingCrop = myCrops.find(c => c.name === order.item);
+          if (matchingCrop) {
+            const orderQty = parseFloat(order.quantity) || 0;
+            const updatedWeight = matchingCrop.weightKg - orderQty;
+
+            if (updatedWeight <= 0) {
+              // Delete crop if all quantity is procured
+              await deleteDoc(doc(db, 'crops', matchingCrop.id));
+            } else {
+              // Reduce crop quantity
+              await updateDoc(doc(db, 'crops', matchingCrop.id), { weightKg: updatedWeight });
+            }
+          }
+          // Mark order as deducted so it doesn't run twice
+          await updateDoc(doc(db, 'orders', order.id), { inventoryDeducted: true });
+        }
+      }
+
       setActiveOrders(ordersData);
     });
+
     const qCrops = query(collection(db, 'crops'), where('userEmail', '==', userProfile.email));
     const unsubCrops = onSnapshot(qCrops, (snapshot) => {
       const cropsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setMyCrops(cropsData);
     });
     return () => { unsubOrders(); unsubCrops(); };
-  }, [userProfile.email]);
+  }, [userProfile.email, myCrops]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -192,7 +221,6 @@ const Dashboard = () => {
   const [orderingItem, setOrderingItem] = useState(null);
   const [orderDetails, setOrderDetails] = useState({ zone: '', subPlace: '', address: '', quantity: '', pattaChitta: '' });
   const [pattaFile, setPattaFile] = useState(null);
-  const [myCrops, setMyCrops] = useState([]);
   const [newCrop, setNewCrop] = useState({ name: '', weightKg: '' });
 
   const handleLogout = () => { 
@@ -231,6 +259,7 @@ const Dashboard = () => {
         documentUrl: fileDataString, 
         datetime: 'TBD by Officer', 
         status: 'Pending VAO', 
+        inventoryDeducted: false,
         createdAt: new Date().toISOString()
       });
       alert(`Success! Application sent to VAO in ${orderDetails.zone} (${orderDetails.subPlace}).`);
