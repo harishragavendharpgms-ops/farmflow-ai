@@ -119,10 +119,37 @@ const OfficerDashboard = () => {
                     {order.documentUrl && (
                       <button 
                         onClick={() => setModalImage(order.documentUrl)} 
-                        style={{ marginTop: '5px', backgroundColor: '#e3f2fd', color: '#1976d2', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold' }}
+                        style={{ marginTop: '5px', backgroundColor: '#e3f2fd', color: '#1976d2', border: 'none', padding: '4px 8px', borderRadius: '4px', cursor: 'pointer', fontSize: '11px', fontWeight: 'bold', display: 'block' }}
                       >
                         👁️ View Document
                       </button>
+                    )}
+
+                    {/* Official Digital Signature Box Stamp */}
+                    {order.vaoSignatureDetails ? (
+                      <div style={{ 
+                        marginTop: '10px',
+                        border: '2px solid #000', 
+                        padding: '6px', 
+                        width: '150px', 
+                        textAlign: 'center', 
+                        fontFamily: 'monospace', 
+                        fontSize: '11px',
+                        lineHeight: '1.3',
+                        backgroundColor: '#fff',
+                        color: '#000'
+                      }}>
+                        <div style={{ borderBottom: '1px dashed #000', paddingBottom: '2px', marginBottom: '2px', letterSpacing: '2px' }}>
+                          --- -----
+                        </div>
+                        <div style={{ fontWeight: 'bold' }}>Digitally signed:</div>
+                        <div style={{ fontWeight: 'bold', margin: '3px 0', textTransform: 'uppercase' }}>{order.vaoSignatureDetails.name}</div>
+                        <div style={{ fontSize: '10px' }}>{order.vaoSignatureDetails.designation}</div>
+                        <div style={{ marginTop: '4px' }}>{order.vaoSignatureDetails.date}</div>
+                        <div>{order.vaoSignatureDetails.time}</div>
+                      </div>
+                    ) : (
+                      <span style={{ fontSize: '11px', color: 'orange', display: 'block', marginTop: '5px' }}>Pending VAO Stamp</span>
                     )}
                   </td>
                   <td style={{ padding: '15px 10px' }}>

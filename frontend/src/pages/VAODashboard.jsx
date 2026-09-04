@@ -37,10 +37,15 @@ const VAODashboard = () => {
 
   const handleVerify = async (order) => {
     try {
-      const eSignature = `Digitally Verified by VAO ${userProfile.name} (${userProfile.subPlace || userProfile.zone}) on ${new Date().toLocaleDateString()}`;
+      const now = new Date();
       await updateDoc(doc(db, 'orders', order.id), { 
         status: 'VAO Verified', 
-        vaoSignature: eSignature,
+        vaoSignatureDetails: {
+          name: userProfile.name || 'VAO Officer',
+          designation: userProfile.subPlace ? `VAO / ${userProfile.subPlace}` : 'Village Administrative Officer',
+          date: now.toLocaleDateString(),
+          time: now.toLocaleTimeString()
+        },
         documentUrl: order.documentUrl 
       });
       alert("Document successfully E-Signed and sent to Procurement Officer!");
