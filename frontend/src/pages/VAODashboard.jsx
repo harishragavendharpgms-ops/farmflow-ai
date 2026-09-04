@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import { collection, query, where, onSnapshot, doc, updateDoc } from 'firebase/firestore';
+import { jsPDF } from 'jspdf';
 
 const VAODashboard = () => {
   const navigate = useNavigate();
@@ -38,20 +39,62 @@ const VAODashboard = () => {
   const handleVerify = async (order) => {
     try {
       const now = new Date();
+      const vaoName = userProfile.name || 'VAO Officer';
+      const vaoDesignation = userProfile.subPlace ? `VAO / ${userProfile.subPlace}` : 'Village Administrative Officer';
+      const dateStr = now.toLocaleDateString();
+      const timeStr = now.toLocaleTimeString();
+
+      // Generate a signed PDF containing the official Government Digital Signature Box stamp
+      const docPdf = new jsPDF();
+      
+      // Document Header
+      docPdf.setFont("helvetica", "bold");
+      docPdf.setFontSize(16);
+      docPdf.text("FARMFLOW AI - OFFICIAL VERIFIED CERTIFICATE", 20, 20);
+      
+      docPdf.setFontSize(11);
+      docPdf.setFont("helvetica", "normal");
+      docPdf.text(`Application ID: ${order.id}`, 20, 35);
+      docPdf.text(`Farmer Name: ${order.userName || 'N/A'}`, 20, 45);
+      docPdf.text(`Crop/Item: ${order.item} (${order.quantity}kg)`, 20, 55);
+      docPdf.text(`Zone / Location: ${order.zone} / ${order.subPlace || 'General'}`, 20, 65);
+      docPdf.text(`Patta/Chitta No: ${order.pattaChitta || 'N/A'}`, 20, 75);
+      
+      docPdf.line(20, 85, 190, 85);
+
+      // Draw Government Digital Signature Box inside the PDF
+      docPdf.rect(130, 100, 65, 45); // Box outline
+      docPdf.setFont("courier", "normal");
+      docPdf.setFontSize(9);
+      docPdf.text("--- -----", 147, 107, { align: "center" });
+      docPdf.setFont("courier", "bold");
+      docPdf.text("Digitally signed:", 162, 114, { align: "center" });
+      docPdf.text(vaoName.toUpperCase(), 162, 121, { align: "center" });
+      docPdf.setFont("courier", "normal");
+      docPdf.setFontSize(8);
+      docPdf.text(vaoDesignation, 162, 127, { align: "center" });
+      docPdf.text(dateStr, 162, 134, { align: "center" });
+      docPdf.text(timeStr, 162, 140, { align: "center" });
+
+      // Output signed PDF as a Base64 string data URL
+      const signedPdfBase64 = docPdf.output('datauristring');
+
+      // Update Firestore with status, signature metadata, and the newly signed PDF
       await updateDoc(doc(db, 'orders', order.id), { 
         status: 'VAO Verified', 
         vaoSignatureDetails: {
-          name: userProfile.name || 'VAO Officer',
-          designation: userProfile.subPlace ? `VAO / ${userProfile.subPlace}` : 'Village Administrative Officer',
-          date: now.toLocaleDateString(),
-          time: now.toLocaleTimeString()
+          name: vaoName,
+          designation: vaoDesignation,
+          date: dateStr,
+          time: timeStr
         },
-        documentUrl: order.documentUrl 
+        documentUrl: signedPdfBase64 
       });
-      alert("Document successfully E-Signed and sent to Procurement Officer!");
+
+      alert("Document successfully E-Signed, stamped inside the PDF, and sent to Procurement Officer!");
     } catch (error) { 
       console.error(error);
-      alert("Failed to verify."); 
+      alert("Failed to verify and sign document."); 
     }
   };
 
