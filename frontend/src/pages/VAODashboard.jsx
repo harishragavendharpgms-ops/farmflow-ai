@@ -115,11 +115,19 @@ const VAODashboard = () => {
 
       {modalImage && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(0,0,0,0.7)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
-          <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', maxWidth: '90%', maxHeight: '90%', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: '0 5px 25px rgba(0,0,0,0.3)' }}>
+          <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', width: '80%', maxWidth: '800px', height: '85vh', display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: '0 5px 25px rgba(0,0,0,0.3)' }}>
             <h3 style={{ margin: '0 0 15px 0', color: '#2c3e50' }}>Patta / Chitta Document Preview</h3>
-            <div style={{ maxWidth: '100%', maxHeight: '70vh', overflow: 'auto', marginBottom: '15px' }}>
-              <img src={modalImage} alt="Patta Document" style={{ width: '100%', height: 'auto', display: 'block', borderRadius: '6px' }} />
+            
+            <div style={{ width: '100%', flex: 1, overflow: 'hidden', marginBottom: '15px', borderRadius: '6px', border: '1px solid #ddd' }}>
+              {modalImage.startsWith('data:application/pdf') || modalImage.toLowerCase().includes('.pdf') ? (
+                <iframe src={modalImage} title="PDF Document Preview" style={{ width: '100%', height: '100%', border: 'none' }} />
+              ) : (
+                <div style={{ width: '100%', height: '100%', overflow: 'auto', display: 'flex', justifyContent: 'center' }}>
+                  <img src={modalImage} alt="Patta Document" style={{ maxWidth: '100%', height: 'auto', display: 'block' }} />
+                </div>
+              )}
             </div>
+
             <button onClick={() => setModalImage(null)} style={{ padding: '8px 20px', backgroundColor: '#d32f2f', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>
               Close Preview
             </button>
