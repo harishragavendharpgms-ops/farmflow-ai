@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { db } from '../firebase'; // Adjust to your firebase configuration import
-import { collection, getDocs, doc, updatedoc, serverTimestamp } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 
 export default function OfficerDashboard() {
   const [orders, setOrders] = useState([]);
