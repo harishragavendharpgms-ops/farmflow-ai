@@ -442,12 +442,12 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* Dedicated Track Status View Tab */}
+        {/* Dedicated Track Status View Tab with Highlighted Payment Status */}
         {activeTab === 'track' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div style={{ backgroundColor: 'white', padding: '25px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
-              <h3 style={{ color: '#2c3e50', marginBottom: '5px', fontSize: '20px' }}>📦 Real-Time Procurement Tracker</h3>
-              <p style={{ color: '#666', fontSize: '14px', marginBottom: '20px' }}>Monitor your submitted crop applications, assigned schedules, verification stamps, and direct benefit transfer (DBT) statuses.</p>
+              <h3 style={{ color: '#2c3e50', marginBottom: '5px', fontSize: '20px' }}>📦 Real-Time Procurement & Payment Tracker</h3>
+              <p style={{ color: '#666', fontSize: '14px', marginBottom: '20px' }}>Monitor your submitted crop applications, assigned schedules, verification stamps, and direct benefit transfer (DBT) payment statuses.</p>
               
               {activeOrders.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '40px', backgroundColor: '#f9f9f9', borderRadius: '8px', color: '#777' }}>
@@ -478,13 +478,27 @@ const Dashboard = () => {
                         <div>
                           <p style={{ margin: '4px 0', color: '#555' }}>📍 <strong>Zone / Sub-place:</strong> {order.zone} / {order.subPlace || 'General'}</p>
                           <p style={{ margin: '4px 0', color: '#555' }}>🏠 <strong>Address:</strong> {order.address || 'N/A'}</p>
-                        </div>
-                        <div>
                           <p style={{ margin: '4px 0', color: '#555' }}>📅 <strong>Assigned Slot:</strong> {order.datetime || 'TBD by Officer'}</p>
-                          <p style={{ margin: '4px 0', color: '#555' }}>💳 <strong>DBT Payout:</strong> <span style={{ color: '#2e7d32', fontWeight: 'bold' }}>{order.paymentStatus || 'Pending Completion'}</span></p>
-                          {order.payoutAmount && (
-                            <p style={{ margin: '4px 0', color: '#2e7d32', fontWeight: 'bold' }}>💰 Disbursed: ₹{order.payoutAmount}</p>
-                          )}
+                        </div>
+                        
+                        {/* Highlighted Payment Status & DBT Section */}
+                        <div style={{ backgroundColor: '#f1f8e9', padding: '12px', borderRadius: '8px', border: '1px solid #c8e6c9' }}>
+                          <p style={{ margin: '0 0 5px 0', fontSize: '13px', fontWeight: 'bold', color: '#2e7d32' }}>💳 Direct Benefit Transfer (DBT) Status:</p>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '5px' }}>
+                            <span style={{ 
+                              padding: '4px 10px', 
+                              borderRadius: '15px', 
+                              fontSize: '12px', 
+                              fontWeight: 'bold',
+                              backgroundColor: order.paymentStatus ? '#e8f5e9' : '#fff3e0',
+                              color: order.paymentStatus ? '#2e7d32' : '#e65100'
+                            }}>
+                              {order.paymentStatus || 'Awaiting Procurement Completion'}
+                            </span>
+                            {order.payoutAmount && (
+                              <strong style={{ fontSize: '15px', color: '#2e7d32' }}>₹{order.payoutAmount} Credited</strong>
+                            )}
+                          </div>
                         </div>
                       </div>
 
@@ -636,7 +650,7 @@ const Dashboard = () => {
                 {hourlyForecast.length === 0 ? (
                   <p style={{ color: '#777', fontStyle: 'italic' }}>Hourly forecast loading...</p>
                 ) : (
-                  hourlyForecast.map((hour, idx) => (
+                  hourlyForecast.main ? null : hourlyForecast.map((hour, idx) => (
                     <div key={idx} style={{ 
                       flex: '0 0 85px', 
                       display: 'flex', 
