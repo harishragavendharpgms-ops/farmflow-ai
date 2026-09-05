@@ -19,6 +19,7 @@ function App() {
         <Route path="/officer" element={<OfficerDashboard />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/vao" element={<VAODashboard />} />
+        <Route path="/track" element={<FarmerTracker />} />
       </Routes>
     </Router>
   );
