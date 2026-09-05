@@ -60,6 +60,10 @@ const Dashboard = () => {
   const [availableSubPlaces, setAvailableSubPlaces] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Real-Time Notification Banner States
+  const [latestNotification, setLatestNotification] = useState(null);
+  const [showBanner, setShowBanner] = useState(false);
+
   // Weather States
   const [weatherData, setWeatherData] = useState({ temp: '--', condition: 'Fetching location weather...', locationName: 'Detecting location...', icon: '🌤️' });
   const [hourlyForecast, setHourlyForecast] = useState([]);
@@ -79,7 +83,6 @@ const Dashboard = () => {
         console.error("Error parsing saved user:", e);
       }
     }
-    // Fallback demo user profile for presentation reliability
     const demoUser = {
       name: "Rajesh Farmer",
       email: "rajesh@farmflow.com",
@@ -182,13 +185,22 @@ const Dashboard = () => {
 
   const [myCrops, setMyCrops] = useState([]);
 
-  // Monitor orders and automatically deduct or delete inventory when status becomes Procured (Case-insensitive email query)
+  // Monitor orders with real-time web notifications & inventory management
   useEffect(() => {
     if (!userProfile.email) return;
     const userEmailLower = userProfile.email.toLowerCase();
 
     const qOrders = query(collection(db, 'orders'), where('userEmail', '==', userEmailLower));
     const unsubOrders = onSnapshot(qOrders, async (snapshot) => {
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === 'modified') {
+          const updatedOrder = change.doc.data();
+          setLatestNotification(`🔔 Update: Your ${updatedOrder.item} application status is now "${updatedOrder.status}"!`);
+          setShowBanner(true);
+          setTimeout(() => setShowBanner(false), 7000);
+        }
+      });
+
       const ordersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       ordersData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
@@ -338,6 +350,25 @@ const Dashboard = () => {
 
       <div style={{ flexGrow: 1, padding: '20px', maxWidth: '100%', boxSizing: 'border-box' }}>
         
+        {/* Real-Time Web Notification Banner */}
+        {showBanner && latestNotification && (
+          <div style={{ 
+            backgroundColor: '#e8f5e9', 
+            color: '#2e7d32', 
+            padding: '12px 20px', 
+            borderRadius: '8px', 
+            border: '1px solid #c8e6c9', 
+            marginBottom: '20px', 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            alignItems: 'center',
+            boxShadow: '0 4px 10px rgba(0,0,0,0.05)'
+          }}>
+            <span style={{ fontWeight: '600', fontSize: '14px' }}>{latestNotification}</span>
+            <button onClick={() => setShowBanner(false)} style={{ background: 'transparent', border: 'none', fontSize: '16px', cursor: 'pointer', color: '#2e7d32', fontWeight: 'bold' }}>✕</button>
+          </div>
+        )}
+
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px', borderBottom: '2px solid #e0e0e0', paddingBottom: '20px', flexWrap: 'wrap', gap: '15px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
             <button onClick={() => setIsSidebarOpen(!isSidebarOpen)} style={{ fontSize: '28px', background: 'transparent', border: 'none', cursor: 'pointer', color: '#2c3e50', padding: '0', display: 'flex', alignItems: 'center' }}>☰</button>
@@ -379,8 +410,8 @@ const Dashboard = () => {
           <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
             <h3 style={{ color: '#2c3e50', marginBottom: '15px', borderBottom: '2px solid #eee', paddingBottom: '10px' }}>{l.userDetails}</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', backgroundColor: '#f9f9f9', borderRadius: '8px' }}><span style={{ fontWeight: 'bold', color: '#555' }}>{l.fullName}</span><span style={{ color: '#2e7d32', fontWeight: 'bold' }}>{userProfile.name || 'Demo Farmer'}</span></div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', backgroundColor: '#f9f9f9', borderRadius: '8px' }}><span style={{ fontWeight: 'bold', color: '#555' }}>{l.emailAddr}</span><span style={{ color: '#333', wordBreak: 'break-all' }}>{userProfile.email || 'farmer@farmflow.com'}</span></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', backgroundColor: '#f9f9f9', borderRadius: '8px' }}><span style={{ fontWeight: 'bold', color: '#555' }}>{l.fullName}</span><span style={{ color: '#2e7d32', fontWeight: 'bold' }}>{userProfile.name || 'Rajesh Farmer'}</span></div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', backgroundColor: '#f9f9f9', borderRadius: '8px' }}><span style={{ fontWeight: 'bold', color: '#555' }}>{l.emailAddr}</span><span style={{ color: '#333', wordBreak: 'break-all' }}>{userProfile.email || 'rajesh@farmflow.com'}</span></div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', backgroundColor: '#f9f9f9', borderRadius: '8px' }}><span style={{ fontWeight: 'bold', color: '#555' }}>{l.phoneNumber}</span><span style={{ color: '#333' }}>{userProfile.phone || '9876543210'}</span></div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', backgroundColor: '#f9f9f9', borderRadius: '8px' }}><span style={{ fontWeight: 'bold', color: '#555' }}>{l.role}</span><span style={{ color: '#333' }}>{l.farmManager}</span></div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px', backgroundColor: '#f9f9f9', borderRadius: '8px' }}><span style={{ fontWeight: 'bold', color: '#555' }}>{l.accountStatus}</span><span style={{ color: 'green', fontWeight: 'bold' }}>{l.verified}</span></div>
