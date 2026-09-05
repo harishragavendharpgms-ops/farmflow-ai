@@ -162,10 +162,12 @@ const Dashboard = () => {
 
   const [myCrops, setMyCrops] = useState([]);
 
-  // Monitor orders and automatically deduct or delete inventory when status becomes Procured
+  // Monitor orders and automatically deduct or delete inventory when status becomes Procured (Case-insensitive email query)
   useEffect(() => {
     if (!userProfile.email) return;
-    const qOrders = query(collection(db, 'orders'), where('userEmail', '==', userProfile.email));
+    const userEmailLower = userProfile.email.toLowerCase();
+
+    const qOrders = query(collection(db, 'orders'), where('userEmail', '==', userEmailLower));
     const unsubOrders = onSnapshot(qOrders, async (snapshot) => {
       const ordersData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       ordersData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -190,7 +192,7 @@ const Dashboard = () => {
       setActiveOrders(ordersData);
     });
 
-    const qCrops = query(collection(db, 'crops'), where('userEmail', '==', userProfile.email));
+    const qCrops = query(collection(db, 'crops'), where('userEmail', '==', userEmailLower));
     const unsubCrops = onSnapshot(qCrops, (snapshot) => {
       const cropsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setMyCrops(cropsData);
@@ -247,7 +249,7 @@ const Dashboard = () => {
       await addDoc(collection(db, 'orders'), {
         userName: userProfile.name || 'Unknown',
         userPhone: userProfile.phone || 'N/A',
-        userEmail: userProfile.email,
+        userEmail: userProfile.email ? userProfile.email.toLowerCase() : '',
         item: orderingItem, 
         quantity: orderDetails.quantity, 
         zone: orderDetails.zone, 
@@ -273,10 +275,10 @@ const Dashboard = () => {
 
   const handleAddCrop = async (e) => {
     e.preventDefault();
-    if (!newCrop.name || !newCrop.weightKg) return;
+    if (!newCrop.name || !newCrop.weightKg || !userProfile.email) return;
     try {
       await addDoc(collection(db, 'crops'), {
-        userEmail: userProfile.email,
+        userEmail: userProfile.email.toLowerCase(),
         name: newCrop.name,
         weightKg: parseFloat(newCrop.weightKg),
         ratePerKg: marketRates[newCrop.name],
@@ -650,7 +652,7 @@ const Dashboard = () => {
                 {hourlyForecast.length === 0 ? (
                   <p style={{ color: '#777', fontStyle: 'italic' }}>Hourly forecast loading...</p>
                 ) : (
-                  hourlyForecast.main ? null : hourlyForecast.map((hour, idx) => (
+                  hourlyForecast.map((hour, idx) => (
                     <div key={idx} style={{ 
                       flex: '0 0 85px', 
                       display: 'flex', 
