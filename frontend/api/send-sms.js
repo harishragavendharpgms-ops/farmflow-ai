@@ -17,9 +17,13 @@ export default async function handler(req, res) {
   const authToken = process.env.TWILIO_AUTH_TOKEN;
   const twilioNumber = process.env.TWILIO_PHONE_NUMBER;
 
-  const client = twilio(accountSid, authToken);
+  if (!accountSid || !authToken || !twilioNumber) {
+    return res.status(500).json({ error: 'Missing Twilio environment variables on server.' });
+  }
 
   try {
+    const client = twilio(accountSid, authToken);
+
     // Format to E.164 (+91 for India if country code is missing)
     const formattedTo = to.startsWith('+') ? to : `+91${to.replace(/\D/g, '').slice(-10)}`;
 
