@@ -48,17 +48,38 @@ const OfficerDashboard = () => {
     }));
   };
 
+  // Helper function to send SMS via the Vercel serverless API route
+  const triggerSms = async (phoneNumber, message) => {
+    if (!phoneNumber || phoneNumber === 'N/A') return;
+    try {
+      await fetch('/api/send-sms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to: phoneNumber, body: message })
+      });
+    } catch (err) {
+      console.warn('SMS dispatch failed:', err);
+    }
+  };
+
   const handleSaveTimeSlot = async (id) => {
     const input = slotInputs[id];
     if (!input || !input.date || !input.time) {
       alert("Please select a date and enter the time manually.");
       return;
     }
+    
     const combinedSlot = `${input.date} at ${input.time}`;
+    const order = orders.find(o => o.id === id); // Fetch specific order details for the SMS
+
     try {
       await updateDoc(doc(db, 'orders', id), { 
         datetime: combinedSlot 
       });
+
+      // Dispatch SMS alert to the farmer
+      await triggerSms(order.userPhone, `FarmFlow AI: Your slot is confirmed on ${combinedSlot} at ${order.zone}.`);
+
       alert(`Time slot successfully assigned: ${combinedSlot}`);
     } catch (error) {
       console.error(error);
@@ -67,11 +88,21 @@ const OfficerDashboard = () => {
   };
 
   const handleProcure = async (id) => {
+    const order = orders.find(o => o.id === id);
+    const estimatedRate = 22.50; // Standard fallback rate if not dynamically pulled
+    const totalPayout = ((parseFloat(order.quantity) || 0) * estimatedRate).toFixed(2);
+
     try {
       await updateDoc(doc(db, 'orders', id), { 
         status: 'Procured',
+        paymentStatus: 'Paid via DBT',
+        payoutAmount: totalPayout,
         procuredAt: new Date().toISOString()
       });
+
+      // Dispatch payout SMS alert to the farmer
+      await triggerSms(order.userPhone, `FarmFlow AI: Procurement complete! A payout of INR ${totalPayout} has been processed via DBT.`);
+
       alert("Crop successfully marked as Procured!");
     } catch (error) { 
       console.error(error);
