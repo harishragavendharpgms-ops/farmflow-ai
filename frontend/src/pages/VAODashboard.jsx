@@ -19,6 +19,7 @@ const VAODashboard = () => {
   useEffect(() => {
     if (!userProfile.zone) return; 
     
+    // VAO QUERY: Only filter by Zone so they see all villages/sub-places inside it.
     const q = query(
       collection(db, 'orders'), 
       where('zone', '==', userProfile.zone)
@@ -26,11 +27,9 @@ const VAODashboard = () => {
     
     const unsub = onSnapshot(q, (snap) => {
       const allZoneOrders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      const filtered = userProfile.subPlace 
-        ? allZoneOrders.filter(o => !o.subPlace || o.subPlace === userProfile.subPlace)
-        : allZoneOrders;
-        
-      setOrders(filtered);
+      // Sort by newest first
+      allZoneOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      setOrders(allZoneOrders); // Removed the subPlace restriction!
     });
 
     return () => unsub();
@@ -57,7 +56,7 @@ const VAODashboard = () => {
       docPdf.text(`Application ID: ${order.id}`, 20, 35);
       docPdf.text(`Farmer Name: ${order.userName || 'N/A'}`, 20, 45);
       docPdf.text(`Crop/Item: ${order.item} (${order.quantity}kg)`, 20, 55);
-      docPdf.text(`Zone / Location: ${order.zone} / ${order.subPlace || 'General'}`, 20, 65);
+      docPdf.text(`Zone / Location: ${order.zone} ${order.subPlace ? `/ ${order.subPlace}` : ''}`, 20, 65);
       docPdf.text(`Patta/Chitta No: ${order.pattaChitta || 'N/A'}`, 20, 75);
       
       docPdf.line(20, 85, 190, 85);
@@ -105,7 +104,7 @@ const VAODashboard = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center', borderBottom: '2px solid #ddd', paddingBottom: '15px' }}>
         <div>
           <h2 style={{ color: '#2c3e50', margin: 0 }}>📝 VAO Dashboard</h2>
-          <p style={{ color: '#9c27b0', margin: '5px 0 0 0', fontWeight: 'bold' }}>👤 {userProfile.name} | 📍 Zone: {userProfile.zone} ({userProfile.subPlace || 'General Jurisdiction'})</p>
+          <p style={{ color: '#9c27b0', margin: '5px 0 0 0', fontWeight: 'bold' }}>👤 {userProfile.name} | 📍 Zone: {userProfile.zone}</p>
         </div>
         <button onClick={handleLogout} style={{ background: '#ff6b6b', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>Log Out</button>
       </div>
@@ -131,7 +130,7 @@ const VAODashboard = () => {
                     <span style={{ fontSize: '13px', color: '#2c3e50', fontWeight: 'bold' }}>👤 {order.userName || 'Farmer'}</span><br/>
                     <span style={{ fontSize: '12px', color: '#2196f3' }}>✉️ {order.userEmail}</span><br/>
                     <span style={{ fontSize: '12px', color: '#e67e22', fontWeight: 'bold' }}>📞 {order.userPhone || 'N/A'}</span><br/>
-                    <span style={{ fontSize: '12px', color: '#2e7d32', fontWeight: 'bold', display: 'inline-block', marginTop: '4px' }}>📍 {order.zone} / {order.subPlace || 'General'}</span>
+                    <span style={{ fontSize: '12px', color: '#2e7d32', fontWeight: 'bold', display: 'inline-block', marginTop: '4px' }}>📍 {order.zone} {order.subPlace ? `/ ${order.subPlace}` : ''}</span>
                   </td>
                   <td style={{ padding: '15px 10px' }}>
                     No: <strong>{order.pattaChitta}</strong> <br/>

@@ -17,20 +17,22 @@ const OfficerDashboard = () => {
   }, [navigate]);
 
   useEffect(() => {
-    if (!userProfile.zone) return; 
+    // Must have both to query as an officer safely
+    if (!userProfile.zone || !userProfile.subPlace) return; 
 
+    // OFFICER QUERY: Filter strictly by Zone AND Sub-Place
     const q = query(
       collection(db, 'orders'), 
-      where('zone', '==', userProfile.zone)
+      where('zone', '==', userProfile.zone),
+      where('subPlace', '==', userProfile.subPlace)
     );
 
     const unsub = onSnapshot(q, (snap) => {
-      const allZoneOrders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const allVillageOrders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       
-      const filtered = allZoneOrders.filter(o => {
-        const matchesSubPlace = userProfile.subPlace ? o.subPlace === userProfile.subPlace : true;
-        return matchesSubPlace && o.status === 'VAO Verified';
-      });
+      // Only show orders that the VAO has already verified
+      const filtered = allVillageOrders.filter(o => o.status === 'VAO Verified');
+      filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
       setOrders(filtered);
     });
@@ -48,7 +50,6 @@ const OfficerDashboard = () => {
     }));
   };
 
-  // Helper function to send SMS via the Vercel serverless API route
   const triggerSms = async (phoneNumber, message) => {
     if (!phoneNumber || phoneNumber === 'N/A') return;
     try {
@@ -61,7 +62,7 @@ const OfficerDashboard = () => {
       if (!res.ok) throw new Error(data.error || 'Failed to send SMS');
       console.log('SMS sent successfully:', data.sid);
     } catch (err) {
-      console.warn('SMS dispatch failed (Check Twilio trial restrictions):', err.message);
+      console.warn('SMS dispatch failed:', err.message);
     }
   };
 
@@ -80,9 +81,7 @@ const OfficerDashboard = () => {
         datetime: combinedSlot 
       });
 
-      // Dispatch SMS alert to the farmer using their exact schema field (userPhone)
       await triggerSms(order.userPhone, `FarmFlow AI: Your slot is confirmed on ${combinedSlot} at ${order.zone}.`);
-
       alert(`Time slot successfully assigned: ${combinedSlot}`);
     } catch (error) {
       console.error(error);
@@ -103,9 +102,7 @@ const OfficerDashboard = () => {
         procuredAt: new Date().toISOString()
       });
 
-      // Dispatch payout SMS alert to the farmer
       await triggerSms(order.userPhone, `FarmFlow AI: Procurement complete! A payout of INR ${totalPayout} has been processed via DBT.`);
-
       alert("Crop successfully marked as Procured!");
     } catch (error) { 
       console.error(error);
@@ -120,7 +117,7 @@ const OfficerDashboard = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center', borderBottom: '2px solid #ddd', paddingBottom: '15px' }}>
         <div>
           <h2 style={{ color: '#2c3e50', margin: 0 }}>🛡️ Procurement Officer Dashboard</h2>
-          <p style={{ color: '#2e7d32', margin: '5px 0 0 0', fontWeight: 'bold' }}>👤 {userProfile.name} | 📍 Zone: {userProfile.zone} ({userProfile.subPlace || 'General Jurisdiction'})</p>
+          <p style={{ color: '#2e7d32', margin: '5px 0 0 0', fontWeight: 'bold' }}>👤 {userProfile.name} | 📍 Jurisdiction: {userProfile.subPlace}, {userProfile.zone}</p>
         </div>
         <button onClick={handleLogout} style={{ background: '#ff6b6b', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>Log Out</button>
       </div>
@@ -149,7 +146,7 @@ const OfficerDashboard = () => {
                     <span style={{ fontSize: '12px', color: '#e67e22', fontWeight: 'bold' }}>📞 {order.userPhone || 'N/A'}</span>
                   </td>
                   <td style={{ padding: '15px 10px' }}>
-                    📍 <strong>{order.zone}</strong> / <span style={{ color: '#2e7d32' }}>{order.subPlace || 'General'}</span><br/>
+                    📍 <strong>{order.zone}</strong> / <span style={{ color: '#2e7d32' }}>{order.subPlace}</span><br/>
                     {order.documentUrl && (
                       <button 
                         onClick={() => setModalImage(order.documentUrl)} 
