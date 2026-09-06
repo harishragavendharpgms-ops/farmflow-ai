@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'; 
 import { useNavigate } from 'react-router-dom';
-import { db, auth } from '../firebase'; // Import auth here
-import { collection, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore'; // Changed addDoc to setDoc
-import { createUserWithEmailAndPassword } from 'firebase/auth'; // Import auth creation method
+import { db, auth } from '../firebase';
+import { collection, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -31,7 +31,6 @@ const AdminDashboard = () => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      // 1. Create the user credentials in Firebase Authentication so login & password reset work
       const userCredential = await createUserWithEmailAndPassword(
         auth, 
         newUser.email.trim().toLowerCase(), 
@@ -39,20 +38,19 @@ const AdminDashboard = () => {
       );
       const user = userCredential.user;
 
-      // 2. Save their profile data with role, zone, and subPlace in Firestore using their UID
       const userProfile = {
         uid: user.uid,
         name: newUser.name,
         email: newUser.email.trim().toLowerCase(),
         role: newUser.role,
-        zone: newUser.zone,
-        subPlace: newUser.subPlace,
+        zone: newUser.zone || '',
+        subPlace: newUser.subPlace || 'General', // Optional fallback
         createdAt: new Date().toISOString()
       };
 
       await setDoc(doc(db, 'users', user.uid), userProfile);
 
-      alert('User account created successfully in Firebase Auth & Firestore with assigned zone & sub-place!');
+      alert('User account created successfully in Firebase Auth & Firestore!');
       setNewUser({ name: '', email: '', password: '', role: 'vao', zone: '', subPlace: '' });
       fetchData();
     } catch (err) {
@@ -110,7 +108,10 @@ const AdminDashboard = () => {
               <option value="farmer">Farmer</option>
             </select>
             <input type="text" placeholder="Zone (e.g., Trichy)" required value={newUser.zone} onChange={e => setNewUser({...newUser, zone: e.target.value})} style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '6px' }} />
-            <input type="text" placeholder="Sub-Place / Village (e.g., Mandaiyur)" required value={newUser.subPlace} onChange={e => setNewUser({...newUser, subPlace: e.target.value})} style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '6px' }} />
+            
+            {/* Sub-place is no longer required */}
+            <input type="text" placeholder="Sub-Place / Village (Optional)" value={newUser.subPlace} onChange={e => setNewUser({...newUser, subPlace: e.target.value})} style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '6px' }} />
+            
             <button type="submit" disabled={isSubmitting} style={{ gridColumn: '1 / -1', padding: '12px', backgroundColor: isSubmitting ? '#999' : '#2e7d32', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: isSubmitting ? 'not-allowed' : 'pointer' }}>
               {isSubmitting ? 'Creating...' : 'Create Account'}
             </button>
