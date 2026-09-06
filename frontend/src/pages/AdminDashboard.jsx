@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react'; 
 import { useNavigate } from 'react-router-dom';
-import { db } from '../firebase';
-import { collection, getDocs, addDoc, doc, deleteDoc } from 'firebase/firestore';
+import { db, auth } from '../firebase'; // Import auth here
+import { collection, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore'; // Changed addDoc to setDoc
+import { createUserWithEmailAndPassword } from 'firebase/auth'; // Import auth creation method
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [users, setUsers] = useState([]);
   const [orders, setOrders] = useState([]);
   const [activeTab, setActiveTab] = useState('farmers');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'vao', zone: '', subPlace: '' });
 
@@ -27,14 +29,37 @@ const AdminDashboard = () => {
 
   const handleCreateUser = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
     try {
-      await addDoc(collection(db, 'users'), newUser);
-      alert('User account created successfully with assigned zone & sub-place!');
+      // 1. Create the user credentials in Firebase Authentication so login & password reset work
+      const userCredential = await createUserWithEmailAndPassword(
+        auth, 
+        newUser.email.trim().toLowerCase(), 
+        newUser.password
+      );
+      const user = userCredential.user;
+
+      // 2. Save their profile data with role, zone, and subPlace in Firestore using their UID
+      const userProfile = {
+        uid: user.uid,
+        name: newUser.name,
+        email: newUser.email.trim().toLowerCase(),
+        role: newUser.role,
+        zone: newUser.zone,
+        subPlace: newUser.subPlace,
+        createdAt: new Date().toISOString()
+      };
+
+      await setDoc(doc(db, 'users', user.uid), userProfile);
+
+      alert('User account created successfully in Firebase Auth & Firestore with assigned zone & sub-place!');
       setNewUser({ name: '', email: '', password: '', role: 'vao', zone: '', subPlace: '' });
       fetchData();
     } catch (err) {
       console.error(err);
-      alert('Error creating user');
+      alert('Error creating user: ' + err.message);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -86,7 +111,9 @@ const AdminDashboard = () => {
             </select>
             <input type="text" placeholder="Zone (e.g., Trichy)" required value={newUser.zone} onChange={e => setNewUser({...newUser, zone: e.target.value})} style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '6px' }} />
             <input type="text" placeholder="Sub-Place / Village (e.g., Mandaiyur)" required value={newUser.subPlace} onChange={e => setNewUser({...newUser, subPlace: e.target.value})} style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '6px' }} />
-            <button type="submit" style={{ gridColumn: '1 / -1', padding: '12px', backgroundColor: '#2e7d32', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: 'pointer' }}>Create Account</button>
+            <button type="submit" disabled={isSubmitting} style={{ gridColumn: '1 / -1', padding: '12px', backgroundColor: isSubmitting ? '#999' : '#2e7d32', color: 'white', border: 'none', borderRadius: '6px', fontWeight: 'bold', cursor: isSubmitting ? 'not-allowed' : 'pointer' }}>
+              {isSubmitting ? 'Creating...' : 'Create Account'}
+            </button>
           </form>
         </div>
       )}
