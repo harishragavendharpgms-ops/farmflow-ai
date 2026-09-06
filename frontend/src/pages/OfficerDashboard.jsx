@@ -59,8 +59,8 @@ const OfficerDashboard = () => {
     }
 
     // --- TEXTBEE CREDENTIALS ---
-    const TEXTBEE_DEVICE_ID = "YOUR_TEXTBEE_DEVICE_ID"; 
-    const TEXTBEE_API_KEY = "YOUR_TEXTBEE_API_KEY";
+    const TEXTBEE_DEVICE_ID = "6a9d1e51ccb6c727098825fb"; 
+    const TEXTBEE_API_KEY = "txb_TxrBzRwSdleKWzGtwMlg3bavFWnhAL7v";
 
     try {
       const res = await fetch(`https://api.textbee.dev/api/v1/gateway/devices/${TEXTBEE_DEVICE_ID}/send-sms`, {
