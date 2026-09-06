@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { db } from '../firebase';
+import { db, auth } from '../firebase'; // Import auth from firebase.js
 import { collection, getDocs, query, where } from 'firebase/firestore';
-import { getAuth, sendPasswordResetEmail } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 
 const Login = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
-  const [showPassword, setShowPassword] = useState(false); // State for eye symbol toggle
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -22,19 +22,16 @@ const Login = () => {
     }
 
     try {
+      // 1. Authenticate securely using Firebase Auth
+      await signInWithEmailAndPassword(auth, email.trim().toLowerCase(), password);
+
+      // 2. Fetch user profile data from Firestore to get their role and name
       const q = query(collection(db, 'users'), where('email', '==', email.trim().toLowerCase()));
       const querySnapshot = await getDocs(q);
       
-      if (querySnapshot.empty) {
-        alert("Account not found. Please register first.");
-        return;
-      }
-
-      const userData = querySnapshot.docs[0].data();
-
-      if (userData.password !== password) {
-        alert("Incorrect password. Please try again.");
-        return;
+      let userData = { name: 'User', email, role: 'farmer' };
+      if (!querySnapshot.empty) {
+        userData = querySnapshot.docs[0].data();
       }
 
       if (rememberMe) localStorage.setItem('farmflow_user', JSON.stringify(userData));
@@ -47,18 +44,16 @@ const Login = () => {
 
     } catch (error) {
       console.error("Error logging in: ", error);
-      alert("Login failed. Check your internet connection and try again.");
+      alert("Login failed: Incorrect email or password.");
     }
   };
 
-  // Forgot Password Handler
   const handleForgotPassword = async () => {
     if (!email) {
       alert("Please enter your registered Email Address above first, then click 'Forgot Password?'");
       return;
     }
     try {
-      const auth = getAuth();
       await sendPasswordResetEmail(auth, email.trim().toLowerCase());
       alert("Password reset link sent successfully! Check your email inbox.");
     } catch (error) {
@@ -98,7 +93,6 @@ const Login = () => {
                 type="button" 
                 onClick={() => setShowPassword(!showPassword)} 
                 style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', cursor: 'pointer', fontSize: '18px', color: '#666' }}
-                title={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? "👁️" : "🙈"}
               </button>
