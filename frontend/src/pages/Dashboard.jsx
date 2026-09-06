@@ -3,7 +3,22 @@ import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import { collection, addDoc, onSnapshot, query, where, getDocs, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 
-const initialRates = { "Rice (Paddy)": 22.50, "Wheat": 25.00, "Maize (Corn)": 20.00, "Cotton": 70.00, "Sugarcane": 3.15, "Soybean": 46.00, "Mustard": 52.00, "Bajra (Pearl Millet)": 24.50, "Groundnut": 65.00, "Tur (Pigeon Pea)": 110.00, "Onion": 28.00, "Potato": 18.00 };
+const initialRates = { 
+  "Rice (Paddy)": 22.50, 
+  "Wheat": 25.00, 
+  "Maize (Corn)": 20.00, 
+  "Cotton": 70.00, 
+  "Sugarcane": 3.15, 
+  "Soybean": 46.00, 
+  "Mustard": 52.00, 
+  "Bajra (Pearl Millet)": 24.50, 
+  "Groundnut": 65.00, 
+  "Tur (Pigeon Pea)": 110.00, 
+  "Moong Dal": 95.00,          // Added live baseline rate
+  "Gingelly (Sesame)": 118.00, // Added live baseline rate
+  "Onion": 28.00, 
+  "Potato": 18.00 
+};
 
 const generateInitialHistory = (rates) => {
   const history = {};
