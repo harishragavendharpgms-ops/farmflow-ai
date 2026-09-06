@@ -29,11 +29,48 @@ const VAODashboard = () => {
       const allZoneOrders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       // Sort by newest first
       allZoneOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-      setOrders(allZoneOrders); // Removed the subPlace restriction!
+      setOrders(allZoneOrders);
     });
 
     return () => unsub();
   }, [userProfile]);
+
+  const triggerSms = async (phoneNumber, message) => {
+    if (!phoneNumber || phoneNumber === 'N/A') return;
+    
+    let cleanPhone = phoneNumber.toString().replace(/[^\d+]/g, '');
+    
+    // Auto-format standard 10-digit Indian numbers to E.164 format
+    if (cleanPhone.length === 10) {
+      cleanPhone = `+91${cleanPhone}`;
+    } else if (!cleanPhone.startsWith('+')) {
+      cleanPhone = `+${cleanPhone}`; 
+    }
+
+    // --- TEXTBEE CREDENTIALS ---
+    const TEXTBEE_DEVICE_ID = "6a9d1e51ccb6c727098825fb"; 
+    const TEXTBEE_API_KEY = "txb_TxrBzRwSdleKWzGtwMlg3bavFWnhAL7v";
+
+    try {
+      const res = await fetch(`https://api.textbee.dev/api/v1/gateway/devices/${TEXTBEE_DEVICE_ID}/send-sms`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-api-key': TEXTBEE_API_KEY
+        },
+        body: JSON.stringify({ 
+          receivers: [cleanPhone], 
+          smsBody: message 
+        })
+      });
+      const data = await res.json();
+      
+      if (!res.ok) throw new Error(data.message || 'Failed to send SMS via TextBee');
+      console.log('SMS sent successfully via TextBee:', data);
+    } catch (err) {
+      console.warn('TextBee SMS dispatch failed:', err.message);
+    }
+  };
 
   const handleVerify = async (order) => {
     try {
@@ -90,7 +127,10 @@ const VAODashboard = () => {
         documentUrl: signedPdfBase64 
       });
 
-      alert("Document successfully E-Signed, stamped inside the PDF, and sent to Procurement Officer!");
+      // Send SMS alert to farmer
+      await triggerSms(order.userPhone, `FarmFlow AI: Your application for ${order.quantity}kg ${order.item} has been successfully verified and E-Signed by the VAO.`);
+
+      alert("Document successfully E-Signed, stamped inside the PDF, and SMS alert sent to Farmer!");
     } catch (error) { 
       console.error(error);
       alert("Failed to verify and sign document."); 
