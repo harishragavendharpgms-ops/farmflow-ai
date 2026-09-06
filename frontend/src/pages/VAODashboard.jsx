@@ -36,6 +36,23 @@ const VAODashboard = () => {
     return () => unsub();
   }, [userProfile]);
 
+  // Helper function to send SMS via textbee.dev serverless API route
+  const triggerSms = async (phoneNumber, message) => {
+    if (!phoneNumber || phoneNumber === 'N/A') return;
+    try {
+      const res = await fetch('/api/send-sms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recipient: phoneNumber, message: message })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to send SMS');
+      console.log('SMS sent successfully via textbee:', data);
+    } catch (err) {
+      console.warn('SMS dispatch failed:', err.message);
+    }
+  };
+
   const handleVerify = async (order) => {
     try {
       const now = new Date();
@@ -90,6 +107,9 @@ const VAODashboard = () => {
         },
         documentUrl: signedPdfBase64 
       });
+
+      // Send SMS alert to farmer via TextBee gateway
+      await triggerSms(order.userPhone, `FarmFlow AI: Your ${order.item} application has been E-Signed and verified by the VAO.`);
 
       alert("Document successfully E-Signed, stamped inside the PDF, and sent to Procurement Officer!");
     } catch (error) { 

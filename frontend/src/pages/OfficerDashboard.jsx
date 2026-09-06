@@ -48,20 +48,20 @@ const OfficerDashboard = () => {
     }));
   };
 
-  // Helper function to send SMS via the Vercel serverless API route
+  // Helper function to send SMS via the serverless API route using textbee.dev
   const triggerSms = async (phoneNumber, message) => {
     if (!phoneNumber || phoneNumber === 'N/A') return;
     try {
       const res = await fetch('/api/send-sms', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ to: phoneNumber, body: message })
+        body: JSON.stringify({ recipient: phoneNumber, message: message })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to send SMS');
-      console.log('SMS sent successfully:', data.sid);
+      console.log('SMS sent successfully via textbee:', data);
     } catch (err) {
-      console.warn('SMS dispatch failed (Check Twilio trial restrictions):', err.message);
+      console.warn('SMS dispatch failed:', err.message);
     }
   };
 
@@ -80,7 +80,7 @@ const OfficerDashboard = () => {
         datetime: combinedSlot 
       });
 
-      // Dispatch SMS alert to the farmer using their exact schema field (userPhone)
+      // Dispatch SMS alert to the farmer using textbee gateway
       await triggerSms(order.userPhone, `FarmFlow AI: Your slot is confirmed on ${combinedSlot} at ${order.zone}.`);
 
       alert(`Time slot successfully assigned: ${combinedSlot}`);
@@ -103,7 +103,7 @@ const OfficerDashboard = () => {
         procuredAt: new Date().toISOString()
       });
 
-      // Dispatch payout SMS alert to the farmer
+      // Dispatch payout SMS alert to the farmer via textbee gateway
       await triggerSms(order.userPhone, `FarmFlow AI: Procurement complete! A payout of INR ${totalPayout} has been processed via DBT.`);
 
       alert("Crop successfully marked as Procured!");
