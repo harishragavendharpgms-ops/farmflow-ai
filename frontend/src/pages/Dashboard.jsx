@@ -490,7 +490,7 @@ const Dashboard = () => {
                       <div>
                         <strong style={{ display: 'block', fontSize: '16px', color: '#2c3e50' }}>{order.item}</strong>
                         <span style={{ color: '#555', fontSize: '13px' }}>{order.quantity} Units • {order.datetime}</span>
-                        <span style={{ display: 'block', color: '#2e7d32', fontSize: '12px', marginTop: '3px', fontWeight: 'bold' }}>📍 {order.zone} / {order.subPlace || 'General'} ({order.address})</span>
+                        <span style={{ display: 'block', color: '#2e7d32', fontSize: '12px', marginTop: '3px', fontWeight: 'bold' }}>📍 {order.zone} {order.subPlace ? `/ ${order.subPlace}` : ''} ({order.address})</span>
                       </div>
                       <span style={{ 
                         padding: '4px 10px', 
@@ -544,7 +544,7 @@ const Dashboard = () => {
 
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '15px', fontSize: '14px', marginBottom: '20px' }}>
                         <div>
-                          <p style={{ margin: '4px 0', color: '#555' }}>📍 <strong>Zone / Sub-place:</strong> {order.zone} / {order.subPlace || 'General'}</p>
+                          <p style={{ margin: '4px 0', color: '#555' }}>📍 <strong>Zone / Sub-place:</strong> {order.zone} {order.subPlace ? `/ ${order.subPlace}` : ''}</p>
                           <p style={{ margin: '4px 0', color: '#555' }}>🏠 <strong>Address:</strong> {order.address || 'N/A'}</p>
                           <p style={{ margin: '4px 0', color: '#555' }}>📅 <strong>Assigned Slot:</strong> {order.datetime || 'TBD by Officer'}</p>
                         </div>
