@@ -49,6 +49,45 @@ const Home = () => {
         </div>
       </div>
 
+      {/* Direct Links: Patta Chitta & Land Document Services */}
+      <div style={{ 
+        backgroundColor: '#ffffff', 
+        padding: '35px 30px', 
+        borderRadius: '20px', 
+        maxWidth: '800px', 
+        width: '100%',
+        marginBottom: '40px',
+        boxShadow: '0 8px 25px rgba(0,0,0,0.08)',
+        borderLeft: '6px solid #2e7d32',
+        textAlign: 'left'
+      }}>
+        <h2 style={{ color: '#1b5e20', fontSize: '24px', marginBottom: '10px' }}>📜 Official Land & Patta Chitta Services</h2>
+        <p style={{ color: '#666', fontSize: '15px', marginBottom: '20px' }}>
+          Quickly access government portals to verify land ownership, view Chitta extracts, and download official records.
+        </p>
+        <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
+          <a 
+            href="https://eservices.tn.gov.in/eservicesnew/index.html" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            style={{ 
+              flex: '1 1 240px', 
+              padding: '12px 20px', 
+              backgroundColor: '#e8f5e9', 
+              color: '#2e7d32', 
+              border: '1px solid #a5d6a7', 
+              borderRadius: '8px', 
+              textDecoration: 'none', 
+              fontWeight: '600',
+              textAlign: 'center',
+              display: 'inline-block'
+            }}
+          >
+            TN e-Services Portal ↗
+          </a>
+        </div>
+      </div>
+
       {/* Inspiring Quotes Section */}
       <div style={{ 
         backgroundColor: 'rgba(255, 255, 255, 0.9)', 
