@@ -14,8 +14,8 @@ const initialRates = {
   "Bajra (Pearl Millet)": 24.50, 
   "Groundnut": 65.00, 
   "Tur (Pigeon Pea)": 110.00, 
-  "Moong Dal": 95.00,          // Added live baseline rate
-  "Gingelly (Sesame)": 118.00, // Added live baseline rate
+  "Moong Dal": 95.00,
+  "Gingelly (Sesame)": 118.00,
   "Onion": 28.00, 
   "Potato": 18.00 
 };
@@ -75,16 +75,13 @@ const Dashboard = () => {
   const [availableSubPlaces, setAvailableSubPlaces] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Real-Time Notification Banner States
   const [latestNotification, setLatestNotification] = useState(null);
   const [showBanner, setShowBanner] = useState(false);
 
-  // Weather States
   const [weatherData, setWeatherData] = useState({ temp: '--', condition: 'Fetching location weather...', locationName: 'Detecting location...', icon: '🌤️' });
   const [hourlyForecast, setHourlyForecast] = useState([]);
   const [showWeatherModal, setShowWeatherModal] = useState(false);
 
-  // Robust User Profile Session Initialization with Fallback
   useEffect(() => {
     const savedUser = localStorage.getItem('farmflow_user') || sessionStorage.getItem('farmflow_user');
     if (savedUser) {
@@ -108,7 +105,6 @@ const Dashboard = () => {
     localStorage.setItem('farmflow_user', JSON.stringify(demoUser));
   }, []);
 
-  // Fetch Live Weather & 24h Hourly Forecast
   useEffect(() => {
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
@@ -192,15 +188,16 @@ const Dashboard = () => {
   const handleZoneChange = (zone) => {
     setOrderDetails(prev => ({ ...prev, zone, subPlace: '' }));
     const matchingUsers = vaoUsers.filter(v => v.zone === zone);
-    const subPlaces = matchingUsers.map(v => 
-      v.subPlace || v.sub_place || v.subZone || v.sub_zone || v.village || v.location
-    ).filter(Boolean);
+    const subPlaces = matchingUsers
+      .map(v => v.subPlace || v.sub_place || v.subZone || v.sub_zone || v.village || v.location)
+      .filter(Boolean)
+      .filter(sub => sub.toLowerCase() !== 'general'); // Completely blocks General from dropdown
+
     setAvailableSubPlaces([...new Set(subPlaces)]);
   };
 
   const [myCrops, setMyCrops] = useState([]);
 
-  // Monitor orders with real-time web notifications & inventory management
   useEffect(() => {
     if (!userProfile.email) return;
     const userEmailLower = userProfile.email.toLowerCase();
@@ -365,7 +362,6 @@ const Dashboard = () => {
 
       <div style={{ flexGrow: 1, padding: '20px', maxWidth: '100%', boxSizing: 'border-box' }}>
         
-        {/* Real-Time Web Notification Banner */}
         {showBanner && latestNotification && (
           <div style={{ 
             backgroundColor: '#e8f5e9', 
@@ -510,7 +506,6 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* Dedicated Track Status View Tab with Highlighted Payment Status */}
         {activeTab === 'track' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
             <div style={{ backgroundColor: 'white', padding: '25px', borderRadius: '12px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
@@ -549,7 +544,6 @@ const Dashboard = () => {
                           <p style={{ margin: '4px 0', color: '#555' }}>📅 <strong>Assigned Slot:</strong> {order.datetime || 'TBD by Officer'}</p>
                         </div>
                         
-                        {/* Highlighted Payment Status & DBT Section */}
                         <div style={{ backgroundColor: '#f1f8e9', padding: '12px', borderRadius: '8px', border: '1px solid #c8e6c9' }}>
                           <p style={{ margin: '0 0 5px 0', fontSize: '13px', fontWeight: 'bold', color: '#2e7d32' }}>💳 Direct Benefit Transfer (DBT) Status:</p>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '5px' }}>
@@ -570,7 +564,6 @@ const Dashboard = () => {
                         </div>
                       </div>
 
-                      {/* Timeline Progress Bar */}
                       <div style={{ backgroundColor: '#f8f9fa', padding: '15px', borderRadius: '8px', border: '1px solid #e9ecef' }}>
                         <p style={{ margin: '0 0 10px 0', fontSize: '13px', fontWeight: 'bold', color: '#2c3e50' }}>Lifecycle Progress:</p>
                         <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', color: '#555', textAlign: 'center', flexWrap: 'wrap', gap: '8px' }}>
@@ -656,16 +649,20 @@ const Dashboard = () => {
             <p style={{ color: '#777', marginBottom: '15px', fontSize: '14px' }}>{l.applyingFor} <strong style={{ color: '#2e7d32', fontSize: '16px' }}>{orderingItem}</strong></p>
             <form onSubmit={submitOrder} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <input type="number" required max={maxAvailableQuantity} placeholder={maxAvailableQuantity ? `${l.quantity} (Max: ${maxAvailableQuantity}kg)` : l.quantity} value={orderDetails.quantity} onChange={(e) => setOrderDetails({...orderDetails, quantity: e.target.value})} style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px' }} />
+              
               <select required value={orderDetails.zone} onChange={(e) => handleZoneChange(e.target.value)} style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px' }}>
                 <option value="">{l.selectZone}</option>
                 {availableZones.length === 0 ? <option value="" disabled>No active zones found.</option> : availableZones.map(zone => <option key={zone} value={zone}>{zone}</option>)}
               </select>
+              
               <select required value={orderDetails.subPlace} onChange={(e) => setOrderDetails({...orderDetails, subPlace: e.target.value})} style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px' }}>
-                <option value="">{l.selectSubPlace}</option>
+                <option value="" disabled>{l.selectSubPlace}</option>
                 {availableSubPlaces.map(sub => <option key={sub} value={sub}>{sub}</option>)}
               </select>
+              
               <input type="text" required placeholder={l.farmAddress} value={orderDetails.address} onChange={(e) => setOrderDetails({...orderDetails, address: e.target.value})} style={{ padding: '10px', border: '1px solid #ddd', borderRadius: '6px', fontSize: '14px' }} />
               <input type="text" required placeholder={l.pattaChitta} value={orderDetails.pattaChitta} onChange={(e) => setOrderDetails({...orderDetails, pattaChitta: e.target.value})} style={{ padding: '10px', border: '1px solid #2e7d32', borderRadius: '6px', fontSize: '14px', backgroundColor: '#f1f8e9' }} />
+              
               <div>
                 <label style={{ display: 'block', marginBottom: '5px', color: '#555', fontSize: '13px', fontWeight: 'bold' }}>{l.uploadDoc}</label>
                 <input type="file" accept=".jpg,.jpeg,.png,.pdf" required onChange={(e) => setPattaFile(e.target.files[0])} style={{ padding: '8px', border: '1px solid #ddd', borderRadius: '6px', width: '100%', boxSizing: 'border-box', fontSize: '13px' }} />
@@ -694,7 +691,6 @@ const Dashboard = () => {
 
       </div>
 
-      {/* Google-Style 24-Hour Weather Forecast Modal */}
       {showWeatherModal && (
         <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(0,0,0,0.65)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000, padding: '15px', boxSizing: 'border-box' }}>
           <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', maxWidth: '750px', width: '100%', padding: '25px', boxShadow: '0 10px 30px rgba(0,0,0,0.3)', display: 'flex', flexDirection: 'column', gap: '20px' }}>
