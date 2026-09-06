@@ -17,10 +17,8 @@ const OfficerDashboard = () => {
   }, [navigate]);
 
   useEffect(() => {
-    // Must have both to query as an officer safely
     if (!userProfile.zone || !userProfile.subPlace) return; 
 
-    // OFFICER QUERY: Filter strictly by Zone AND Sub-Place
     const q = query(
       collection(db, 'orders'), 
       where('zone', '==', userProfile.zone),
@@ -30,7 +28,6 @@ const OfficerDashboard = () => {
     const unsub = onSnapshot(q, (snap) => {
       const allVillageOrders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       
-      // Only show orders that the VAO has already verified
       const filtered = allVillageOrders.filter(o => o.status === 'VAO Verified');
       filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
@@ -52,17 +49,38 @@ const OfficerDashboard = () => {
 
   const triggerSms = async (phoneNumber, message) => {
     if (!phoneNumber || phoneNumber === 'N/A') return;
+    
+    let cleanPhone = phoneNumber.toString().replace(/[^\d+]/g, '');
+    
+    if (cleanPhone.length === 10) {
+      cleanPhone = `+91${cleanPhone}`;
+    } else if (!cleanPhone.startsWith('+')) {
+      cleanPhone = `+${cleanPhone}`; 
+    }
+
+    // --- TEXTBEE CREDENTIALS ---
+    const TEXTBEE_DEVICE_ID = "YOUR_TEXTBEE_DEVICE_ID"; 
+    const TEXTBEE_API_KEY = "YOUR_TEXTBEE_API_KEY";
+
     try {
-      const res = await fetch('/api/send-sms', {
+      const res = await fetch(`https://api.textbee.dev/api/v1/gateway/devices/${TEXTBEE_DEVICE_ID}/send-sms`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ to: phoneNumber, body: message })
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-api-key': TEXTBEE_API_KEY
+        },
+        body: JSON.stringify({ 
+          receivers: [cleanPhone], 
+          smsBody: message 
+        })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to send SMS');
-      console.log('SMS sent successfully:', data.sid);
+      
+      // TextBee usually returns status 200/201 on success
+      if (!res.ok) throw new Error(data.message || 'Failed to send SMS');
+      console.log('SMS sent successfully via TextBee:', data);
     } catch (err) {
-      console.warn('SMS dispatch failed:', err.message);
+      console.warn('TextBee SMS dispatch failed:', err.message);
     }
   };
 
