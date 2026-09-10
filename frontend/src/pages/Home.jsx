@@ -1,162 +1,308 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import './Home.css';
 
 const Home = () => {
   const navigate = useNavigate();
 
   return (
-    <div style={{ 
-      minHeight: '100vh', 
-      display: 'flex', 
-      flexDirection: 'column', 
-      alignItems: 'center', 
-      background: 'linear-gradient(135deg, #f1f8e9 0%, #c8e6c9 100%)',
-      fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-      textAlign: 'center',
-      padding: '40px 20px'
-    }}>
-      
-      {/* Hero Header Section */}
-      <div style={{ 
-        backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-        padding: '50px 30px', 
-        borderRadius: '20px', 
-        boxShadow: '0 10px 30px rgba(0,0,0,0.1)',
-        maxWidth: '800px',
-        width: '100%',
-        marginBottom: '40px'
-      }}>
-        <div style={{ fontSize: '60px', marginBottom: '15px' }}>🌾🤖</div>
-        <h1 style={{ color: '#1b5e20', fontSize: '42px', margin: '0 0 15px 0', fontWeight: 'bold' }}>FarmFlow AI</h1>
-        <p style={{ color: '#444', fontSize: '18px', lineHeight: '1.6', marginBottom: '30px' }}>
-          Your digital agricultural partner. Empowering farmers and officers with smart AI monitoring, accurate weather forecasting, and fast access to land documents.
-        </p>
-        
-        <div style={{ display: 'flex', gap: '20px', justifyContent: 'center', flexWrap: 'wrap' }}>
-          <button 
-            onClick={() => navigate('/register')}
-            style={{ padding: '14px 28px', fontSize: '16px', backgroundColor: '#2e7d32', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold', boxShadow: '0 4px 6px rgba(46, 125, 50, 0.3)' }}
-          >
-            Get Started
-          </button>
-          
-          <button 
+    <div className="home-page">
+
+      {/* NAVIGATION */}
+      <header className="home-nav">
+
+        <div
+          className="home-brand"
+          onClick={() => navigate('/')}
+          role="button"
+          tabIndex={0}
+        >
+          <span>🌱</span>
+          FarmFlow <b>AI</b>
+        </div>
+
+        <div className="home-nav-actions">
+          <button
+            className="home-nav-login"
             onClick={() => navigate('/login')}
-            style={{ padding: '14px 28px', fontSize: '16px', backgroundColor: 'white', color: '#2e7d32', border: '2px solid #2e7d32', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
           >
-            Log In
+            Sign in
+          </button>
+
+          <button
+            className="home-nav-cta"
+            onClick={() => navigate('/register')}
+          >
+            Create account
           </button>
         </div>
-      </div>
 
-      {/* Direct Links: Patta Chitta & Land Document Services */}
-      <div style={{ 
-        backgroundColor: '#ffffff', 
-        padding: '35px 30px', 
-        borderRadius: '20px', 
-        maxWidth: '800px', 
-        width: '100%',
-        marginBottom: '40px',
-        boxShadow: '0 8px 25px rgba(0,0,0,0.08)',
-        borderLeft: '6px solid #2e7d32',
-        textAlign: 'left'
-      }}>
-        <h2 style={{ color: '#1b5e20', fontSize: '24px', marginBottom: '10px' }}>📜 Official Land & Patta Chitta Services</h2>
-        <p style={{ color: '#666', fontSize: '15px', marginBottom: '20px' }}>
-          Quickly access government portals to verify land ownership, view Chitta extracts, and download official records.
+      </header>
+
+      <main>
+
+        {/* HERO */}
+        <section className="home-hero">
+
+          <div className="home-hero-copy">
+
+            <div className="home-eyebrow">
+              SMART AGRICULTURE PLATFORM
+            </div>
+
+            <h1>
+              Better decisions for{' '}
+              <span>every harvest.</span>
+            </h1>
+
+            <p>
+              FarmFlow AI brings market intelligence, weather
+              signals, procurement workflows and land-document
+              verification into one simple workspace for farmers
+              and field officers.
+            </p>
+
+            <div className="home-actions">
+
+              <button
+                className="home-primary"
+                onClick={() => navigate('/register')}
+              >
+                Get started
+                <span>→</span>
+              </button>
+
+              <button
+                className="home-secondary"
+                onClick={() => navigate('/login')}
+              >
+                I already have an account
+              </button>
+
+            </div>
+
+            <div className="home-trust">
+              <span>✓</span>
+              Secure role-based access
+
+              <span>✓</span>
+              Live market & weather data
+            </div>
+
+          </div>
+
+          {/* INTELLIGENCE PREVIEW */}
+          <div className="home-hero-panel">
+
+            <div className="home-panel-glow"></div>
+
+            <div className="home-panel-top">
+              <span>Farm intelligence</span>
+
+              <span className="live-dot">
+                ● LIVE
+              </span>
+            </div>
+
+            <div className="home-metric">
+
+              <div>
+                <small>
+                  Today's market signal
+                </small>
+
+                <strong>
+                  Favourable
+                </strong>
+
+                <em>
+                  ↑ 8.4% opportunity
+                </em>
+              </div>
+
+              <div className="metric-chart">
+                <i></i>
+                <i></i>
+                <i></i>
+                <i></i>
+                <i></i>
+                <i></i>
+                <i></i>
+              </div>
+
+            </div>
+
+            <div className="home-panel-grid">
+
+              <div>
+                <span>🌤️</span>
+
+                <small>
+                  Weather
+                </small>
+
+                <b>
+                  Good for field work
+                </b>
+              </div>
+
+              <div>
+                <span>📦</span>
+
+                <small>
+                  Procurement
+                </small>
+
+                <b>
+                  3 active applications
+                </b>
+              </div>
+
+            </div>
+
+            <div className="home-ai-note">
+
+              <span>✦</span>
+
+              <div>
+                <b>
+                  AI recommendation
+                </b>
+
+                <p>
+                  Review wheat rates before
+                  confirming your next delivery slot.
+                </p>
+              </div>
+
+            </div>
+
+          </div>
+
+        </section>
+
+        {/* SERVICES */}
+        <section className="home-services">
+
+          <div className="section-heading">
+
+            <div>
+              <span>
+                ONE PLATFORM
+              </span>
+
+              <h2>
+                Everything your farm
+                workflow needs.
+              </h2>
+            </div>
+
+            <p>
+              Designed to reduce paperwork,
+              improve visibility and help
+              teams act faster.
+            </p>
+
+          </div>
+
+          <div className="service-grid">
+
+            <article>
+              <div className="service-icon">
+                📈
+              </div>
+
+              <h3>
+                Market intelligence
+              </h3>
+
+              <p>
+                Track crop rates and trends
+                so you can make better selling
+                and procurement decisions.
+              </p>
+            </article>
+
+            <article>
+              <div className="service-icon">
+                🤖
+              </div>
+
+              <h3>
+                AI insights
+              </h3>
+
+              <p>
+                Turn weather and market signals
+                into practical recommendations
+                for the week ahead.
+              </p>
+            </article>
+
+            <article>
+              <div className="service-icon">
+                🧾
+              </div>
+
+              <h3>
+                Digital verification
+              </h3>
+
+              <p>
+                Move land documents and applications
+                through farmer, VAO and officer workflows.
+              </p>
+            </article>
+
+          </div>
+
+        </section>
+
+        {/* LAND SERVICES */}
+        <section className="home-land">
+
+          <div>
+
+            <div className="land-tag">
+              OFFICIAL SERVICES
+            </div>
+
+            <h2>
+              Land records, one click away.
+            </h2>
+
+            <p>
+              Access the Tamil Nadu e-Services
+              portal for land ownership, Patta
+              and Chitta records.
+            </p>
+
+          </div>
+
+          <a
+            href="https://eservices.tn.gov.in/eservicesnew/index.html"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Open TN e-Services ↗
+          </a>
+
+        </section>
+
+      </main>
+
+      {/* FOOTER */}
+      <footer className="home-footer">
+
+        <div>
+          🌱 <strong>FarmFlow AI</strong>
+        </div>
+
+        <p>
+          Smarter agriculture. Simpler workflows.
         </p>
-        <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
-          <a 
-            href="https://eservices.tn.gov.in/eservicesnew/land/chittaگر_en.html" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            style={{ 
-              flex: '1 1 240px', 
-              padding: '12px 20px', 
-              backgroundColor: '#e8f5e9', 
-              color: '#2e7d32', 
-              border: '1px solid #a5d6a7', 
-              borderRadius: '8px', 
-              textDecoration: 'none', 
-              fontWeight: '600',
-              textAlign: 'center',
-              display: 'inline-block'
-            }}
-          >
-            View Patta & Chitta Download ↗
-          </a>
-          
-          <a 
-            href="https://eservices.tn.gov.in/eservicesnew/index.html" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            style={{ 
-              flex: '1 1 240px', 
-              padding: '12px 20px', 
-              backgroundColor: '#e8f5e9', 
-              color: '#2e7d32', 
-              border: '1px solid #a5d6a7', 
-              borderRadius: '8px', 
-              textDecoration: 'none', 
-              fontWeight: '600',
-              textAlign: 'center',
-              display: 'inline-block'
-            }}
-          >
-            TN e-Services Portal ↗
-          </a>
-        </div>
-      </div>
 
-      {/* Inspiring Quotes Section */}
-      <div style={{ 
-        backgroundColor: 'rgba(255, 255, 255, 0.9)', 
-        padding: '35px 30px', 
-        borderRadius: '20px', 
-        maxWidth: '800px', 
-        width: '100%',
-        marginBottom: '40px',
-        boxShadow: '0 8px 25px rgba(0,0,0,0.08)'
-      }}>
-        <blockquote style={{ 
-          fontStyle: 'italic', 
-          fontSize: '1.2rem', 
-          color: '#333', 
-          lineHeight: '1.6',
-          margin: '0 0 15px 0'
-        }}>
-          "Agriculture is our wisest pursuit, because it will in the end contribute most to real wealth, good morals, and happiness."
-        </blockquote>
-        <p style={{ fontWeight: 'bold', color: '#2e7d32', margin: 0 }}>— Thomas Jefferson</p>
-      </div>
-
-      {/* Visual Design Grid with Images */}
-      <div style={{ 
-        display: 'grid', 
-        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
-        gap: '20px', 
-        maxWidth: '800px', 
-        width: '100%',
-        marginBottom: '40px'
-      }}>
-        <div style={{ backgroundColor: 'white', borderRadius: '15px', overflow: 'hidden', boxShadow: '0 4px 15px rgba(0,0,0,0.08)' }}>
-          <img 
-            src="https://images.unsplash.com/photo-1500937386664-56d1dfef3854" 
-            alt="Farming Landscape" 
-            style={{ width: '100%', height: '160px', objectFit: 'cover' }} 
-          />
-          <div style={{ padding: '15px', color: '#2e7d32', fontWeight: 'bold' }}>Sustainable Fields</div>
-        </div>
-
-        <div style={{ backgroundColor: 'white', borderRadius: '15px', overflow: 'hidden', boxShadow: '0 4px 15px rgba(0,0,0,0.08)' }}>
-          <img 
-            src="https://images.unsplash.com/photo-1625246333195-78d9c38ad449" 
-            alt="Smart Tech Agriculture" 
-            style={{ width: '100%', height: '160px', objectFit: 'cover' }} 
-          />
-          <div style={{ padding: '15px', color: '#2e7d32', fontWeight: 'bold' }}>Smart Analytics & AI</div>
-        </div>
-      </div>
+      </footer>
 
     </div>
   );
