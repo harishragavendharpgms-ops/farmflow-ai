@@ -1,44 +1,41 @@
-import axios from 'axios';
+import twilio from 'twilio';
 
 export default async function handler(req, res) {
+  // Only allow POST requests
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ message: 'Method Not Allowed' });
   }
 
-  const { recipient, message } = req.body;
+  const { to, body } = req.body;
 
-  if (!recipient || !message) {
-    return res.status(400).json({ error: 'Missing recipient or message parameters.' });
+  if (!to || !body) {
+    return res.status(400).json({ error: 'Recipient phone number and message body are required.' });
   }
 
-  // Your textbee.dev API Key configuration
-  const TEXTBEE_API_KEY = 'txb_TxrBzRwSdleKWzGtwMlg3bavFWnhAL7v';
+  // Vercel securely pulls these from your environment variables
+  const accountSid = process.env.TWILIO_ACCOUNT_SID;
+  const authToken = process.env.TWILIO_AUTH_TOKEN;
+  const twilioNumber = process.env.TWILIO_PHONE_NUMBER;
+
+  if (!accountSid || !authToken || !twilioNumber) {
+    return res.status(500).json({ error: 'Missing Twilio environment variables on server.' });
+  }
 
   try {
-    const response = await axios.post(
-      'https://api.textbee.dev/api/v1/gateway/send-sms',
-      {
-        recipients: [recipient], // Format expected: E.164 (e.g., +919876543210)
-        message: message,
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': TEXTBEE_API_KEY,
-        },
-      }
-    );
+    const client = twilio(accountSid, authToken);
 
-    return res.status(200).json({ 
-      success: true, 
-      message: 'SMS sent successfully via textbee.dev', 
-      data: response.data 
+    // Format to E.164 (+91 for India if country code is missing)
+    const formattedTo = to.startsWith('+') ? to : `+91${to.replace(/\D/g, '').slice(-10)}`;
+
+    const message = await client.messages.create({
+      body: body,
+      from: twilioNumber,
+      to: formattedTo
     });
+
+    return res.status(200).json({ success: true, sid: message.sid });
   } catch (error) {
-    console.error('Textbee SMS Error:', error.response?.data || error.message);
-    return res.status(500).json({ 
-      error: 'Failed to send SMS through textbee gateway.', 
-      details: error.response?.data || error.message 
-    });
+    console.error('Twilio Error:', error);
+    return res.status(500).json({ error: error.message });
   }
 }

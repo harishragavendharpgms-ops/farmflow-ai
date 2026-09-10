@@ -17,20 +17,19 @@ const OfficerDashboard = () => {
   }, [navigate]);
 
   useEffect(() => {
-    if (!userProfile.zone) return; 
+    if (!userProfile.zone || !userProfile.subPlace) return; 
 
     const q = query(
       collection(db, 'orders'), 
-      where('zone', '==', userProfile.zone)
+      where('zone', '==', userProfile.zone),
+      where('subPlace', '==', userProfile.subPlace)
     );
 
     const unsub = onSnapshot(q, (snap) => {
-      const allZoneOrders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const allVillageOrders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       
-      const filtered = allZoneOrders.filter(o => {
-        const matchesSubPlace = userProfile.subPlace ? o.subPlace === userProfile.subPlace : true;
-        return matchesSubPlace && o.status === 'VAO Verified';
-      });
+      const filtered = allVillageOrders.filter(o => o.status === 'VAO Verified');
+      filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
       setOrders(filtered);
     });
@@ -48,20 +47,40 @@ const OfficerDashboard = () => {
     }));
   };
 
-  // Helper function to send SMS via the serverless API route using textbee.dev
   const triggerSms = async (phoneNumber, message) => {
     if (!phoneNumber || phoneNumber === 'N/A') return;
+    
+    let cleanPhone = phoneNumber.toString().replace(/[^\d+]/g, '');
+    
+    if (cleanPhone.length === 10) {
+      cleanPhone = `+91${cleanPhone}`;
+    } else if (!cleanPhone.startsWith('+')) {
+      cleanPhone = `+${cleanPhone}`; 
+    }
+
+    // --- TEXTBEE CREDENTIALS ---
+    const TEXTBEE_DEVICE_ID = "6a9d1e51ccb6c727098825fb"; 
+    const TEXTBEE_API_KEY = "txb_TxrBzRwSdleKWzGtwMlg3bavFWnhAL7v";
+
     try {
-      const res = await fetch('/api/send-sms', {
+      const res = await fetch(`https://api.textbee.dev/api/v1/gateway/devices/${TEXTBEE_DEVICE_ID}/send-sms`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipient: phoneNumber, message: message })
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-api-key': TEXTBEE_API_KEY
+        },
+        body: JSON.stringify({ 
+          receivers: [cleanPhone], 
+          smsBody: message 
+        })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to send SMS');
-      console.log('SMS sent successfully via textbee:', data);
+      
+      // TextBee usually returns status 200/201 on success
+      if (!res.ok) throw new Error(data.message || 'Failed to send SMS');
+      console.log('SMS sent successfully via TextBee:', data);
     } catch (err) {
-      console.warn('SMS dispatch failed:', err.message);
+      console.warn('TextBee SMS dispatch failed:', err.message);
     }
   };
 
@@ -80,9 +99,7 @@ const OfficerDashboard = () => {
         datetime: combinedSlot 
       });
 
-      // Dispatch SMS alert to the farmer using textbee gateway
       await triggerSms(order.userPhone, `FarmFlow AI: Your slot is confirmed on ${combinedSlot} at ${order.zone}.`);
-
       alert(`Time slot successfully assigned: ${combinedSlot}`);
     } catch (error) {
       console.error(error);
@@ -103,9 +120,7 @@ const OfficerDashboard = () => {
         procuredAt: new Date().toISOString()
       });
 
-      // Dispatch payout SMS alert to the farmer via textbee gateway
       await triggerSms(order.userPhone, `FarmFlow AI: Procurement complete! A payout of INR ${totalPayout} has been processed via DBT.`);
-
       alert("Crop successfully marked as Procured!");
     } catch (error) { 
       console.error(error);
@@ -120,7 +135,7 @@ const OfficerDashboard = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center', borderBottom: '2px solid #ddd', paddingBottom: '15px' }}>
         <div>
           <h2 style={{ color: '#2c3e50', margin: 0 }}>🛡️ Procurement Officer Dashboard</h2>
-          <p style={{ color: '#2e7d32', margin: '5px 0 0 0', fontWeight: 'bold' }}>👤 {userProfile.name} | 📍 Zone: {userProfile.zone} ({userProfile.subPlace || 'General Jurisdiction'})</p>
+          <p style={{ color: '#2e7d32', margin: '5px 0 0 0', fontWeight: 'bold' }}>👤 {userProfile.name} | 📍 Jurisdiction: {userProfile.subPlace}, {userProfile.zone}</p>
         </div>
         <button onClick={handleLogout} style={{ background: '#ff6b6b', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>Log Out</button>
       </div>
@@ -149,7 +164,7 @@ const OfficerDashboard = () => {
                     <span style={{ fontSize: '12px', color: '#e67e22', fontWeight: 'bold' }}>📞 {order.userPhone || 'N/A'}</span>
                   </td>
                   <td style={{ padding: '15px 10px' }}>
-                    📍 <strong>{order.zone}</strong> / <span style={{ color: '#2e7d32' }}>{order.subPlace || 'General'}</span><br/>
+                    📍 <strong>{order.zone}</strong> / <span style={{ color: '#2e7d32' }}>{order.subPlace}</span><br/>
                     {order.documentUrl && (
                       <button 
                         onClick={() => setModalImage(order.documentUrl)} 

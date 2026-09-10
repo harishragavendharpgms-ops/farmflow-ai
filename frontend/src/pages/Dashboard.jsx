@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import {
@@ -85,25 +85,25 @@ const Sparkline = ({ data }) => {
 };
 
 const getWeatherMeta = (code) => {
-  if (code === 0) return { label: "Clear sky", icon: "☀️" };
-  if (code > 0 && code < 4) return { label: "Partly cloudy", icon: "⛅" };
-  if (code >= 45 && code < 50) return { label: "Foggy / Misty", icon: "🌫️" };
-  if (code >= 50 && code < 80) return { label: "Rainy", icon: "🌧️" };
-  if (code >= 80 && code < 90) return { label: "Showers", icon: "🌦️" };
-  if (code >= 90) return { label: "Thunderstorm", icon: "⛈️" };
+  if (code === 0) return { label: "Clear sky", icon: "â˜€ï¸" };
+  if (code > 0 && code < 4) return { label: "Partly cloudy", icon: "â›…" };
+  if (code >= 45 && code < 50) return { label: "Foggy / Misty", icon: "ðŸŒ«ï¸" };
+  if (code >= 50 && code < 80) return { label: "Rainy", icon: "ðŸŒ§ï¸" };
+  if (code >= 80 && code < 90) return { label: "Showers", icon: "ðŸŒ¦ï¸" };
+  if (code >= 90) return { label: "Thunderstorm", icon: "â›ˆï¸" };
 
-  return { label: "Clear", icon: "🌤️" };
+  return { label: "Clear", icon: "ðŸŒ¤ï¸" };
 };
 
 const t = {
   en: {
-    navDashboard: "📊 Dashboard",
-    navProfile: "👤 My Profile",
-    navCrops: "🌾 My Crops",
-    navProcurement: "🛒 Procurement",
-    navTrack: "📦 Track Status",
-    navAi: "🤖 AI Insights",
-    navHelp: "❓ Help",
+    navDashboard: "ðŸ“Š Dashboard",
+    navProfile: "ðŸ‘¤ My Profile",
+    navCrops: "ðŸŒ¾ My Crops",
+    navProcurement: "ðŸ›’ Procurement",
+    navTrack: "ðŸ“¦ Track Status",
+    navAi: "ðŸ¤– AI Insights",
+    navHelp: "â“ Help",
     logout: "Log Out",
     module: "Module",
     subtitle: "Manage your smart farm operations seamlessly.",
@@ -115,7 +115,7 @@ const t = {
     role: "Role:",
     farmManager: "Farmer",
     accountStatus: "Account Status:",
-    verified: "Verified 🟢",
+    verified: "Verified ðŸŸ¢",
     weather: "Local Weather",
     pestAlert: "Pest Alert",
     pestDesc: "No active threats detected in your area.",
@@ -169,149 +169,149 @@ const t = {
   },
 
   hi: {
-    navDashboard: "📊 डैशबोर्ड",
-    navProfile: "👤 मेरी प्रोफ़ाइल",
-    navCrops: "🌾 मेरी फसलें",
-    navProcurement: "🛒 खरीद",
-    navTrack: "📦 स्थिति ट्रैक करें",
-    navAi: "🤖 एआई अंतर्दृष्टि",
-    navHelp: "❓ सहायता",
-    logout: "लॉग आउट",
-    module: "मॉड्यूल",
-    subtitle: "अपने स्मार्ट कृषि कार्यों को आसानी से प्रबंधित करें।",
-    liveMarket: "लाइव मार्केट सक्रिय",
-    userDetails: "उपयोगकर्ता विवरण",
-    fullName: "पूरा नाम:",
-    emailAddr: "ईमेल पता:",
-    phoneNumber: "फ़ोन नंबर:",
-    role: "भूमिका:",
-    farmManager: "किसान",
-    accountStatus: "खाता स्थिति:",
-    verified: "सत्यापित 🟢",
-    weather: "स्थानीय मौसम",
-    pestAlert: "कीट चेतावनी",
-    pestDesc: "आपके क्षेत्र में कोई सक्रिय खतरा नहीं पाया गया।",
-    addCropTitle: "नई फसल इन्वेंटरी जोड़ें",
-    selectCrop: "-- भारतीय फसल चुनें --",
-    weightKg: "वजन (किलो)",
-    addCropBtn: "फसल जोड़ें",
-    myCropInventory: "मेरी फसल इन्वेंटरी",
-    emptyInventory: "आपकी इन्वेंटरी वर्तमान में खाली है।",
-    lockedRate: "लॉक्ड दर:",
-    remove: "हटाएं",
-    liveCropMarket: "लाइव फसल बाजार मूल्य",
-    cropName: "फसल का नाम",
-    pastRates: "पिछली दरें",
-    liveRate: "लाइव दर और रुझान",
-    action: "कार्रवाई",
-    sellMarket: "बाजार में बेचें",
-    procurementApp: "खरीद आवेदन",
-    applyingFor: "इसके लिए आवेदन:",
-    quantity: "मात्रा (किलो / बैग)",
-    selectZone: "-- सक्रिय ज़ोन चुनें --",
-    selectSubPlace: "-- उप-स्थान चुनें --",
-    farmAddress: "विशिष्ट खेत का पता",
-    pattaChitta: "पट्टा / चिट्टा दस्तावेज़ संख्या",
+    navDashboard: "ðŸ“Š à¤¡à¥ˆà¤¶à¤¬à¥‹à¤°à¥à¤¡",
+    navProfile: "ðŸ‘¤ à¤®à¥‡à¤°à¥€ à¤ªà¥à¤°à¥‹à¤«à¤¼à¤¾à¤‡à¤²",
+    navCrops: "ðŸŒ¾ à¤®à¥‡à¤°à¥€ à¤«à¤¸à¤²à¥‡à¤‚",
+    navProcurement: "ðŸ›’ à¤–à¤°à¥€à¤¦",
+    navTrack: "ðŸ“¦ à¤¸à¥à¤¥à¤¿à¤¤à¤¿ à¤Ÿà¥à¤°à¥ˆà¤• à¤•à¤°à¥‡à¤‚",
+    navAi: "ðŸ¤– à¤à¤†à¤ˆ à¤…à¤‚à¤¤à¤°à¥à¤¦à¥ƒà¤·à¥à¤Ÿà¤¿",
+    navHelp: "â“ à¤¸à¤¹à¤¾à¤¯à¤¤à¤¾",
+    logout: "à¤²à¥‰à¤— à¤†à¤‰à¤Ÿ",
+    module: "à¤®à¥‰à¤¡à¥à¤¯à¥‚à¤²",
+    subtitle: "à¤…à¤ªà¤¨à¥‡ à¤¸à¥à¤®à¤¾à¤°à¥à¤Ÿ à¤•à¥ƒà¤·à¤¿ à¤•à¤¾à¤°à¥à¤¯à¥‹à¤‚ à¤•à¥‹ à¤†à¤¸à¤¾à¤¨à¥€ à¤¸à¥‡ à¤ªà¥à¤°à¤¬à¤‚à¤§à¤¿à¤¤ à¤•à¤°à¥‡à¤‚à¥¤",
+    liveMarket: "à¤²à¤¾à¤‡à¤µ à¤®à¤¾à¤°à¥à¤•à¥‡à¤Ÿ à¤¸à¤•à¥à¤°à¤¿à¤¯",
+    userDetails: "à¤‰à¤ªà¤¯à¥‹à¤—à¤•à¤°à¥à¤¤à¤¾ à¤µà¤¿à¤µà¤°à¤£",
+    fullName: "à¤ªà¥‚à¤°à¤¾ à¤¨à¤¾à¤®:",
+    emailAddr: "à¤ˆà¤®à¥‡à¤² à¤ªà¤¤à¤¾:",
+    phoneNumber: "à¤«à¤¼à¥‹à¤¨ à¤¨à¤‚à¤¬à¤°:",
+    role: "à¤­à¥‚à¤®à¤¿à¤•à¤¾:",
+    farmManager: "à¤•à¤¿à¤¸à¤¾à¤¨",
+    accountStatus: "à¤–à¤¾à¤¤à¤¾ à¤¸à¥à¤¥à¤¿à¤¤à¤¿:",
+    verified: "à¤¸à¤¤à¥à¤¯à¤¾à¤ªà¤¿à¤¤ ðŸŸ¢",
+    weather: "à¤¸à¥à¤¥à¤¾à¤¨à¥€à¤¯ à¤®à¥Œà¤¸à¤®",
+    pestAlert: "à¤•à¥€à¤Ÿ à¤šà¥‡à¤¤à¤¾à¤µà¤¨à¥€",
+    pestDesc: "à¤†à¤ªà¤•à¥‡ à¤•à¥à¤·à¥‡à¤¤à¥à¤° à¤®à¥‡à¤‚ à¤•à¥‹à¤ˆ à¤¸à¤•à¥à¤°à¤¿à¤¯ à¤–à¤¤à¤°à¤¾ à¤¨à¤¹à¥€à¤‚ à¤ªà¤¾à¤¯à¤¾ à¤—à¤¯à¤¾à¥¤",
+    addCropTitle: "à¤¨à¤ˆ à¤«à¤¸à¤² à¤‡à¤¨à¥à¤µà¥‡à¤‚à¤Ÿà¤°à¥€ à¤œà¥‹à¤¡à¤¼à¥‡à¤‚",
+    selectCrop: "-- à¤­à¤¾à¤°à¤¤à¥€à¤¯ à¤«à¤¸à¤² à¤šà¥à¤¨à¥‡à¤‚ --",
+    weightKg: "à¤µà¤œà¤¨ (à¤•à¤¿à¤²à¥‹)",
+    addCropBtn: "à¤«à¤¸à¤² à¤œà¥‹à¤¡à¤¼à¥‡à¤‚",
+    myCropInventory: "à¤®à¥‡à¤°à¥€ à¤«à¤¸à¤² à¤‡à¤¨à¥à¤µà¥‡à¤‚à¤Ÿà¤°à¥€",
+    emptyInventory: "à¤†à¤ªà¤•à¥€ à¤‡à¤¨à¥à¤µà¥‡à¤‚à¤Ÿà¤°à¥€ à¤µà¤°à¥à¤¤à¤®à¤¾à¤¨ à¤®à¥‡à¤‚ à¤–à¤¾à¤²à¥€ à¤¹à¥ˆà¥¤",
+    lockedRate: "à¤²à¥‰à¤•à¥à¤¡ à¤¦à¤°:",
+    remove: "à¤¹à¤Ÿà¤¾à¤à¤‚",
+    liveCropMarket: "à¤²à¤¾à¤‡à¤µ à¤«à¤¸à¤² à¤¬à¤¾à¤œà¤¾à¤° à¤®à¥‚à¤²à¥à¤¯",
+    cropName: "à¤«à¤¸à¤² à¤•à¤¾ à¤¨à¤¾à¤®",
+    pastRates: "à¤ªà¤¿à¤›à¤²à¥€ à¤¦à¤°à¥‡à¤‚",
+    liveRate: "à¤²à¤¾à¤‡à¤µ à¤¦à¤° à¤”à¤° à¤°à¥à¤à¤¾à¤¨",
+    action: "à¤•à¤¾à¤°à¥à¤°à¤µà¤¾à¤ˆ",
+    sellMarket: "à¤¬à¤¾à¤œà¤¾à¤° à¤®à¥‡à¤‚ à¤¬à¥‡à¤šà¥‡à¤‚",
+    procurementApp: "à¤–à¤°à¥€à¤¦ à¤†à¤µà¥‡à¤¦à¤¨",
+    applyingFor: "à¤‡à¤¸à¤•à¥‡ à¤²à¤¿à¤ à¤†à¤µà¥‡à¤¦à¤¨:",
+    quantity: "à¤®à¤¾à¤¤à¥à¤°à¤¾ (à¤•à¤¿à¤²à¥‹ / à¤¬à¥ˆà¤—)",
+    selectZone: "-- à¤¸à¤•à¥à¤°à¤¿à¤¯ à¤œà¤¼à¥‹à¤¨ à¤šà¥à¤¨à¥‡à¤‚ --",
+    selectSubPlace: "-- à¤‰à¤ª-à¤¸à¥à¤¥à¤¾à¤¨ à¤šà¥à¤¨à¥‡à¤‚ --",
+    farmAddress: "à¤µà¤¿à¤¶à¤¿à¤·à¥à¤Ÿ à¤–à¥‡à¤¤ à¤•à¤¾ à¤ªà¤¤à¤¾",
+    pattaChitta: "à¤ªà¤Ÿà¥à¤Ÿà¤¾ / à¤šà¤¿à¤Ÿà¥à¤Ÿà¤¾ à¤¦à¤¸à¥à¤¤à¤¾à¤µà¥‡à¤œà¤¼ à¤¸à¤‚à¤–à¥à¤¯à¤¾",
     uploadDoc:
-      "पट्टा/चिट्टा अपलोड करें (JPG/PDF, Max 500KB)",
-    confirmOrder: "VAO को सबमिट करें",
-    cancel: "रद्द करें",
-    upcomingProcurements: "आगामी खरीद",
-    noActiveOrders: "इस समय कोई सक्रिय आदेश नहीं है।",
-    aiAnalysis: "AI विश्लेषण",
-    aiReport: "साप्ताहिक अंतर्दृष्टि रिपोर्ट जनरेट की गई:",
+      "à¤ªà¤Ÿà¥à¤Ÿà¤¾/à¤šà¤¿à¤Ÿà¥à¤Ÿà¤¾ à¤…à¤ªà¤²à¥‹à¤¡ à¤•à¤°à¥‡à¤‚ (JPG/PDF, Max 500KB)",
+    confirmOrder: "VAO à¤•à¥‹ à¤¸à¤¬à¤®à¤¿à¤Ÿ à¤•à¤°à¥‡à¤‚",
+    cancel: "à¤°à¤¦à¥à¤¦ à¤•à¤°à¥‡à¤‚",
+    upcomingProcurements: "à¤†à¤—à¤¾à¤®à¥€ à¤–à¤°à¥€à¤¦",
+    noActiveOrders: "à¤‡à¤¸ à¤¸à¤®à¤¯ à¤•à¥‹à¤ˆ à¤¸à¤•à¥à¤°à¤¿à¤¯ à¤†à¤¦à¥‡à¤¶ à¤¨à¤¹à¥€à¤‚ à¤¹à¥ˆà¥¤",
+    aiAnalysis: "AI à¤µà¤¿à¤¶à¥à¤²à¥‡à¤·à¤£",
+    aiReport: "à¤¸à¤¾à¤ªà¥à¤¤à¤¾à¤¹à¤¿à¤• à¤…à¤‚à¤¤à¤°à¥à¤¦à¥ƒà¤·à¥à¤Ÿà¤¿ à¤°à¤¿à¤ªà¥‹à¤°à¥à¤Ÿ à¤œà¤¨à¤°à¥‡à¤Ÿ à¤•à¥€ à¤—à¤ˆ:",
     aiTip1:
-      "आपके खेतों में नाइट्रोजन का स्तर गिर सकता है। गुरुवार तक यूरिया लगाने की सलाह दी जाती है।",
+      "à¤†à¤ªà¤•à¥‡ à¤–à¥‡à¤¤à¥‹à¤‚ à¤®à¥‡à¤‚ à¤¨à¤¾à¤‡à¤Ÿà¥à¤°à¥‹à¤œà¤¨ à¤•à¤¾ à¤¸à¥à¤¤à¤° à¤—à¤¿à¤° à¤¸à¤•à¤¤à¤¾ à¤¹à¥ˆà¥¤ à¤—à¥à¤°à¥à¤µà¤¾à¤° à¤¤à¤• à¤¯à¥‚à¤°à¤¿à¤¯à¤¾ à¤²à¤—à¤¾à¤¨à¥‡ à¤•à¥€ à¤¸à¤²à¤¾à¤¹ à¤¦à¥€ à¤œà¤¾à¤¤à¥€ à¤¹à¥ˆà¥¤",
     aiTip2:
-      "बाजार की स्थिति अधिकतम लाभ के लिए गेहूं की बिक्री 2 सप्ताह तक रोकने का सुझाव देती है।",
+      "à¤¬à¤¾à¤œà¤¾à¤° à¤•à¥€ à¤¸à¥à¤¥à¤¿à¤¤à¤¿ à¤…à¤§à¤¿à¤•à¤¤à¤® à¤²à¤¾à¤­ à¤•à¥‡ à¤²à¤¿à¤ à¤—à¥‡à¤¹à¥‚à¤‚ à¤•à¥€ à¤¬à¤¿à¤•à¥à¤°à¥€ 2 à¤¸à¤ªà¥à¤¤à¤¾à¤¹ à¤¤à¤• à¤°à¥‹à¤•à¤¨à¥‡ à¤•à¤¾ à¤¸à¥à¤à¤¾à¤µ à¤¦à¥‡à¤¤à¥€ à¤¹à¥ˆà¥¤",
     aiTip3:
-      "मौसम विश्लेषण अगले 7 दिनों तक कीटों के कम जोखिम को दर्शाता है।",
-    helpTitle: "सहायता और मार्गदर्शन",
+      "à¤®à¥Œà¤¸à¤® à¤µà¤¿à¤¶à¥à¤²à¥‡à¤·à¤£ à¤…à¤—à¤²à¥‡ 7 à¤¦à¤¿à¤¨à¥‹à¤‚ à¤¤à¤• à¤•à¥€à¤Ÿà¥‹à¤‚ à¤•à¥‡ à¤•à¤® à¤œà¥‹à¤–à¤¿à¤® à¤•à¥‹ à¤¦à¤°à¥à¤¶à¤¾à¤¤à¤¾ à¤¹à¥ˆà¥¤",
+    helpTitle: "à¤¸à¤¹à¤¾à¤¯à¤¤à¤¾ à¤”à¤° à¤®à¤¾à¤°à¥à¤—à¤¦à¤°à¥à¤¶à¤¨",
     helpIntro:
-      "FarmFlow AI में आपका स्वागत है! यहाँ बताया गया है कि अपने डैशबोर्ड का उपयोग कैसे करें:",
+      "FarmFlow AI à¤®à¥‡à¤‚ à¤†à¤ªà¤•à¤¾ à¤¸à¥à¤µà¤¾à¤—à¤¤ à¤¹à¥ˆ! à¤¯à¤¹à¤¾à¤ à¤¬à¤¤à¤¾à¤¯à¤¾ à¤—à¤¯à¤¾ à¤¹à¥ˆ à¤•à¤¿ à¤…à¤ªà¤¨à¥‡ à¤¡à¥ˆà¤¶à¤¬à¥‹à¤°à¥à¤¡ à¤•à¤¾ à¤‰à¤ªà¤¯à¥‹à¤— à¤•à¥ˆà¤¸à¥‡ à¤•à¤°à¥‡à¤‚:",
     helpProfile:
-      "प्रोफ़ाइल: अपने पंजीकृत खाते का विवरण और स्थिति देखें।",
+      "à¤ªà¥à¤°à¥‹à¤«à¤¼à¤¾à¤‡à¤²: à¤…à¤ªà¤¨à¥‡ à¤ªà¤‚à¤œà¥€à¤•à¥ƒà¤¤ à¤–à¤¾à¤¤à¥‡ à¤•à¤¾ à¤µà¤¿à¤µà¤°à¤£ à¤”à¤° à¤¸à¥à¤¥à¤¿à¤¤à¤¿ à¤¦à¥‡à¤–à¥‡à¤‚à¥¤",
     helpCrops:
-      "मेरी फसलें: अपनी काटी गई फसलें जोड़ें, वजन दर्ज करें, और अनुमानित लाइव बाजार मूल्य देखें।",
+      "à¤®à¥‡à¤°à¥€ à¤«à¤¸à¤²à¥‡à¤‚: à¤…à¤ªà¤¨à¥€ à¤•à¤¾à¤Ÿà¥€ à¤—à¤ˆ à¤«à¤¸à¤²à¥‡à¤‚ à¤œà¥‹à¤¡à¤¼à¥‡à¤‚, à¤µà¤œà¤¨ à¤¦à¤°à¥à¤œ à¤•à¤°à¥‡à¤‚, à¤”à¤° à¤…à¤¨à¥à¤®à¤¾à¤¨à¤¿à¤¤ à¤²à¤¾à¤‡à¤µ à¤¬à¤¾à¤œà¤¾à¤° à¤®à¥‚à¤²à¥à¤¯ à¤¦à¥‡à¤–à¥‡à¤‚à¥¤",
     helpProcurement:
-      "खरीद: लाइव बाजार दरें देखें। आप अपनी फसल बेचने या कृषि आपूर्ति खरीदने के लिए आवेदन कर सकते हैं।",
+      "à¤–à¤°à¥€à¤¦: à¤²à¤¾à¤‡à¤µ à¤¬à¤¾à¤œà¤¾à¤° à¤¦à¤°à¥‡à¤‚ à¤¦à¥‡à¤–à¥‡à¤‚à¥¤ à¤†à¤ª à¤…à¤ªà¤¨à¥€ à¤«à¤¸à¤² à¤¬à¥‡à¤šà¤¨à¥‡ à¤¯à¤¾ à¤•à¥ƒà¤·à¤¿ à¤†à¤ªà¥‚à¤°à¥à¤¤à¤¿ à¤–à¤°à¥€à¤¦à¤¨à¥‡ à¤•à¥‡ à¤²à¤¿à¤ à¤†à¤µà¥‡à¤¦à¤¨ à¤•à¤° à¤¸à¤•à¤¤à¥‡ à¤¹à¥ˆà¤‚à¥¤",
     helpTrack:
-      "स्थिति ट्रैक करें: अपने VAO सत्यापन, आवंटित स्लॉट और DBT भुगतान की निगरानी करें।",
+      "à¤¸à¥à¤¥à¤¿à¤¤à¤¿ à¤Ÿà¥à¤°à¥ˆà¤• à¤•à¤°à¥‡à¤‚: à¤…à¤ªà¤¨à¥‡ VAO à¤¸à¤¤à¥à¤¯à¤¾à¤ªà¤¨, à¤†à¤µà¤‚à¤Ÿà¤¿à¤¤ à¤¸à¥à¤²à¥‰à¤Ÿ à¤”à¤° DBT à¤­à¥à¤—à¤¤à¤¾à¤¨ à¤•à¥€ à¤¨à¤¿à¤—à¤°à¤¾à¤¨à¥€ à¤•à¤°à¥‡à¤‚à¥¤",
     helpAi:
-      "एआई अंतर्दृष्टि: अपने खेत के मुनाफे को अधिकतम करने के लिए एआई-जनित सलाह पढ़ें।"
+      "à¤à¤†à¤ˆ à¤…à¤‚à¤¤à¤°à¥à¤¦à¥ƒà¤·à¥à¤Ÿà¤¿: à¤…à¤ªà¤¨à¥‡ à¤–à¥‡à¤¤ à¤•à¥‡ à¤®à¥à¤¨à¤¾à¤«à¥‡ à¤•à¥‹ à¤…à¤§à¤¿à¤•à¤¤à¤® à¤•à¤°à¤¨à¥‡ à¤•à¥‡ à¤²à¤¿à¤ à¤à¤†à¤ˆ-à¤œà¤¨à¤¿à¤¤ à¤¸à¤²à¤¾à¤¹ à¤ªà¤¢à¤¼à¥‡à¤‚à¥¤"
   },
 
   ta: {
-    navDashboard: "📊 டாஷ்போர்டு",
-    navProfile: "👤 என் சுயவிவரம்",
-    navCrops: "🌾 என் பயிர்கள்",
-    navProcurement: "🛒 கொள்முதல்",
-    navTrack: "📦 நிலை கண்காணிக்க",
-    navAi: "🤖 AI ஆலோசனைகள்",
-    navHelp: "❓ உதவி",
-    logout: "வெளியேறு",
-    module: "பிரிவு",
-    subtitle: "உங்கள் பண்ணை செயல்பாடுகளை எளிதாக நிர்வகிக்கவும்.",
-    liveMarket: "நேரடி சந்தை செயலில் உள்ளது",
-    userDetails: "பயனர் விவரங்கள்",
-    fullName: "முழு பெயர்:",
-    emailAddr: "மின்னஞ்சல்:",
-    phoneNumber: "தொலைபேசி எண்:",
-    role: "பங்கு:",
-    farmManager: "விவசாயி",
-    accountStatus: "கணக்கு நிலை:",
-    verified: "சரிபார்க்கப்பட்டது 🟢",
-    weather: "உள்ளூர் வானிலை",
-    pestAlert: "பூச்சி எச்சரிக்கை",
-    pestDesc: "உங்கள் பகுதியில் எந்த அச்சுறுத்தலும் இல்லை.",
-    addCropTitle: "புதிய பயிர் சேர்ப்பது",
-    selectCrop: "-- இந்திய பயிரைத் தேர்ந்தெடுக்கவும் --",
-    weightKg: "எடை (கிலோ)",
-    addCropBtn: "பயிரைச் சேர்",
-    myCropInventory: "என் பயிர் இருப்பு",
-    emptyInventory: "உங்கள் இருப்பு காலியாக உள்ளது.",
-    lockedRate: "பூட்டப்பட்ட விலை:",
-    remove: "நீக்கு",
-    liveCropMarket: "நேரடி பயிர் சந்தை விலைகள்",
-    cropName: "பயிர் பெயர்",
-    pastRates: "கடந்த விலைகள்",
-    liveRate: "நேரடி விலை & போக்கு",
-    action: "செயல்",
-    sellMarket: "சந்தையில் விற்க",
-    procurementApp: "கொள்முதல் விண்ணப்பம்",
-    applyingFor: "விண்ணப்பிப்பது:",
-    quantity: "அளவு (கிலோ / பைகள்)",
-    selectZone: "-- மண்டலத்தைத் தேர்ந்தெடுக்கவும் --",
-    selectSubPlace: "-- கிராமத்தைத் தேர்ந்தெடுக்கவும் --",
-    farmAddress: "குறிப்பிட்ட பண்ணை முகவரி",
-    pattaChitta: "பட்டா / சிட்டா ஆவண எண்",
+    navDashboard: "ðŸ“Š à®Ÿà®¾à®·à¯à®ªà¯‹à®°à¯à®Ÿà¯",
+    navProfile: "ðŸ‘¤ à®Žà®©à¯ à®šà¯à®¯à®µà®¿à®µà®°à®®à¯",
+    navCrops: "ðŸŒ¾ à®Žà®©à¯ à®ªà®¯à®¿à®°à¯à®•à®³à¯",
+    navProcurement: "ðŸ›’ à®•à¯Šà®³à¯à®®à¯à®¤à®²à¯",
+    navTrack: "ðŸ“¦ à®¨à®¿à®²à¯ˆ à®•à®£à¯à®•à®¾à®£à®¿à®•à¯à®•",
+    navAi: "ðŸ¤– AI à®†à®²à¯‹à®šà®©à¯ˆà®•à®³à¯",
+    navHelp: "â“ à®‰à®¤à®µà®¿",
+    logout: "à®µà¯†à®³à®¿à®¯à¯‡à®±à¯",
+    module: "à®ªà®¿à®°à®¿à®µà¯",
+    subtitle: "à®‰à®™à¯à®•à®³à¯ à®ªà®£à¯à®£à¯ˆ à®šà¯†à®¯à®²à¯à®ªà®¾à®Ÿà¯à®•à®³à¯ˆ à®Žà®³à®¿à®¤à®¾à®• à®¨à®¿à®°à¯à®µà®•à®¿à®•à¯à®•à®µà¯à®®à¯.",
+    liveMarket: "à®¨à¯‡à®°à®Ÿà®¿ à®šà®¨à¯à®¤à¯ˆ à®šà¯†à®¯à®²à®¿à®²à¯ à®‰à®³à¯à®³à®¤à¯",
+    userDetails: "à®ªà®¯à®©à®°à¯ à®µà®¿à®µà®°à®™à¯à®•à®³à¯",
+    fullName: "à®®à¯à®´à¯ à®ªà¯†à®¯à®°à¯:",
+    emailAddr: "à®®à®¿à®©à¯à®©à®žà¯à®šà®²à¯:",
+    phoneNumber: "à®¤à¯Šà®²à¯ˆà®ªà¯‡à®šà®¿ à®Žà®£à¯:",
+    role: "à®ªà®™à¯à®•à¯:",
+    farmManager: "à®µà®¿à®µà®šà®¾à®¯à®¿",
+    accountStatus: "à®•à®£à®•à¯à®•à¯ à®¨à®¿à®²à¯ˆ:",
+    verified: "à®šà®°à®¿à®ªà®¾à®°à¯à®•à¯à®•à®ªà¯à®ªà®Ÿà¯à®Ÿà®¤à¯ ðŸŸ¢",
+    weather: "à®‰à®³à¯à®³à¯‚à®°à¯ à®µà®¾à®©à®¿à®²à¯ˆ",
+    pestAlert: "à®ªà¯‚à®šà¯à®šà®¿ à®Žà®šà¯à®šà®°à®¿à®•à¯à®•à¯ˆ",
+    pestDesc: "à®‰à®™à¯à®•à®³à¯ à®ªà®•à¯à®¤à®¿à®¯à®¿à®²à¯ à®Žà®¨à¯à®¤ à®…à®šà¯à®šà¯à®±à¯à®¤à¯à®¤à®²à¯à®®à¯ à®‡à®²à¯à®²à¯ˆ.",
+    addCropTitle: "à®ªà¯à®¤à®¿à®¯ à®ªà®¯à®¿à®°à¯ à®šà¯‡à®°à¯à®ªà¯à®ªà®¤à¯",
+    selectCrop: "-- à®‡à®¨à¯à®¤à®¿à®¯ à®ªà®¯à®¿à®°à¯ˆà®¤à¯ à®¤à¯‡à®°à¯à®¨à¯à®¤à¯†à®Ÿà¯à®•à¯à®•à®µà¯à®®à¯ --",
+    weightKg: "à®Žà®Ÿà¯ˆ (à®•à®¿à®²à¯‹)",
+    addCropBtn: "à®ªà®¯à®¿à®°à¯ˆà®šà¯ à®šà¯‡à®°à¯",
+    myCropInventory: "à®Žà®©à¯ à®ªà®¯à®¿à®°à¯ à®‡à®°à¯à®ªà¯à®ªà¯",
+    emptyInventory: "à®‰à®™à¯à®•à®³à¯ à®‡à®°à¯à®ªà¯à®ªà¯ à®•à®¾à®²à®¿à®¯à®¾à®• à®‰à®³à¯à®³à®¤à¯.",
+    lockedRate: "à®ªà¯‚à®Ÿà¯à®Ÿà®ªà¯à®ªà®Ÿà¯à®Ÿ à®µà®¿à®²à¯ˆ:",
+    remove: "à®¨à¯€à®•à¯à®•à¯",
+    liveCropMarket: "à®¨à¯‡à®°à®Ÿà®¿ à®ªà®¯à®¿à®°à¯ à®šà®¨à¯à®¤à¯ˆ à®µà®¿à®²à¯ˆà®•à®³à¯",
+    cropName: "à®ªà®¯à®¿à®°à¯ à®ªà¯†à®¯à®°à¯",
+    pastRates: "à®•à®Ÿà®¨à¯à®¤ à®µà®¿à®²à¯ˆà®•à®³à¯",
+    liveRate: "à®¨à¯‡à®°à®Ÿà®¿ à®µà®¿à®²à¯ˆ & à®ªà¯‹à®•à¯à®•à¯",
+    action: "à®šà¯†à®¯à®²à¯",
+    sellMarket: "à®šà®¨à¯à®¤à¯ˆà®¯à®¿à®²à¯ à®µà®¿à®±à¯à®•",
+    procurementApp: "à®•à¯Šà®³à¯à®®à¯à®¤à®²à¯ à®µà®¿à®£à¯à®£à®ªà¯à®ªà®®à¯",
+    applyingFor: "à®µà®¿à®£à¯à®£à®ªà¯à®ªà®¿à®ªà¯à®ªà®¤à¯:",
+    quantity: "à®…à®³à®µà¯ (à®•à®¿à®²à¯‹ / à®ªà¯ˆà®•à®³à¯)",
+    selectZone: "-- à®®à®£à¯à®Ÿà®²à®¤à¯à®¤à¯ˆà®¤à¯ à®¤à¯‡à®°à¯à®¨à¯à®¤à¯†à®Ÿà¯à®•à¯à®•à®µà¯à®®à¯ --",
+    selectSubPlace: "-- à®•à®¿à®°à®¾à®®à®¤à¯à®¤à¯ˆà®¤à¯ à®¤à¯‡à®°à¯à®¨à¯à®¤à¯†à®Ÿà¯à®•à¯à®•à®µà¯à®®à¯ --",
+    farmAddress: "à®•à¯à®±à®¿à®ªà¯à®ªà®¿à®Ÿà¯à®Ÿ à®ªà®£à¯à®£à¯ˆ à®®à¯à®•à®µà®°à®¿",
+    pattaChitta: "à®ªà®Ÿà¯à®Ÿà®¾ / à®šà®¿à®Ÿà¯à®Ÿà®¾ à®†à®µà®£ à®Žà®£à¯",
     uploadDoc:
-      "பட்டா/சிட்டாவை பதிவேற்றவும் (JPG/PDF, Max 500KB)",
-    confirmOrder: "VAO க்கு சமர்ப்பிக்கவும்",
-    cancel: "ரத்து செய்",
-    upcomingProcurements: "வரவிருக்கும் கொள்முதல்",
-    noActiveOrders: "தற்போது எந்த ஆர்டரும் இல்லை.",
-    aiAnalysis: "AI பகுப்பாய்வு",
-    aiReport: "வாராந்திர அறிக்கை:",
+      "à®ªà®Ÿà¯à®Ÿà®¾/à®šà®¿à®Ÿà¯à®Ÿà®¾à®µà¯ˆ à®ªà®¤à®¿à®µà¯‡à®±à¯à®±à®µà¯à®®à¯ (JPG/PDF, Max 500KB)",
+    confirmOrder: "VAO à®•à¯à®•à¯ à®šà®®à®°à¯à®ªà¯à®ªà®¿à®•à¯à®•à®µà¯à®®à¯",
+    cancel: "à®°à®¤à¯à®¤à¯ à®šà¯†à®¯à¯",
+    upcomingProcurements: "à®µà®°à®µà®¿à®°à¯à®•à¯à®•à¯à®®à¯ à®•à¯Šà®³à¯à®®à¯à®¤à®²à¯",
+    noActiveOrders: "à®¤à®±à¯à®ªà¯‹à®¤à¯ à®Žà®¨à¯à®¤ à®†à®°à¯à®Ÿà®°à¯à®®à¯ à®‡à®²à¯à®²à¯ˆ.",
+    aiAnalysis: "AI à®ªà®•à¯à®ªà¯à®ªà®¾à®¯à¯à®µà¯",
+    aiReport: "à®µà®¾à®°à®¾à®¨à¯à®¤à®¿à®° à®…à®±à®¿à®•à¯à®•à¯ˆ:",
     aiTip1:
-      "நைட்ரஜன் அளவுகள் குறையக்கூடும். வியாழக்கிழமைக்குள் யூரியா பயன்படுத்த பரிந்துரைக்கப்படுகிறது.",
+      "à®¨à¯ˆà®Ÿà¯à®°à®œà®©à¯ à®…à®³à®µà¯à®•à®³à¯ à®•à¯à®±à¯ˆà®¯à®•à¯à®•à¯‚à®Ÿà¯à®®à¯. à®µà®¿à®¯à®¾à®´à®•à¯à®•à®¿à®´à®®à¯ˆà®•à¯à®•à¯à®³à¯ à®¯à¯‚à®°à®¿à®¯à®¾ à®ªà®¯à®©à¯à®ªà®Ÿà¯à®¤à¯à®¤ à®ªà®°à®¿à®¨à¯à®¤à¯à®°à¯ˆà®•à¯à®•à®ªà¯à®ªà®Ÿà¯à®•à®¿à®±à®¤à¯.",
     aiTip2:
-      "லாபத்தை அதிகரிக்க கோதுமை விற்பனையை 2 வாரங்களுக்கு தாமதப்படுத்தவும்.",
+      "à®²à®¾à®ªà®¤à¯à®¤à¯ˆ à®…à®¤à®¿à®•à®°à®¿à®•à¯à®• à®•à¯‹à®¤à¯à®®à¯ˆ à®µà®¿à®±à¯à®ªà®©à¯ˆà®¯à¯ˆ 2 à®µà®¾à®°à®™à¯à®•à®³à¯à®•à¯à®•à¯ à®¤à®¾à®®à®¤à®ªà¯à®ªà®Ÿà¯à®¤à¯à®¤à®µà¯à®®à¯.",
     aiTip3:
-      "அடுத்த 7 நாட்களுக்கு பூச்சிகள் தாக்கும் அபாயம் குறைவு.",
-    helpTitle: "உதவி மற்றும் வழிகாட்டி",
+      "à®…à®Ÿà¯à®¤à¯à®¤ 7 à®¨à®¾à®Ÿà¯à®•à®³à¯à®•à¯à®•à¯ à®ªà¯‚à®šà¯à®šà®¿à®•à®³à¯ à®¤à®¾à®•à¯à®•à¯à®®à¯ à®…à®ªà®¾à®¯à®®à¯ à®•à¯à®±à¯ˆà®µà¯.",
+    helpTitle: "à®‰à®¤à®µà®¿ à®®à®±à¯à®±à¯à®®à¯ à®µà®´à®¿à®•à®¾à®Ÿà¯à®Ÿà®¿",
     helpIntro:
-      "FarmFlow AI-க்கு உங்களை வரவேற்கிறோம்! டாஷ்போர்டை எவ்வாறு பயன்படுத்துவது:",
+      "FarmFlow AI-à®•à¯à®•à¯ à®‰à®™à¯à®•à®³à¯ˆ à®µà®°à®µà¯‡à®±à¯à®•à®¿à®±à¯‹à®®à¯! à®Ÿà®¾à®·à¯à®ªà¯‹à®°à¯à®Ÿà¯ˆ à®Žà®µà¯à®µà®¾à®±à¯ à®ªà®¯à®©à¯à®ªà®Ÿà¯à®¤à¯à®¤à¯à®µà®¤à¯:",
     helpProfile:
-      "சுயவிவரம்: உங்கள் கணக்கு விவரங்கள் மற்றும் நிலையைப் பார்க்கவும்.",
+      "à®šà¯à®¯à®µà®¿à®µà®°à®®à¯: à®‰à®™à¯à®•à®³à¯ à®•à®£à®•à¯à®•à¯ à®µà®¿à®µà®°à®™à¯à®•à®³à¯ à®®à®±à¯à®±à¯à®®à¯ à®¨à®¿à®²à¯ˆà®¯à¯ˆà®ªà¯ à®ªà®¾à®°à¯à®•à¯à®•à®µà¯à®®à¯.",
     helpCrops:
-      "என் பயிர்கள்: உங்கள் அறுவடை பயிர்களைச் சேர்க்கவும், நேரடி சந்தை மதிப்பை அறியவும்.",
+      "à®Žà®©à¯ à®ªà®¯à®¿à®°à¯à®•à®³à¯: à®‰à®™à¯à®•à®³à¯ à®…à®±à¯à®µà®Ÿà¯ˆ à®ªà®¯à®¿à®°à¯à®•à®³à¯ˆà®šà¯ à®šà¯‡à®°à¯à®•à¯à®•à®µà¯à®®à¯, à®¨à¯‡à®°à®Ÿà®¿ à®šà®¨à¯à®¤à¯ˆ à®®à®¤à®¿à®ªà¯à®ªà¯ˆ à®…à®±à®¿à®¯à®µà¯à®®à¯.",
     helpProcurement:
-      "கொள்முதல்: நேரடி சந்தை விலைகளை காணுங்கள். விற்க அல்லது வாங்க விண்ணப்பிக்கலாம்.",
+      "à®•à¯Šà®³à¯à®®à¯à®¤à®²à¯: à®¨à¯‡à®°à®Ÿà®¿ à®šà®¨à¯à®¤à¯ˆ à®µà®¿à®²à¯ˆà®•à®³à¯ˆ à®•à®¾à®£à¯à®™à¯à®•à®³à¯. à®µà®¿à®±à¯à®• à®…à®²à¯à®²à®¤à¯ à®µà®¾à®™à¯à®• à®µà®¿à®£à¯à®£à®ªà¯à®ªà®¿à®•à¯à®•à®²à®¾à®®à¯.",
     helpTrack:
-      "நிலை கண்காணிக்க: VAO சரிபார்ப்பு, ஒதுக்கப்பட்ட நேரங்கள் மற்றும் DBT பரிமாற்றங்களை கண்காணிக்கவும்.",
+      "à®¨à®¿à®²à¯ˆ à®•à®£à¯à®•à®¾à®£à®¿à®•à¯à®•: VAO à®šà®°à®¿à®ªà®¾à®°à¯à®ªà¯à®ªà¯, à®’à®¤à¯à®•à¯à®•à®ªà¯à®ªà®Ÿà¯à®Ÿ à®¨à¯‡à®°à®™à¯à®•à®³à¯ à®®à®±à¯à®±à¯à®®à¯ DBT à®ªà®°à®¿à®®à®¾à®±à¯à®±à®™à¯à®•à®³à¯ˆ à®•à®£à¯à®•à®¾à®£à®¿à®•à¯à®•à®µà¯à®®à¯.",
     helpAi:
-      "AI ஆலோசனைகள்: லாபத்தை அதிகரிக்க AI ஆலோசனைகளைப் படிக்கவும்."
+      "AI à®†à®²à¯‹à®šà®©à¯ˆà®•à®³à¯: à®²à®¾à®ªà®¤à¯à®¤à¯ˆ à®…à®¤à®¿à®•à®°à®¿à®•à¯à®• AI à®†à®²à¯‹à®šà®©à¯ˆà®•à®³à¯ˆà®ªà¯ à®ªà®Ÿà®¿à®•à¯à®•à®µà¯à®®à¯."
   }
 };
 
@@ -348,7 +348,7 @@ const Dashboard = () => {
     temp: '--',
     condition: 'Fetching location weather...',
     locationName: 'Detecting location...',
-    icon: '🌤️'
+    icon: 'ðŸŒ¤ï¸'
   });
 
   const [hourlyForecast, setHourlyForecast] = useState([]);
@@ -411,7 +411,7 @@ const Dashboard = () => {
         temp: 'N/A',
         condition: 'Geolocation is not supported.',
         locationName: 'Unavailable',
-        icon: '📍'
+        icon: 'ðŸ“'
       });
       return;
     }
@@ -449,7 +449,7 @@ const Dashboard = () => {
           setWeatherData({
             temp: `${Math.round(
               weatherJson.current.temperature_2m
-            )}°C`,
+            )}Â°C`,
             condition: `${locationString}: ${meta.label}. Humidity: ${weatherJson.current.relative_humidity_2m}%`,
             locationName: locationString,
             icon: meta.icon
@@ -508,7 +508,7 @@ const Dashboard = () => {
                 time: timeLabel,
                 temp: `${Math.round(
                   weatherJson.hourly.temperature_2m[i]
-                )}°C`,
+                )}Â°C`,
                 rainProb:
                   weatherJson.hourly
                     .precipitation_probability
@@ -529,7 +529,7 @@ const Dashboard = () => {
             temp: '--',
             condition: 'Unable to load live weather.',
             locationName: 'Weather Error',
-            icon: '🌤️'
+            icon: 'ðŸŒ¤ï¸'
           });
         }
       },
@@ -544,7 +544,7 @@ const Dashboard = () => {
           condition:
             'Location permission denied. Enable GPS for live weather.',
           locationName: 'Location Disabled',
-          icon: '📍'
+          icon: 'ðŸ“'
         });
       }
     );
@@ -630,7 +630,7 @@ const Dashboard = () => {
             const updatedOrder = change.doc.data();
 
             setLatestNotification(
-              `🔔 Update: Your ${updatedOrder.item} application status is now "${updatedOrder.status}"!`
+              `ðŸ”” Update: Your ${updatedOrder.item} application status is now "${updatedOrder.status}"!`
             );
 
             setShowBanner(true);
@@ -988,32 +988,32 @@ const Dashboard = () => {
     {
       id: 'dashboard',
       label: l.navDashboard,
-      icon: '📊'
+      icon: 'ðŸ“Š'
     },
     {
       id: 'profile',
       label: l.navProfile,
-      icon: '👤'
+      icon: 'ðŸ‘¤'
     },
     {
       id: 'crops',
       label: l.navCrops,
-      icon: '🌾'
+      icon: 'ðŸŒ¾'
     },
     {
       id: 'procurement',
       label: l.navProcurement,
-      icon: '🛒'
+      icon: 'ðŸ›’'
     },
     {
       id: 'track',
       label: l.navTrack,
-      icon: '📦'
+      icon: 'ðŸ“¦'
     },
     {
       id: 'ai',
       label: l.navAi,
-      icon: '🤖'
+      icon: 'ðŸ¤–'
     }
   ];
 
@@ -1040,7 +1040,7 @@ const Dashboard = () => {
       >
         <div className="sidebar-brand">
           <div className="brand-icon">
-            🌱
+            ðŸŒ±
           </div>
 
           <div>
@@ -1124,7 +1124,7 @@ const Dashboard = () => {
           }
         >
           <span className="nav-icon">
-            ❓
+            â“
           </span>
 
           <span className="nav-label">
@@ -1143,7 +1143,7 @@ const Dashboard = () => {
           className="logout-button"
           onClick={handleLogout}
         >
-          <span>↪</span>
+          <span>â†ª</span>
           {l.logout}
         </button>
 
@@ -1171,7 +1171,7 @@ const Dashboard = () => {
               type="button"
               aria-label="Open menu"
             >
-              ☰
+              â˜°
             </button>
 
             <div>
@@ -1235,7 +1235,7 @@ const Dashboard = () => {
           latestNotification && (
             <div className="notification-banner">
               <div className="notification-icon">
-                🔔
+                ðŸ””
               </div>
 
               <div className="notification-text">
@@ -1248,7 +1248,7 @@ const Dashboard = () => {
                   setShowBanner(false)
                 }
               >
-                ×
+                Ã—
               </button>
             </div>
           )}
@@ -1261,7 +1261,7 @@ const Dashboard = () => {
 
               <div className="page-intro-card">
                 <div className="intro-icon">
-                  ❓
+                  â“
                 </div>
 
                 <div>
@@ -1283,23 +1283,23 @@ const Dashboard = () => {
 
                 {[
                   {
-                    icon: '👤',
+                    icon: 'ðŸ‘¤',
                     text: l.helpProfile
                   },
                   {
-                    icon: '🌾',
+                    icon: 'ðŸŒ¾',
                     text: l.helpCrops
                   },
                   {
-                    icon: '🛒',
+                    icon: 'ðŸ›’',
                     text: l.helpProcurement
                   },
                   {
-                    icon: '📦',
+                    icon: 'ðŸ“¦',
                     text: l.helpTrack
                   },
                   {
-                    icon: '🤖',
+                    icon: 'ðŸ¤–',
                     text: l.helpAi
                   }
                 ].map(
@@ -1351,7 +1351,7 @@ const Dashboard = () => {
                 </div>
 
                 <div className="verified-badge">
-                  ✓ Verified
+                  âœ“ Verified
                 </div>
               </div>
 
@@ -1369,7 +1369,7 @@ const Dashboard = () => {
                   </div>
 
                   <span className="heading-icon">
-                    👤
+                    ðŸ‘¤
                   </span>
                 </div>
 
@@ -1451,7 +1451,7 @@ const Dashboard = () => {
                       userProfile.name ||
                       'Farmer'
                     ).split(' ')[0]}
-                    ! 👋
+                    ! ðŸ‘‹
                   </h2>
 
                   <p>
@@ -1461,7 +1461,7 @@ const Dashboard = () => {
                 </div>
 
                 <div className="welcome-illustration">
-                  🌾
+                  ðŸŒ¾
                 </div>
               </div>
 
@@ -1470,7 +1470,7 @@ const Dashboard = () => {
 
                 <div className="stat-card">
                   <div className="stat-icon green">
-                    🌾
+                    ðŸŒ¾
                   </div>
 
                   <div>
@@ -1486,7 +1486,7 @@ const Dashboard = () => {
 
                 <div className="stat-card">
                   <div className="stat-icon blue">
-                    📦
+                    ðŸ“¦
                   </div>
 
                   <div>
@@ -1502,7 +1502,7 @@ const Dashboard = () => {
 
                 <div className="stat-card">
                   <div className="stat-icon orange">
-                    💰
+                    ðŸ’°
                   </div>
 
                   <div>
@@ -1520,7 +1520,7 @@ const Dashboard = () => {
 
                 <div className="stat-card">
                   <div className="stat-icon purple">
-                    🤖
+                    ðŸ¤–
                   </div>
 
                   <div>
@@ -1553,7 +1553,7 @@ const Dashboard = () => {
                     </div>
 
                     <span className="card-arrow">
-                      →
+                      â†’
                     </span>
                   </div>
 
@@ -1570,7 +1570,7 @@ const Dashboard = () => {
                   </div>
 
                   <p className="weather-location">
-                    📍{' '}
+                    ðŸ“{' '}
                     {weatherData.locationName}
                   </p>
 
@@ -1580,7 +1580,7 @@ const Dashboard = () => {
 
                   <div className="card-link">
                     View 24-hour forecast
-                    <span>→</span>
+                    <span>â†’</span>
                   </div>
                 </button>
 
@@ -1589,7 +1589,7 @@ const Dashboard = () => {
                   <div className="card-top-line">
 
                     <div className="card-icon-large pest">
-                      🐛
+                      ðŸ›
                     </div>
 
                     <span className="safe-badge">
@@ -1632,14 +1632,14 @@ const Dashboard = () => {
                   </div>
 
                   <div className="heading-icon">
-                    📦
+                    ðŸ“¦
                   </div>
                 </div>
 
                 {activeOrders.length === 0 ? (
                   <div className="empty-state">
                     <div>
-                      📭
+                      ðŸ“­
                     </div>
 
                     <h4>
@@ -1662,7 +1662,7 @@ const Dashboard = () => {
                           <div className="order-main">
 
                             <div className="order-icon">
-                              📦
+                              ðŸ“¦
                             </div>
 
                             <div>
@@ -1672,12 +1672,12 @@ const Dashboard = () => {
 
                               <span>
                                 {order.quantity}{' '}
-                                Units •{' '}
+                                Units â€¢{' '}
                                 {order.datetime}
                               </span>
 
                               <small>
-                                📍{' '}
+                                ðŸ“{' '}
                                 {order.zone ||
                                   'Zone'}{' '}
                                 /{' '}
@@ -1726,7 +1726,7 @@ const Dashboard = () => {
 
               <div className="page-intro-card track-intro">
                 <div className="intro-icon">
-                  📦
+                  ðŸ“¦
                 </div>
 
                 <div>
@@ -1750,7 +1750,7 @@ const Dashboard = () => {
                 <div className="section-card">
                   <div className="empty-state large">
                     <div>
-                      📭
+                      ðŸ“­
                     </div>
 
                     <h4>
@@ -1813,7 +1813,7 @@ const Dashboard = () => {
 
                             <div>
                               <span>
-                                📍 Location
+                                ðŸ“ Location
                               </span>
 
                               <strong>
@@ -1827,7 +1827,7 @@ const Dashboard = () => {
 
                             <div>
                               <span>
-                                🏠 Address
+                                ðŸ  Address
                               </span>
 
                               <strong>
@@ -1838,7 +1838,7 @@ const Dashboard = () => {
 
                             <div>
                               <span>
-                                📅 Assigned Slot
+                                ðŸ“… Assigned Slot
                               </span>
 
                               <strong>
@@ -1851,7 +1851,7 @@ const Dashboard = () => {
                           <div className="dbt-card">
 
                             <span>
-                              💳 DBT PAYMENT
+                              ðŸ’³ DBT PAYMENT
                             </span>
 
                             <strong>
@@ -1861,7 +1861,7 @@ const Dashboard = () => {
 
                             {order.payoutAmount && (
                               <b>
-                                ₹
+                                â‚¹
                                 {
                                   order.payoutAmount
                                 }{' '}
@@ -1919,7 +1919,7 @@ const Dashboard = () => {
                               >
                                 <div className="timeline-dot">
                                   {step.active
-                                    ? '✓'
+                                    ? 'âœ“'
                                     : index +
                                       1}
                                 </div>
@@ -1959,7 +1959,7 @@ const Dashboard = () => {
                   </div>
 
                   <div className="heading-icon">
-                    🌾
+                    ðŸŒ¾
                   </div>
                 </div>
 
@@ -1988,7 +1988,7 @@ const Dashboard = () => {
                         key={crop}
                         value={crop}
                       >
-                        {crop} (₹
+                        {crop} (â‚¹
                         {marketRates[
                           crop
                         ].toFixed(2)}
@@ -2048,7 +2048,7 @@ const Dashboard = () => {
                 {myCrops.length === 0 ? (
                   <div className="empty-state">
                     <div>
-                      🌱
+                      ðŸŒ±
                     </div>
 
                     <h4>
@@ -2072,7 +2072,7 @@ const Dashboard = () => {
                           <div className="crop-card-top">
 
                             <div className="crop-symbol">
-                              🌾
+                              ðŸŒ¾
                             </div>
 
                             <button
@@ -2084,7 +2084,7 @@ const Dashboard = () => {
                               }
                               className="delete-button"
                             >
-                              ×
+                              Ã—
                             </button>
                           </div>
 
@@ -2109,7 +2109,7 @@ const Dashboard = () => {
                             </span>
 
                             <strong>
-                              ₹
+                              â‚¹
                               {Number(
                                 crop.ratePerKg
                               ).toFixed(2)}
@@ -2123,7 +2123,7 @@ const Dashboard = () => {
                             </span>
 
                             <strong>
-                              ₹
+                              â‚¹
                               {(
                                 crop.weightKg *
                                 crop.ratePerKg
@@ -2150,7 +2150,7 @@ const Dashboard = () => {
 
                 <div className="page-intro-card market-intro">
                   <div className="intro-icon">
-                    📈
+                    ðŸ“ˆ
                   </div>
 
                   <div>
@@ -2253,7 +2253,7 @@ const Dashboard = () => {
                               <td>
                                 <div className="table-crop-name">
                                   <span>
-                                    🌾
+                                    ðŸŒ¾
                                   </span>
 
                                   <strong>
@@ -2265,11 +2265,11 @@ const Dashboard = () => {
                               <td>
                                 <div className="past-rates">
                                   <span>
-                                    ₹{p1}
+                                    â‚¹{p1}
                                   </span>
 
                                   <span>
-                                    ₹{p2}
+                                    â‚¹{p2}
                                   </span>
                                 </div>
                               </td>
@@ -2285,7 +2285,7 @@ const Dashboard = () => {
                                           : 'price-down'
                                       }
                                     >
-                                      ₹
+                                      â‚¹
                                       {marketRates[
                                         crop
                                       ].toFixed(
@@ -2295,8 +2295,8 @@ const Dashboard = () => {
 
                                     <small>
                                       {trendUp
-                                        ? '↑ Rising'
-                                        : '↓ Falling'}
+                                        ? 'â†‘ Rising'
+                                        : 'â†“ Falling'}
                                     </small>
                                   </div>
 
@@ -2358,7 +2358,7 @@ const Dashboard = () => {
                       )
                     }
                   >
-                    ← Back to Market
+                    â† Back to Market
                   </button>
 
                   <div className="order-form-card">
@@ -2366,7 +2366,7 @@ const Dashboard = () => {
                     <div className="order-form-header">
 
                       <div className="form-icon">
-                        🛒
+                        ðŸ›’
                       </div>
 
                       <div>
@@ -2577,7 +2577,7 @@ const Dashboard = () => {
                           />
 
                           <span>
-                            📎 Choose document
+                            ðŸ“Ž Choose document
                           </span>
                         </div>
 
@@ -2602,7 +2602,7 @@ const Dashboard = () => {
                         >
                           {isSubmitting
                             ? 'Processing...'
-                            : `✓ ${l.confirmOrder}`}
+                            : `âœ“ ${l.confirmOrder}`}
                         </button>
 
                         <button
@@ -2634,7 +2634,7 @@ const Dashboard = () => {
               <div className="ai-hero">
 
                 <div className="ai-hero-icon">
-                  🤖
+                  ðŸ¤–
                 </div>
 
                 <div>
@@ -2668,7 +2668,7 @@ const Dashboard = () => {
                   </div>
 
                   <div className="ai-status">
-                    ● AI Generated
+                    â— AI Generated
                   </div>
                 </div>
 
@@ -2676,7 +2676,7 @@ const Dashboard = () => {
 
                   <div className="ai-insight green">
                     <div>
-                      🌱
+                      ðŸŒ±
                     </div>
 
                     <p>
@@ -2686,7 +2686,7 @@ const Dashboard = () => {
 
                   <div className="ai-insight blue">
                     <div>
-                      📈
+                      ðŸ“ˆ
                     </div>
 
                     <p>
@@ -2696,7 +2696,7 @@ const Dashboard = () => {
 
                   <div className="ai-insight orange">
                     <div>
-                      🌦️
+                      ðŸŒ¦ï¸
                     </div>
 
                     <p>
@@ -2735,7 +2735,7 @@ const Dashboard = () => {
                 </span>
 
                 <h2>
-                  📍{' '}
+                  ðŸ“{' '}
                   {weatherData.locationName}
                 </h2>
 
@@ -2767,7 +2767,7 @@ const Dashboard = () => {
                   )
                 }
               >
-                ×
+                Ã—
               </button>
             </div>
 
@@ -2812,7 +2812,7 @@ const Dashboard = () => {
                       </strong>
 
                       <small>
-                        💧{' '}
+                        ðŸ’§{' '}
                         {hour.rainProb ||
                           0}
                         %

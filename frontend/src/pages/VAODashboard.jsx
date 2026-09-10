@@ -19,6 +19,7 @@ const VAODashboard = () => {
   useEffect(() => {
     if (!userProfile.zone) return; 
     
+    // VAO QUERY: Only filter by Zone so they see all villages/sub-places inside it.
     const q = query(
       collection(db, 'orders'), 
       where('zone', '==', userProfile.zone)
@@ -26,30 +27,48 @@ const VAODashboard = () => {
     
     const unsub = onSnapshot(q, (snap) => {
       const allZoneOrders = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      const filtered = userProfile.subPlace 
-        ? allZoneOrders.filter(o => !o.subPlace || o.subPlace === userProfile.subPlace)
-        : allZoneOrders;
-        
-      setOrders(filtered);
+      // Sort by newest first
+      allZoneOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      setOrders(allZoneOrders);
     });
 
     return () => unsub();
   }, [userProfile]);
 
-  // Helper function to send SMS via textbee.dev serverless API route
   const triggerSms = async (phoneNumber, message) => {
     if (!phoneNumber || phoneNumber === 'N/A') return;
+    
+    let cleanPhone = phoneNumber.toString().replace(/[^\d+]/g, '');
+    
+    // Auto-format standard 10-digit Indian numbers to E.164 format
+    if (cleanPhone.length === 10) {
+      cleanPhone = `+91${cleanPhone}`;
+    } else if (!cleanPhone.startsWith('+')) {
+      cleanPhone = `+${cleanPhone}`; 
+    }
+
+    // --- TEXTBEE CREDENTIALS ---
+    const TEXTBEE_DEVICE_ID = "6a9d1e51ccb6c727098825fb"; 
+    const TEXTBEE_API_KEY = "txb_TxrBzRwSdleKWzGtwMlg3bavFWnhAL7v";
+
     try {
-      const res = await fetch('/api/send-sms', {
+      const res = await fetch(`https://api.textbee.dev/api/v1/gateway/devices/${TEXTBEE_DEVICE_ID}/send-sms`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipient: phoneNumber, message: message })
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-api-key': TEXTBEE_API_KEY
+        },
+        body: JSON.stringify({ 
+          receivers: [cleanPhone], 
+          smsBody: message 
+        })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to send SMS');
-      console.log('SMS sent successfully via textbee:', data);
+      
+      if (!res.ok) throw new Error(data.message || 'Failed to send SMS via TextBee');
+      console.log('SMS sent successfully via TextBee:', data);
     } catch (err) {
-      console.warn('SMS dispatch failed:', err.message);
+      console.warn('TextBee SMS dispatch failed:', err.message);
     }
   };
 
@@ -74,7 +93,7 @@ const VAODashboard = () => {
       docPdf.text(`Application ID: ${order.id}`, 20, 35);
       docPdf.text(`Farmer Name: ${order.userName || 'N/A'}`, 20, 45);
       docPdf.text(`Crop/Item: ${order.item} (${order.quantity}kg)`, 20, 55);
-      docPdf.text(`Zone / Location: ${order.zone} / ${order.subPlace || 'General'}`, 20, 65);
+      docPdf.text(`Zone / Location: ${order.zone} ${order.subPlace ? `/ ${order.subPlace}` : ''}`, 20, 65);
       docPdf.text(`Patta/Chitta No: ${order.pattaChitta || 'N/A'}`, 20, 75);
       
       docPdf.line(20, 85, 190, 85);
@@ -108,10 +127,10 @@ const VAODashboard = () => {
         documentUrl: signedPdfBase64 
       });
 
-      // Send SMS alert to farmer via TextBee gateway
-      await triggerSms(order.userPhone, `FarmFlow AI: Your ${order.item} application has been E-Signed and verified by the VAO.`);
+      // Send SMS alert to farmer
+      await triggerSms(order.userPhone, `FarmFlow AI: Your application for ${order.quantity}kg ${order.item} has been successfully verified and E-Signed by the VAO.`);
 
-      alert("Document successfully E-Signed, stamped inside the PDF, and sent to Procurement Officer!");
+      alert("Document successfully E-Signed, stamped inside the PDF, and SMS alert sent to Farmer!");
     } catch (error) { 
       console.error(error);
       alert("Failed to verify and sign document."); 
@@ -125,7 +144,7 @@ const VAODashboard = () => {
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', alignItems: 'center', borderBottom: '2px solid #ddd', paddingBottom: '15px' }}>
         <div>
           <h2 style={{ color: '#2c3e50', margin: 0 }}>📝 VAO Dashboard</h2>
-          <p style={{ color: '#9c27b0', margin: '5px 0 0 0', fontWeight: 'bold' }}>👤 {userProfile.name} | 📍 Zone: {userProfile.zone} ({userProfile.subPlace || 'General Jurisdiction'})</p>
+          <p style={{ color: '#9c27b0', margin: '5px 0 0 0', fontWeight: 'bold' }}>👤 {userProfile.name} | 📍 Zone: {userProfile.zone}</p>
         </div>
         <button onClick={handleLogout} style={{ background: '#ff6b6b', color: 'white', padding: '10px 20px', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>Log Out</button>
       </div>
@@ -151,7 +170,7 @@ const VAODashboard = () => {
                     <span style={{ fontSize: '13px', color: '#2c3e50', fontWeight: 'bold' }}>👤 {order.userName || 'Farmer'}</span><br/>
                     <span style={{ fontSize: '12px', color: '#2196f3' }}>✉️ {order.userEmail}</span><br/>
                     <span style={{ fontSize: '12px', color: '#e67e22', fontWeight: 'bold' }}>📞 {order.userPhone || 'N/A'}</span><br/>
-                    <span style={{ fontSize: '12px', color: '#2e7d32', fontWeight: 'bold', display: 'inline-block', marginTop: '4px' }}>📍 {order.zone} / {order.subPlace || 'General'}</span>
+                    <span style={{ fontSize: '12px', color: '#2e7d32', fontWeight: 'bold', display: 'inline-block', marginTop: '4px' }}>📍 {order.zone} {order.subPlace ? `/ ${order.subPlace}` : ''}</span>
                   </td>
                   <td style={{ padding: '15px 10px' }}>
                     No: <strong>{order.pattaChitta}</strong> <br/>
