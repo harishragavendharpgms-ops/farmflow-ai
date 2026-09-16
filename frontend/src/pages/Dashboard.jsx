@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import {
@@ -9,60 +9,394 @@ import {
   where,
   getDocs,
   deleteDoc,
-  doc,
-  updateDoc
+  doc
 } from 'firebase/firestore';
-
 import './Dashboard.css';
 
-const initialRates = {
-  "Rice (Paddy)": 22.50,
-  "Wheat": 25.00,
-  "Maize (Corn)": 20.00,
-  "Cotton": 70.00,
-  "Sugarcane": 3.15,
-  "Soybean": 46.00,
-  "Mustard": 52.00,
-  "Bajra (Pearl Millet)": 24.50,
-  "Groundnut": 65.00,
-  "Tur (Pigeon Pea)": 110.00,
-  "Onion": 28.00,
-  "Potato": 18.00
+/* =========================================================
+   ICONS
+   Using Unicode escapes prevents emoji encoding problems.
+========================================================= */
+
+const ICON = {
+  leaf: '\u{1F331}',
+  chart: '\u{1F4CA}',
+  user: '\u{1F464}',
+  crop: '\u{1F33E}',
+  cart: '\u{1F6D2}',
+  box: '\u{1F4E6}',
+  robot: '\u{1F916}',
+  help: '\u2753',
+  weather: '\u{1F324}',
+  partly: '\u26C5',
+  fog: '\u{1F32B}',
+  rain: '\u{1F327}',
+  shower: '\u{1F326}',
+  storm: '\u26C8',
+  money: '\u{1F4B0}',
+  bug: '\u{1F41B}',
+  pin: '\u{1F4CD}',
+  house: '\u{1F3E0}',
+  calendar: '\u{1F4C5}',
+  card: '\u{1F4B3}',
+  clip: '\u{1F4CE}',
+  spark: '\u2726',
+  check: '\u2713',
+  close: '\u00D7',
+  arrow: '\u2192',
+  back: '\u2190',
+  up: '\u2191',
+  down: '\u2193',
+  bell: '\u{1F514}',
+  logout: '\u21AA',
+  empty: '\u{1F4ED}',
+  wave: '\u{1F44B}'
 };
+
+/* =========================================================
+   MARKET RATES
+========================================================= */
+
+const initialRates = {
+  'Rice (Paddy)': 22.5,
+  Wheat: 25,
+  'Maize (Corn)': 20,
+  Cotton: 70,
+  Sugarcane: 3.15,
+  Soybean: 46,
+  Mustard: 52,
+  'Bajra (Pearl Millet)': 24.5,
+  Groundnut: 65,
+  'Tur (Pigeon Pea)': 110,
+  'Moong Dal': 95,
+  'Gingelly (Sesame)': 118,
+  Onion: 28,
+  Potato: 18
+};
+
+/* =========================================================
+   TRANSLATIONS
+========================================================= */
+
+const translations = {
+  en: {
+    dashboard: 'Dashboard',
+    profile: 'My Profile',
+    crops: 'My Crops',
+    procurement: 'Procurement',
+    track: 'Track Status',
+    ai: 'AI Insights',
+    help: 'Help',
+    logout: 'Log Out',
+
+    subtitle: 'Manage your smart farm operations seamlessly.',
+    liveMarket: 'Live Market Active',
+
+    userDetails: 'User Details',
+    fullName: 'Full Name:',
+    emailAddr: 'Email Address:',
+    phoneNumber: 'Phone Number:',
+    role: 'Role:',
+    farmer: 'Farmer',
+    accountStatus: 'Account Status:',
+    verified: 'Verified',
+
+    weather: 'Local Weather',
+    pestAlert: 'Pest Alert',
+    pestDesc: 'No active threats detected in your area.',
+
+    addCropTitle: 'Add New Crop Inventory',
+    selectCrop: '-- Select Major Indian Crop --',
+    weightKg: 'Weight (KGs)',
+    addCropBtn: 'Add Crop',
+    myCropInventory: 'My Crop Inventory',
+    emptyInventory: 'Your inventory is currently empty.',
+    lockedRate: 'Locked Rate:',
+    remove: 'Remove',
+
+    liveCropMarket: 'Live Crop Market Prices',
+    cropName: 'Crop Name',
+    pastRates: 'Past Rates',
+    liveRate: 'Live Rate & Trend',
+    action: 'Action',
+    sellMarket: 'Sell to Market',
+
+    procurementApp: 'Procurement Application',
+    applyingFor: 'Applying for:',
+    quantity: 'Quantity (KGs)',
+    selectZone: '-- Select Active Zone --',
+    selectSubPlace: '-- Select Sub-Place / Village --',
+    farmAddress: 'Specific Farm Address',
+    pattaChitta: 'Patta / Chitta Document Number',
+    uploadDoc: 'Upload Patta/Chitta (JPG/PNG/PDF, Max 500KB)',
+    confirmOrder: 'Submit to VAO',
+    cancel: 'Cancel',
+
+    upcomingProcurements: 'Upcoming Procurements',
+    noActiveOrders: 'No active orders at the moment.',
+
+    aiAnalysis: 'AI Analysis',
+    aiReport: 'Weekly Insight Report',
+
+    helpTitle: 'Help & Guide',
+    helpIntro:
+      'Welcome to FarmFlow AI! Here is how to use your dashboard:',
+    helpProfile:
+      'Profile: View your registered account details and status.',
+    helpCrops:
+      'My Crops: Add harvested crops, enter weight, and see estimated market value.',
+    helpProcurement:
+      'Procurement: View live market rates and submit applications to sell crops.',
+    helpTrack:
+      'Track Status: Monitor VAO verification, assigned slots, and DBT payment status.',
+    helpAi:
+      'AI Insights: Read weekly AI-generated recommendations for your farm.'
+  },
+
+  hi: {
+    dashboard: 'डैशबोर्ड',
+    profile: 'मेरी प्रोफ़ाइल',
+    crops: 'मेरी फसलें',
+    procurement: 'खरीद',
+    track: 'स्थिति ट्रैक करें',
+    ai: 'एआई अंतर्दृष्टि',
+    help: 'सहायता',
+    logout: 'लॉग आउट',
+
+    subtitle: 'अपने स्मार्ट कृषि कार्यों को आसानी से प्रबंधित करें।',
+    liveMarket: 'लाइव मार्केट सक्रिय',
+
+    userDetails: 'उपयोगकर्ता विवरण',
+    fullName: 'पूरा नाम:',
+    emailAddr: 'ईमेल पता:',
+    phoneNumber: 'फ़ोन नंबर:',
+    role: 'भूमिका:',
+    farmer: 'किसान',
+    accountStatus: 'खाता स्थिति:',
+    verified: 'सत्यापित',
+
+    weather: 'स्थानीय मौसम',
+    pestAlert: 'कीट चेतावनी',
+    pestDesc: 'आपके क्षेत्र में कोई सक्रिय खतरा नहीं पाया गया।',
+
+    addCropTitle: 'नई फसल इन्वेंटरी जोड़ें',
+    selectCrop: '-- भारतीय फसल चुनें --',
+    weightKg: 'वजन (किलो)',
+    addCropBtn: 'फसल जोड़ें',
+    myCropInventory: 'मेरी फसल इन्वेंटरी',
+    emptyInventory: 'आपकी इन्वेंटरी वर्तमान में खाली है।',
+    lockedRate: 'लॉक्ड दर:',
+    remove: 'हटाएं',
+
+    liveCropMarket: 'लाइव फसल बाजार मूल्य',
+    cropName: 'फसल का नाम',
+    pastRates: 'पिछली दरें',
+    liveRate: 'लाइव दर और रुझान',
+    action: 'कार्रवाई',
+    sellMarket: 'बाजार में बेचें',
+
+    procurementApp: 'खरीद आवेदन',
+    applyingFor: 'इसके लिए आवेदन:',
+    quantity: 'मात्रा (किलो)',
+    selectZone: '-- सक्रिय ज़ोन चुनें --',
+    selectSubPlace: '-- उप-स्थान / गांव चुनें --',
+    farmAddress: 'विशिष्ट खेत का पता',
+    pattaChitta: 'पट्टा / चिट्टा दस्तावेज़ संख्या',
+    uploadDoc:
+      'पट्टा/चिट्टा अपलोड करें (JPG/PNG/PDF, अधिकतम 500KB)',
+    confirmOrder: 'VAO को सबमिट करें',
+    cancel: 'रद्द करें',
+
+    upcomingProcurements: 'आगामी खरीद',
+    noActiveOrders: 'इस समय कोई सक्रिय आदेश नहीं है।',
+
+    aiAnalysis: 'एआई विश्लेषण',
+    aiReport: 'साप्ताहिक अंतर्दृष्टि रिपोर्ट',
+
+    helpTitle: 'सहायता और मार्गदर्शन',
+    helpIntro:
+      'FarmFlow AI में आपका स्वागत है! यहाँ बताया गया है कि डैशबोर्ड का उपयोग कैसे करें:',
+    helpProfile:
+      'प्रोफ़ाइल: अपने पंजीकृत खाते का विवरण और स्थिति देखें।',
+    helpCrops:
+      'मेरी फसलें: फसल जोड़ें, वजन दर्ज करें और अनुमानित बाजार मूल्य देखें।',
+    helpProcurement:
+      'खरीद: लाइव बाजार दरें देखें और फसल बेचने के लिए आवेदन करें।',
+    helpTrack:
+      'स्थिति ट्रैक करें: VAO सत्यापन, स्लॉट और DBT भुगतान की निगरानी करें।',
+    helpAi:
+      'एआई अंतर्दृष्टि: अपने खेत के लिए साप्ताहिक एआई सिफारिशें पढ़ें।'
+  },
+
+  ta: {
+    dashboard: 'டாஷ்போர்டு',
+    profile: 'என் சுயவிவரம்',
+    crops: 'என் பயிர்கள்',
+    procurement: 'கொள்முதல்',
+    track: 'நிலை கண்காணிக்க',
+    ai: 'AI ஆலோசனைகள்',
+    help: 'உதவி',
+    logout: 'வெளியேறு',
+
+    subtitle: 'உங்கள் பண்ணை செயல்பாடுகளை எளிதாக நிர்வகிக்கவும்.',
+    liveMarket: 'நேரடி சந்தை செயலில் உள்ளது',
+
+    userDetails: 'பயனர் விவரங்கள்',
+    fullName: 'முழு பெயர்:',
+    emailAddr: 'மின்னஞ்சல்:',
+    phoneNumber: 'தொலைபேசி எண்:',
+    role: 'பங்கு:',
+    farmer: 'விவசாயி',
+    accountStatus: 'கணக்கு நிலை:',
+    verified: 'சரிபார்க்கப்பட்டது',
+
+    weather: 'உள்ளூர் வானிலை',
+    pestAlert: 'பூச்சி எச்சரிக்கை',
+    pestDesc: 'உங்கள் பகுதியில் எந்த அச்சுறுத்தலும் இல்லை.',
+
+    addCropTitle: 'புதிய பயிர் சேர்க்கவும்',
+    selectCrop: '-- இந்திய பயிரைத் தேர்ந்தெடுக்கவும் --',
+    weightKg: 'எடை (கிலோ)',
+    addCropBtn: 'பயிரைச் சேர்',
+    myCropInventory: 'என் பயிர் இருப்பு',
+    emptyInventory: 'உங்கள் இருப்பு காலியாக உள்ளது.',
+    lockedRate: 'பூட்டப்பட்ட விலை:',
+    remove: 'நீக்கு',
+
+    liveCropMarket: 'நேரடி பயிர் சந்தை விலைகள்',
+    cropName: 'பயிர் பெயர்',
+    pastRates: 'கடந்த விலைகள்',
+    liveRate: 'நேரடி விலை & போக்கு',
+    action: 'செயல்',
+    sellMarket: 'சந்தையில் விற்க',
+
+    procurementApp: 'கொள்முதல் விண்ணப்பம்',
+    applyingFor: 'விண்ணப்பிப்பது:',
+    quantity: 'அளவு (கிலோ)',
+    selectZone: '-- மண்டலத்தைத் தேர்ந்தெடுக்கவும் --',
+    selectSubPlace: '-- கிராமத்தைத் தேர்ந்தெடுக்கவும் --',
+    farmAddress: 'குறிப்பிட்ட பண்ணை முகவரி',
+    pattaChitta: 'பட்டா / சிட்டா ஆவண எண்',
+    uploadDoc:
+      'பட்டா/சிட்டாவை பதிவேற்றவும் (JPG/PNG/PDF, அதிகபட்சம் 500KB)',
+    confirmOrder: 'VAO க்கு சமர்ப்பிக்கவும்',
+    cancel: 'ரத்து செய்',
+
+    upcomingProcurements: 'வரவிருக்கும் கொள்முதல்',
+    noActiveOrders: 'தற்போது எந்த ஆர்டரும் இல்லை.',
+
+    aiAnalysis: 'AI பகுப்பாய்வு',
+    aiReport: 'வாராந்திர அறிக்கை',
+
+    helpTitle: 'உதவி மற்றும் வழிகாட்டி',
+    helpIntro:
+      'FarmFlow AI-க்கு உங்களை வரவேற்கிறோம்! டாஷ்போர்டை எவ்வாறு பயன்படுத்துவது:',
+    helpProfile:
+      'சுயவிவரம்: உங்கள் கணக்கு விவரங்கள் மற்றும் நிலையைப் பார்க்கவும்.',
+    helpCrops:
+      'என் பயிர்கள்: பயிரைச் சேர்த்து, எடையைப் பதிவு செய்து, சந்தை மதிப்பைப் பார்க்கவும்.',
+    helpProcurement:
+      'கொள்முதல்: நேரடி சந்தை விலைகளைப் பார்த்து விற்க விண்ணப்பிக்கவும்.',
+    helpTrack:
+      'நிலை கண்காணிக்க: VAO சரிபார்ப்பு, நேரம் மற்றும் DBT கட்டண நிலையைப் பார்க்கவும்.',
+    helpAi:
+      'AI ஆலோசனைகள்: உங்கள் பண்ணைக்கான வாராந்திர AI பரிந்துரைகளைப் படிக்கவும்.'
+  }
+};
+
+/* =========================================================
+   HELPERS
+========================================================= */
 
 const generateInitialHistory = (rates) => {
   const history = {};
 
   Object.keys(rates).forEach((crop) => {
     let current = rates[crop];
-    const pastRates = [];
+    const values = [];
 
-    for (let i = 0; i < 10; i++) {
-      current = current * (1 + ((Math.random() * 0.06) - 0.03));
-      pastRates.unshift(current);
+    for (let i = 0; i < 10; i += 1) {
+      current *= 1 + Math.random() * 0.06 - 0.03;
+      values.unshift(Number(current.toFixed(2)));
     }
 
-    pastRates.push(rates[crop]);
-    history[crop] = pastRates;
+    values.push(rates[crop]);
+    history[crop] = values;
   });
 
   return history;
 };
 
+const getWeatherMeta = (code) => {
+  if (code === 0) {
+    return {
+      label: 'Clear sky',
+      icon: ICON.weather
+    };
+  }
+
+  if (code > 0 && code < 4) {
+    return {
+      label: 'Partly cloudy',
+      icon: ICON.partly
+    };
+  }
+
+  if (code >= 45 && code < 50) {
+    return {
+      label: 'Foggy / Misty',
+      icon: ICON.fog
+    };
+  }
+
+  if (code >= 50 && code < 80) {
+    return {
+      label: 'Rainy',
+      icon: ICON.rain
+    };
+  }
+
+  if (code >= 80 && code < 90) {
+    return {
+      label: 'Showers',
+      icon: ICON.shower
+    };
+  }
+
+  if (code >= 90) {
+    return {
+      label: 'Thunderstorm',
+      icon: ICON.storm
+    };
+  }
+
+  return {
+    label: 'Clear',
+    icon: ICON.weather
+  };
+};
+
+/* =========================================================
+   SPARKLINE
+========================================================= */
+
 const Sparkline = ({ data }) => {
-  if (!data || data.length < 2) return null;
+  if (!data || data.length < 2) {
+    return null;
+  }
 
   const min = Math.min(...data);
   const max = Math.max(...data);
   const range = max - min || 1;
 
-  const isUp = data[data.length - 1] >= data[data.length - 2];
+  const isUp =
+    data[data.length - 1] >= data[data.length - 2];
 
   const points = data
     .map(
-      (val, i) =>
-        `${(i / (data.length - 1)) * 80},${
-          24 - ((val - min) / range) * 20 - 2
+      (value, index) =>
+        `${(index / (data.length - 1)) * 80},${
+          22 - ((value - min) / range) * 18
         }`
     )
     .join(' ');
@@ -70,7 +404,10 @@ const Sparkline = ({ data }) => {
   return (
     <svg
       viewBox="0 0 80 24"
-      className={`sparkline ${isUp ? 'sparkline-up' : 'sparkline-down'}`}
+      className={`sparkline ${
+        isUp ? 'sparkline-up' : 'sparkline-down'
+      }`}
+      aria-hidden="true"
     >
       <polyline
         fill="none"
@@ -84,236 +421,9 @@ const Sparkline = ({ data }) => {
   );
 };
 
-const getWeatherMeta = (code) => {
-  if (code === 0) return { label: "Clear sky", icon: "â˜€ï¸" };
-  if (code > 0 && code < 4) return { label: "Partly cloudy", icon: "â›…" };
-  if (code >= 45 && code < 50) return { label: "Foggy / Misty", icon: "ðŸŒ«ï¸" };
-  if (code >= 50 && code < 80) return { label: "Rainy", icon: "ðŸŒ§ï¸" };
-  if (code >= 80 && code < 90) return { label: "Showers", icon: "ðŸŒ¦ï¸" };
-  if (code >= 90) return { label: "Thunderstorm", icon: "â›ˆï¸" };
-
-  return { label: "Clear", icon: "ðŸŒ¤ï¸" };
-};
-
-const t = {
-  en: {
-    navDashboard: "ðŸ“Š Dashboard",
-    navProfile: "ðŸ‘¤ My Profile",
-    navCrops: "ðŸŒ¾ My Crops",
-    navProcurement: "ðŸ›’ Procurement",
-    navTrack: "ðŸ“¦ Track Status",
-    navAi: "ðŸ¤– AI Insights",
-    navHelp: "â“ Help",
-    logout: "Log Out",
-    module: "Module",
-    subtitle: "Manage your smart farm operations seamlessly.",
-    liveMarket: "Live Market Active",
-    userDetails: "User Details",
-    fullName: "Full Name:",
-    emailAddr: "Email Address:",
-    phoneNumber: "Phone Number:",
-    role: "Role:",
-    farmManager: "Farmer",
-    accountStatus: "Account Status:",
-    verified: "Verified ðŸŸ¢",
-    weather: "Local Weather",
-    pestAlert: "Pest Alert",
-    pestDesc: "No active threats detected in your area.",
-    addCropTitle: "Add New Crop Inventory",
-    selectCrop: "-- Select Major Indian Crop --",
-    weightKg: "Weight (KGs)",
-    addCropBtn: "Add Crop",
-    myCropInventory: "My Crop Inventory",
-    emptyInventory: "Your inventory is currently empty.",
-    lockedRate: "Locked Rate:",
-    remove: "Remove",
-    liveCropMarket: "Live Crop Market Prices",
-    cropName: "Crop Name",
-    pastRates: "Past Rates",
-    liveRate: "Live Rate & Trend",
-    action: "Action",
-    sellMarket: "Sell to Market",
-    procurementApp: "Procurement Application",
-    applyingFor: "Applying for:",
-    quantity: "Quantity (KGs / Bags)",
-    selectZone: "-- Select Active Zone --",
-    selectSubPlace: "-- Select Sub-Place / Village --",
-    farmAddress: "Specific Farm Address",
-    pattaChitta: "Patta / Chitta Document Number",
-    uploadDoc: "Upload Patta/Chitta (JPG/PDF, Max 500KB)",
-    confirmOrder: "Submit to VAO",
-    cancel: "Cancel",
-    upcomingProcurements: "Upcoming Procurements",
-    noActiveOrders: "No active orders at the moment.",
-    aiAnalysis: "AI Analysis",
-    aiReport: "Weekly Insight Report generated:",
-    aiTip1:
-      "Nitrogen levels in your fields may be dropping. Recommended to apply Urea by Thursday.",
-    aiTip2:
-      "Market conditions suggest holding wheat sales for 2 weeks to maximize profit.",
-    aiTip3:
-      "Weather analysis shows low risk of pests for the next 7 days.",
-    helpTitle: "Help & Guide",
-    helpIntro:
-      "Welcome to FarmFlow AI! Here is how to use your dashboard:",
-    helpProfile:
-      "Profile: View your registered account details and status.",
-    helpCrops:
-      "My Crops: Add your harvested crops, enter the weight, and see the estimated live market value.",
-    helpProcurement:
-      "Procurement: View live fluctuating market rates. You can apply to sell your crops or buy farming supplies.",
-    helpTrack:
-      "Track Status: Monitor your VAO verification progress, assigned time slots, and direct benefit transfer (DBT) payouts.",
-    helpAi:
-      "AI Insights: Read weekly AI-generated advice to maximize your farm's profit and health."
-  },
-
-  hi: {
-    navDashboard: "ðŸ“Š à¤¡à¥ˆà¤¶à¤¬à¥‹à¤°à¥à¤¡",
-    navProfile: "ðŸ‘¤ à¤®à¥‡à¤°à¥€ à¤ªà¥à¤°à¥‹à¤«à¤¼à¤¾à¤‡à¤²",
-    navCrops: "ðŸŒ¾ à¤®à¥‡à¤°à¥€ à¤«à¤¸à¤²à¥‡à¤‚",
-    navProcurement: "ðŸ›’ à¤–à¤°à¥€à¤¦",
-    navTrack: "ðŸ“¦ à¤¸à¥à¤¥à¤¿à¤¤à¤¿ à¤Ÿà¥à¤°à¥ˆà¤• à¤•à¤°à¥‡à¤‚",
-    navAi: "ðŸ¤– à¤à¤†à¤ˆ à¤…à¤‚à¤¤à¤°à¥à¤¦à¥ƒà¤·à¥à¤Ÿà¤¿",
-    navHelp: "â“ à¤¸à¤¹à¤¾à¤¯à¤¤à¤¾",
-    logout: "à¤²à¥‰à¤— à¤†à¤‰à¤Ÿ",
-    module: "à¤®à¥‰à¤¡à¥à¤¯à¥‚à¤²",
-    subtitle: "à¤…à¤ªà¤¨à¥‡ à¤¸à¥à¤®à¤¾à¤°à¥à¤Ÿ à¤•à¥ƒà¤·à¤¿ à¤•à¤¾à¤°à¥à¤¯à¥‹à¤‚ à¤•à¥‹ à¤†à¤¸à¤¾à¤¨à¥€ à¤¸à¥‡ à¤ªà¥à¤°à¤¬à¤‚à¤§à¤¿à¤¤ à¤•à¤°à¥‡à¤‚à¥¤",
-    liveMarket: "à¤²à¤¾à¤‡à¤µ à¤®à¤¾à¤°à¥à¤•à¥‡à¤Ÿ à¤¸à¤•à¥à¤°à¤¿à¤¯",
-    userDetails: "à¤‰à¤ªà¤¯à¥‹à¤—à¤•à¤°à¥à¤¤à¤¾ à¤µà¤¿à¤µà¤°à¤£",
-    fullName: "à¤ªà¥‚à¤°à¤¾ à¤¨à¤¾à¤®:",
-    emailAddr: "à¤ˆà¤®à¥‡à¤² à¤ªà¤¤à¤¾:",
-    phoneNumber: "à¤«à¤¼à¥‹à¤¨ à¤¨à¤‚à¤¬à¤°:",
-    role: "à¤­à¥‚à¤®à¤¿à¤•à¤¾:",
-    farmManager: "à¤•à¤¿à¤¸à¤¾à¤¨",
-    accountStatus: "à¤–à¤¾à¤¤à¤¾ à¤¸à¥à¤¥à¤¿à¤¤à¤¿:",
-    verified: "à¤¸à¤¤à¥à¤¯à¤¾à¤ªà¤¿à¤¤ ðŸŸ¢",
-    weather: "à¤¸à¥à¤¥à¤¾à¤¨à¥€à¤¯ à¤®à¥Œà¤¸à¤®",
-    pestAlert: "à¤•à¥€à¤Ÿ à¤šà¥‡à¤¤à¤¾à¤µà¤¨à¥€",
-    pestDesc: "à¤†à¤ªà¤•à¥‡ à¤•à¥à¤·à¥‡à¤¤à¥à¤° à¤®à¥‡à¤‚ à¤•à¥‹à¤ˆ à¤¸à¤•à¥à¤°à¤¿à¤¯ à¤–à¤¤à¤°à¤¾ à¤¨à¤¹à¥€à¤‚ à¤ªà¤¾à¤¯à¤¾ à¤—à¤¯à¤¾à¥¤",
-    addCropTitle: "à¤¨à¤ˆ à¤«à¤¸à¤² à¤‡à¤¨à¥à¤µà¥‡à¤‚à¤Ÿà¤°à¥€ à¤œà¥‹à¤¡à¤¼à¥‡à¤‚",
-    selectCrop: "-- à¤­à¤¾à¤°à¤¤à¥€à¤¯ à¤«à¤¸à¤² à¤šà¥à¤¨à¥‡à¤‚ --",
-    weightKg: "à¤µà¤œà¤¨ (à¤•à¤¿à¤²à¥‹)",
-    addCropBtn: "à¤«à¤¸à¤² à¤œà¥‹à¤¡à¤¼à¥‡à¤‚",
-    myCropInventory: "à¤®à¥‡à¤°à¥€ à¤«à¤¸à¤² à¤‡à¤¨à¥à¤µà¥‡à¤‚à¤Ÿà¤°à¥€",
-    emptyInventory: "à¤†à¤ªà¤•à¥€ à¤‡à¤¨à¥à¤µà¥‡à¤‚à¤Ÿà¤°à¥€ à¤µà¤°à¥à¤¤à¤®à¤¾à¤¨ à¤®à¥‡à¤‚ à¤–à¤¾à¤²à¥€ à¤¹à¥ˆà¥¤",
-    lockedRate: "à¤²à¥‰à¤•à¥à¤¡ à¤¦à¤°:",
-    remove: "à¤¹à¤Ÿà¤¾à¤à¤‚",
-    liveCropMarket: "à¤²à¤¾à¤‡à¤µ à¤«à¤¸à¤² à¤¬à¤¾à¤œà¤¾à¤° à¤®à¥‚à¤²à¥à¤¯",
-    cropName: "à¤«à¤¸à¤² à¤•à¤¾ à¤¨à¤¾à¤®",
-    pastRates: "à¤ªà¤¿à¤›à¤²à¥€ à¤¦à¤°à¥‡à¤‚",
-    liveRate: "à¤²à¤¾à¤‡à¤µ à¤¦à¤° à¤”à¤° à¤°à¥à¤à¤¾à¤¨",
-    action: "à¤•à¤¾à¤°à¥à¤°à¤µà¤¾à¤ˆ",
-    sellMarket: "à¤¬à¤¾à¤œà¤¾à¤° à¤®à¥‡à¤‚ à¤¬à¥‡à¤šà¥‡à¤‚",
-    procurementApp: "à¤–à¤°à¥€à¤¦ à¤†à¤µà¥‡à¤¦à¤¨",
-    applyingFor: "à¤‡à¤¸à¤•à¥‡ à¤²à¤¿à¤ à¤†à¤µà¥‡à¤¦à¤¨:",
-    quantity: "à¤®à¤¾à¤¤à¥à¤°à¤¾ (à¤•à¤¿à¤²à¥‹ / à¤¬à¥ˆà¤—)",
-    selectZone: "-- à¤¸à¤•à¥à¤°à¤¿à¤¯ à¤œà¤¼à¥‹à¤¨ à¤šà¥à¤¨à¥‡à¤‚ --",
-    selectSubPlace: "-- à¤‰à¤ª-à¤¸à¥à¤¥à¤¾à¤¨ à¤šà¥à¤¨à¥‡à¤‚ --",
-    farmAddress: "à¤µà¤¿à¤¶à¤¿à¤·à¥à¤Ÿ à¤–à¥‡à¤¤ à¤•à¤¾ à¤ªà¤¤à¤¾",
-    pattaChitta: "à¤ªà¤Ÿà¥à¤Ÿà¤¾ / à¤šà¤¿à¤Ÿà¥à¤Ÿà¤¾ à¤¦à¤¸à¥à¤¤à¤¾à¤µà¥‡à¤œà¤¼ à¤¸à¤‚à¤–à¥à¤¯à¤¾",
-    uploadDoc:
-      "à¤ªà¤Ÿà¥à¤Ÿà¤¾/à¤šà¤¿à¤Ÿà¥à¤Ÿà¤¾ à¤…à¤ªà¤²à¥‹à¤¡ à¤•à¤°à¥‡à¤‚ (JPG/PDF, Max 500KB)",
-    confirmOrder: "VAO à¤•à¥‹ à¤¸à¤¬à¤®à¤¿à¤Ÿ à¤•à¤°à¥‡à¤‚",
-    cancel: "à¤°à¤¦à¥à¤¦ à¤•à¤°à¥‡à¤‚",
-    upcomingProcurements: "à¤†à¤—à¤¾à¤®à¥€ à¤–à¤°à¥€à¤¦",
-    noActiveOrders: "à¤‡à¤¸ à¤¸à¤®à¤¯ à¤•à¥‹à¤ˆ à¤¸à¤•à¥à¤°à¤¿à¤¯ à¤†à¤¦à¥‡à¤¶ à¤¨à¤¹à¥€à¤‚ à¤¹à¥ˆà¥¤",
-    aiAnalysis: "AI à¤µà¤¿à¤¶à¥à¤²à¥‡à¤·à¤£",
-    aiReport: "à¤¸à¤¾à¤ªà¥à¤¤à¤¾à¤¹à¤¿à¤• à¤…à¤‚à¤¤à¤°à¥à¤¦à¥ƒà¤·à¥à¤Ÿà¤¿ à¤°à¤¿à¤ªà¥‹à¤°à¥à¤Ÿ à¤œà¤¨à¤°à¥‡à¤Ÿ à¤•à¥€ à¤—à¤ˆ:",
-    aiTip1:
-      "à¤†à¤ªà¤•à¥‡ à¤–à¥‡à¤¤à¥‹à¤‚ à¤®à¥‡à¤‚ à¤¨à¤¾à¤‡à¤Ÿà¥à¤°à¥‹à¤œà¤¨ à¤•à¤¾ à¤¸à¥à¤¤à¤° à¤—à¤¿à¤° à¤¸à¤•à¤¤à¤¾ à¤¹à¥ˆà¥¤ à¤—à¥à¤°à¥à¤µà¤¾à¤° à¤¤à¤• à¤¯à¥‚à¤°à¤¿à¤¯à¤¾ à¤²à¤—à¤¾à¤¨à¥‡ à¤•à¥€ à¤¸à¤²à¤¾à¤¹ à¤¦à¥€ à¤œà¤¾à¤¤à¥€ à¤¹à¥ˆà¥¤",
-    aiTip2:
-      "à¤¬à¤¾à¤œà¤¾à¤° à¤•à¥€ à¤¸à¥à¤¥à¤¿à¤¤à¤¿ à¤…à¤§à¤¿à¤•à¤¤à¤® à¤²à¤¾à¤­ à¤•à¥‡ à¤²à¤¿à¤ à¤—à¥‡à¤¹à¥‚à¤‚ à¤•à¥€ à¤¬à¤¿à¤•à¥à¤°à¥€ 2 à¤¸à¤ªà¥à¤¤à¤¾à¤¹ à¤¤à¤• à¤°à¥‹à¤•à¤¨à¥‡ à¤•à¤¾ à¤¸à¥à¤à¤¾à¤µ à¤¦à¥‡à¤¤à¥€ à¤¹à¥ˆà¥¤",
-    aiTip3:
-      "à¤®à¥Œà¤¸à¤® à¤µà¤¿à¤¶à¥à¤²à¥‡à¤·à¤£ à¤…à¤—à¤²à¥‡ 7 à¤¦à¤¿à¤¨à¥‹à¤‚ à¤¤à¤• à¤•à¥€à¤Ÿà¥‹à¤‚ à¤•à¥‡ à¤•à¤® à¤œà¥‹à¤–à¤¿à¤® à¤•à¥‹ à¤¦à¤°à¥à¤¶à¤¾à¤¤à¤¾ à¤¹à¥ˆà¥¤",
-    helpTitle: "à¤¸à¤¹à¤¾à¤¯à¤¤à¤¾ à¤”à¤° à¤®à¤¾à¤°à¥à¤—à¤¦à¤°à¥à¤¶à¤¨",
-    helpIntro:
-      "FarmFlow AI à¤®à¥‡à¤‚ à¤†à¤ªà¤•à¤¾ à¤¸à¥à¤µà¤¾à¤—à¤¤ à¤¹à¥ˆ! à¤¯à¤¹à¤¾à¤ à¤¬à¤¤à¤¾à¤¯à¤¾ à¤—à¤¯à¤¾ à¤¹à¥ˆ à¤•à¤¿ à¤…à¤ªà¤¨à¥‡ à¤¡à¥ˆà¤¶à¤¬à¥‹à¤°à¥à¤¡ à¤•à¤¾ à¤‰à¤ªà¤¯à¥‹à¤— à¤•à¥ˆà¤¸à¥‡ à¤•à¤°à¥‡à¤‚:",
-    helpProfile:
-      "à¤ªà¥à¤°à¥‹à¤«à¤¼à¤¾à¤‡à¤²: à¤…à¤ªà¤¨à¥‡ à¤ªà¤‚à¤œà¥€à¤•à¥ƒà¤¤ à¤–à¤¾à¤¤à¥‡ à¤•à¤¾ à¤µà¤¿à¤µà¤°à¤£ à¤”à¤° à¤¸à¥à¤¥à¤¿à¤¤à¤¿ à¤¦à¥‡à¤–à¥‡à¤‚à¥¤",
-    helpCrops:
-      "à¤®à¥‡à¤°à¥€ à¤«à¤¸à¤²à¥‡à¤‚: à¤…à¤ªà¤¨à¥€ à¤•à¤¾à¤Ÿà¥€ à¤—à¤ˆ à¤«à¤¸à¤²à¥‡à¤‚ à¤œà¥‹à¤¡à¤¼à¥‡à¤‚, à¤µà¤œà¤¨ à¤¦à¤°à¥à¤œ à¤•à¤°à¥‡à¤‚, à¤”à¤° à¤…à¤¨à¥à¤®à¤¾à¤¨à¤¿à¤¤ à¤²à¤¾à¤‡à¤µ à¤¬à¤¾à¤œà¤¾à¤° à¤®à¥‚à¤²à¥à¤¯ à¤¦à¥‡à¤–à¥‡à¤‚à¥¤",
-    helpProcurement:
-      "à¤–à¤°à¥€à¤¦: à¤²à¤¾à¤‡à¤µ à¤¬à¤¾à¤œà¤¾à¤° à¤¦à¤°à¥‡à¤‚ à¤¦à¥‡à¤–à¥‡à¤‚à¥¤ à¤†à¤ª à¤…à¤ªà¤¨à¥€ à¤«à¤¸à¤² à¤¬à¥‡à¤šà¤¨à¥‡ à¤¯à¤¾ à¤•à¥ƒà¤·à¤¿ à¤†à¤ªà¥‚à¤°à¥à¤¤à¤¿ à¤–à¤°à¥€à¤¦à¤¨à¥‡ à¤•à¥‡ à¤²à¤¿à¤ à¤†à¤µà¥‡à¤¦à¤¨ à¤•à¤° à¤¸à¤•à¤¤à¥‡ à¤¹à¥ˆà¤‚à¥¤",
-    helpTrack:
-      "à¤¸à¥à¤¥à¤¿à¤¤à¤¿ à¤Ÿà¥à¤°à¥ˆà¤• à¤•à¤°à¥‡à¤‚: à¤…à¤ªà¤¨à¥‡ VAO à¤¸à¤¤à¥à¤¯à¤¾à¤ªà¤¨, à¤†à¤µà¤‚à¤Ÿà¤¿à¤¤ à¤¸à¥à¤²à¥‰à¤Ÿ à¤”à¤° DBT à¤­à¥à¤—à¤¤à¤¾à¤¨ à¤•à¥€ à¤¨à¤¿à¤—à¤°à¤¾à¤¨à¥€ à¤•à¤°à¥‡à¤‚à¥¤",
-    helpAi:
-      "à¤à¤†à¤ˆ à¤…à¤‚à¤¤à¤°à¥à¤¦à¥ƒà¤·à¥à¤Ÿà¤¿: à¤…à¤ªà¤¨à¥‡ à¤–à¥‡à¤¤ à¤•à¥‡ à¤®à¥à¤¨à¤¾à¤«à¥‡ à¤•à¥‹ à¤…à¤§à¤¿à¤•à¤¤à¤® à¤•à¤°à¤¨à¥‡ à¤•à¥‡ à¤²à¤¿à¤ à¤à¤†à¤ˆ-à¤œà¤¨à¤¿à¤¤ à¤¸à¤²à¤¾à¤¹ à¤ªà¤¢à¤¼à¥‡à¤‚à¥¤"
-  },
-
-  ta: {
-    navDashboard: "ðŸ“Š à®Ÿà®¾à®·à¯à®ªà¯‹à®°à¯à®Ÿà¯",
-    navProfile: "ðŸ‘¤ à®Žà®©à¯ à®šà¯à®¯à®µà®¿à®µà®°à®®à¯",
-    navCrops: "ðŸŒ¾ à®Žà®©à¯ à®ªà®¯à®¿à®°à¯à®•à®³à¯",
-    navProcurement: "ðŸ›’ à®•à¯Šà®³à¯à®®à¯à®¤à®²à¯",
-    navTrack: "ðŸ“¦ à®¨à®¿à®²à¯ˆ à®•à®£à¯à®•à®¾à®£à®¿à®•à¯à®•",
-    navAi: "ðŸ¤– AI à®†à®²à¯‹à®šà®©à¯ˆà®•à®³à¯",
-    navHelp: "â“ à®‰à®¤à®µà®¿",
-    logout: "à®µà¯†à®³à®¿à®¯à¯‡à®±à¯",
-    module: "à®ªà®¿à®°à®¿à®µà¯",
-    subtitle: "à®‰à®™à¯à®•à®³à¯ à®ªà®£à¯à®£à¯ˆ à®šà¯†à®¯à®²à¯à®ªà®¾à®Ÿà¯à®•à®³à¯ˆ à®Žà®³à®¿à®¤à®¾à®• à®¨à®¿à®°à¯à®µà®•à®¿à®•à¯à®•à®µà¯à®®à¯.",
-    liveMarket: "à®¨à¯‡à®°à®Ÿà®¿ à®šà®¨à¯à®¤à¯ˆ à®šà¯†à®¯à®²à®¿à®²à¯ à®‰à®³à¯à®³à®¤à¯",
-    userDetails: "à®ªà®¯à®©à®°à¯ à®µà®¿à®µà®°à®™à¯à®•à®³à¯",
-    fullName: "à®®à¯à®´à¯ à®ªà¯†à®¯à®°à¯:",
-    emailAddr: "à®®à®¿à®©à¯à®©à®žà¯à®šà®²à¯:",
-    phoneNumber: "à®¤à¯Šà®²à¯ˆà®ªà¯‡à®šà®¿ à®Žà®£à¯:",
-    role: "à®ªà®™à¯à®•à¯:",
-    farmManager: "à®µà®¿à®µà®šà®¾à®¯à®¿",
-    accountStatus: "à®•à®£à®•à¯à®•à¯ à®¨à®¿à®²à¯ˆ:",
-    verified: "à®šà®°à®¿à®ªà®¾à®°à¯à®•à¯à®•à®ªà¯à®ªà®Ÿà¯à®Ÿà®¤à¯ ðŸŸ¢",
-    weather: "à®‰à®³à¯à®³à¯‚à®°à¯ à®µà®¾à®©à®¿à®²à¯ˆ",
-    pestAlert: "à®ªà¯‚à®šà¯à®šà®¿ à®Žà®šà¯à®šà®°à®¿à®•à¯à®•à¯ˆ",
-    pestDesc: "à®‰à®™à¯à®•à®³à¯ à®ªà®•à¯à®¤à®¿à®¯à®¿à®²à¯ à®Žà®¨à¯à®¤ à®…à®šà¯à®šà¯à®±à¯à®¤à¯à®¤à®²à¯à®®à¯ à®‡à®²à¯à®²à¯ˆ.",
-    addCropTitle: "à®ªà¯à®¤à®¿à®¯ à®ªà®¯à®¿à®°à¯ à®šà¯‡à®°à¯à®ªà¯à®ªà®¤à¯",
-    selectCrop: "-- à®‡à®¨à¯à®¤à®¿à®¯ à®ªà®¯à®¿à®°à¯ˆà®¤à¯ à®¤à¯‡à®°à¯à®¨à¯à®¤à¯†à®Ÿà¯à®•à¯à®•à®µà¯à®®à¯ --",
-    weightKg: "à®Žà®Ÿà¯ˆ (à®•à®¿à®²à¯‹)",
-    addCropBtn: "à®ªà®¯à®¿à®°à¯ˆà®šà¯ à®šà¯‡à®°à¯",
-    myCropInventory: "à®Žà®©à¯ à®ªà®¯à®¿à®°à¯ à®‡à®°à¯à®ªà¯à®ªà¯",
-    emptyInventory: "à®‰à®™à¯à®•à®³à¯ à®‡à®°à¯à®ªà¯à®ªà¯ à®•à®¾à®²à®¿à®¯à®¾à®• à®‰à®³à¯à®³à®¤à¯.",
-    lockedRate: "à®ªà¯‚à®Ÿà¯à®Ÿà®ªà¯à®ªà®Ÿà¯à®Ÿ à®µà®¿à®²à¯ˆ:",
-    remove: "à®¨à¯€à®•à¯à®•à¯",
-    liveCropMarket: "à®¨à¯‡à®°à®Ÿà®¿ à®ªà®¯à®¿à®°à¯ à®šà®¨à¯à®¤à¯ˆ à®µà®¿à®²à¯ˆà®•à®³à¯",
-    cropName: "à®ªà®¯à®¿à®°à¯ à®ªà¯†à®¯à®°à¯",
-    pastRates: "à®•à®Ÿà®¨à¯à®¤ à®µà®¿à®²à¯ˆà®•à®³à¯",
-    liveRate: "à®¨à¯‡à®°à®Ÿà®¿ à®µà®¿à®²à¯ˆ & à®ªà¯‹à®•à¯à®•à¯",
-    action: "à®šà¯†à®¯à®²à¯",
-    sellMarket: "à®šà®¨à¯à®¤à¯ˆà®¯à®¿à®²à¯ à®µà®¿à®±à¯à®•",
-    procurementApp: "à®•à¯Šà®³à¯à®®à¯à®¤à®²à¯ à®µà®¿à®£à¯à®£à®ªà¯à®ªà®®à¯",
-    applyingFor: "à®µà®¿à®£à¯à®£à®ªà¯à®ªà®¿à®ªà¯à®ªà®¤à¯:",
-    quantity: "à®…à®³à®µà¯ (à®•à®¿à®²à¯‹ / à®ªà¯ˆà®•à®³à¯)",
-    selectZone: "-- à®®à®£à¯à®Ÿà®²à®¤à¯à®¤à¯ˆà®¤à¯ à®¤à¯‡à®°à¯à®¨à¯à®¤à¯†à®Ÿà¯à®•à¯à®•à®µà¯à®®à¯ --",
-    selectSubPlace: "-- à®•à®¿à®°à®¾à®®à®¤à¯à®¤à¯ˆà®¤à¯ à®¤à¯‡à®°à¯à®¨à¯à®¤à¯†à®Ÿà¯à®•à¯à®•à®µà¯à®®à¯ --",
-    farmAddress: "à®•à¯à®±à®¿à®ªà¯à®ªà®¿à®Ÿà¯à®Ÿ à®ªà®£à¯à®£à¯ˆ à®®à¯à®•à®µà®°à®¿",
-    pattaChitta: "à®ªà®Ÿà¯à®Ÿà®¾ / à®šà®¿à®Ÿà¯à®Ÿà®¾ à®†à®µà®£ à®Žà®£à¯",
-    uploadDoc:
-      "à®ªà®Ÿà¯à®Ÿà®¾/à®šà®¿à®Ÿà¯à®Ÿà®¾à®µà¯ˆ à®ªà®¤à®¿à®µà¯‡à®±à¯à®±à®µà¯à®®à¯ (JPG/PDF, Max 500KB)",
-    confirmOrder: "VAO à®•à¯à®•à¯ à®šà®®à®°à¯à®ªà¯à®ªà®¿à®•à¯à®•à®µà¯à®®à¯",
-    cancel: "à®°à®¤à¯à®¤à¯ à®šà¯†à®¯à¯",
-    upcomingProcurements: "à®µà®°à®µà®¿à®°à¯à®•à¯à®•à¯à®®à¯ à®•à¯Šà®³à¯à®®à¯à®¤à®²à¯",
-    noActiveOrders: "à®¤à®±à¯à®ªà¯‹à®¤à¯ à®Žà®¨à¯à®¤ à®†à®°à¯à®Ÿà®°à¯à®®à¯ à®‡à®²à¯à®²à¯ˆ.",
-    aiAnalysis: "AI à®ªà®•à¯à®ªà¯à®ªà®¾à®¯à¯à®µà¯",
-    aiReport: "à®µà®¾à®°à®¾à®¨à¯à®¤à®¿à®° à®…à®±à®¿à®•à¯à®•à¯ˆ:",
-    aiTip1:
-      "à®¨à¯ˆà®Ÿà¯à®°à®œà®©à¯ à®…à®³à®µà¯à®•à®³à¯ à®•à¯à®±à¯ˆà®¯à®•à¯à®•à¯‚à®Ÿà¯à®®à¯. à®µà®¿à®¯à®¾à®´à®•à¯à®•à®¿à®´à®®à¯ˆà®•à¯à®•à¯à®³à¯ à®¯à¯‚à®°à®¿à®¯à®¾ à®ªà®¯à®©à¯à®ªà®Ÿà¯à®¤à¯à®¤ à®ªà®°à®¿à®¨à¯à®¤à¯à®°à¯ˆà®•à¯à®•à®ªà¯à®ªà®Ÿà¯à®•à®¿à®±à®¤à¯.",
-    aiTip2:
-      "à®²à®¾à®ªà®¤à¯à®¤à¯ˆ à®…à®¤à®¿à®•à®°à®¿à®•à¯à®• à®•à¯‹à®¤à¯à®®à¯ˆ à®µà®¿à®±à¯à®ªà®©à¯ˆà®¯à¯ˆ 2 à®µà®¾à®°à®™à¯à®•à®³à¯à®•à¯à®•à¯ à®¤à®¾à®®à®¤à®ªà¯à®ªà®Ÿà¯à®¤à¯à®¤à®µà¯à®®à¯.",
-    aiTip3:
-      "à®…à®Ÿà¯à®¤à¯à®¤ 7 à®¨à®¾à®Ÿà¯à®•à®³à¯à®•à¯à®•à¯ à®ªà¯‚à®šà¯à®šà®¿à®•à®³à¯ à®¤à®¾à®•à¯à®•à¯à®®à¯ à®…à®ªà®¾à®¯à®®à¯ à®•à¯à®±à¯ˆà®µà¯.",
-    helpTitle: "à®‰à®¤à®µà®¿ à®®à®±à¯à®±à¯à®®à¯ à®µà®´à®¿à®•à®¾à®Ÿà¯à®Ÿà®¿",
-    helpIntro:
-      "FarmFlow AI-à®•à¯à®•à¯ à®‰à®™à¯à®•à®³à¯ˆ à®µà®°à®µà¯‡à®±à¯à®•à®¿à®±à¯‹à®®à¯! à®Ÿà®¾à®·à¯à®ªà¯‹à®°à¯à®Ÿà¯ˆ à®Žà®µà¯à®µà®¾à®±à¯ à®ªà®¯à®©à¯à®ªà®Ÿà¯à®¤à¯à®¤à¯à®µà®¤à¯:",
-    helpProfile:
-      "à®šà¯à®¯à®µà®¿à®µà®°à®®à¯: à®‰à®™à¯à®•à®³à¯ à®•à®£à®•à¯à®•à¯ à®µà®¿à®µà®°à®™à¯à®•à®³à¯ à®®à®±à¯à®±à¯à®®à¯ à®¨à®¿à®²à¯ˆà®¯à¯ˆà®ªà¯ à®ªà®¾à®°à¯à®•à¯à®•à®µà¯à®®à¯.",
-    helpCrops:
-      "à®Žà®©à¯ à®ªà®¯à®¿à®°à¯à®•à®³à¯: à®‰à®™à¯à®•à®³à¯ à®…à®±à¯à®µà®Ÿà¯ˆ à®ªà®¯à®¿à®°à¯à®•à®³à¯ˆà®šà¯ à®šà¯‡à®°à¯à®•à¯à®•à®µà¯à®®à¯, à®¨à¯‡à®°à®Ÿà®¿ à®šà®¨à¯à®¤à¯ˆ à®®à®¤à®¿à®ªà¯à®ªà¯ˆ à®…à®±à®¿à®¯à®µà¯à®®à¯.",
-    helpProcurement:
-      "à®•à¯Šà®³à¯à®®à¯à®¤à®²à¯: à®¨à¯‡à®°à®Ÿà®¿ à®šà®¨à¯à®¤à¯ˆ à®µà®¿à®²à¯ˆà®•à®³à¯ˆ à®•à®¾à®£à¯à®™à¯à®•à®³à¯. à®µà®¿à®±à¯à®• à®…à®²à¯à®²à®¤à¯ à®µà®¾à®™à¯à®• à®µà®¿à®£à¯à®£à®ªà¯à®ªà®¿à®•à¯à®•à®²à®¾à®®à¯.",
-    helpTrack:
-      "à®¨à®¿à®²à¯ˆ à®•à®£à¯à®•à®¾à®£à®¿à®•à¯à®•: VAO à®šà®°à®¿à®ªà®¾à®°à¯à®ªà¯à®ªà¯, à®’à®¤à¯à®•à¯à®•à®ªà¯à®ªà®Ÿà¯à®Ÿ à®¨à¯‡à®°à®™à¯à®•à®³à¯ à®®à®±à¯à®±à¯à®®à¯ DBT à®ªà®°à®¿à®®à®¾à®±à¯à®±à®™à¯à®•à®³à¯ˆ à®•à®£à¯à®•à®¾à®£à®¿à®•à¯à®•à®µà¯à®®à¯.",
-    helpAi:
-      "AI à®†à®²à¯‹à®šà®©à¯ˆà®•à®³à¯: à®²à®¾à®ªà®¤à¯à®¤à¯ˆ à®…à®¤à®¿à®•à®°à®¿à®•à¯à®• AI à®†à®²à¯‹à®šà®©à¯ˆà®•à®³à¯ˆà®ªà¯ à®ªà®Ÿà®¿à®•à¯à®•à®µà¯à®®à¯."
-  }
-};
+/* =========================================================
+   DASHBOARD COMPONENT
+========================================================= */
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -322,41 +432,51 @@ const Dashboard = () => {
   const [lang, setLang] = useState('en');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  const l = t[lang];
+  const [marketRates, setMarketRates] =
+    useState(initialRates);
 
-  const [marketRates, setMarketRates] = useState(initialRates);
   const [marketHistory, setMarketHistory] = useState(() =>
     generateInitialHistory(initialRates)
   );
 
   const [activeOrders, setActiveOrders] = useState([]);
+  const [myCrops, setMyCrops] = useState([]);
+
   const [userProfile, setUserProfile] = useState({
     name: '',
     email: '',
-    phone: ''
+    phone: '',
+    role: 'farmer'
   });
 
   const [vaoUsers, setVaoUsers] = useState([]);
   const [availableZones, setAvailableZones] = useState([]);
-  const [availableSubPlaces, setAvailableSubPlaces] = useState([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [availableSubPlaces, setAvailableSubPlaces] =
+    useState([]);
 
-  const [latestNotification, setLatestNotification] = useState(null);
+  const [isSubmitting, setIsSubmitting] =
+    useState(false);
+
+  const [latestNotification, setLatestNotification] =
+    useState(null);
+
   const [showBanner, setShowBanner] = useState(false);
 
   const [weatherData, setWeatherData] = useState({
     temp: '--',
     condition: 'Fetching location weather...',
     locationName: 'Detecting location...',
-    icon: 'ðŸŒ¤ï¸'
+    icon: ICON.weather
   });
 
-  const [hourlyForecast, setHourlyForecast] = useState([]);
-  const [showWeatherModal, setShowWeatherModal] = useState(false);
+  const [hourlyForecast, setHourlyForecast] =
+    useState([]);
 
-  const [myCrops, setMyCrops] = useState([]);
+  const [showWeatherModal, setShowWeatherModal] =
+    useState(false);
 
-  const [orderingItem, setOrderingItem] = useState(null);
+  const [orderingItem, setOrderingItem] =
+    useState(null);
 
   const [orderDetails, setOrderDetails] = useState({
     zone: '',
@@ -366,12 +486,19 @@ const Dashboard = () => {
     pattaChitta: ''
   });
 
-  const [pattaFile, setPattaFile] = useState(null);
+  const [pattaFile, setPattaFile] =
+    useState(null);
 
   const [newCrop, setNewCrop] = useState({
     name: '',
     weightKg: ''
   });
+
+  const l = translations[lang];
+
+  /* =======================================================
+     LOAD USER
+  ======================================================= */
 
   useEffect(() => {
     const savedUser =
@@ -383,198 +510,253 @@ const Dashboard = () => {
         const parsed = JSON.parse(savedUser);
 
         if (parsed && parsed.email) {
-          setUserProfile(parsed);
+          setUserProfile((previous) => ({
+            ...previous,
+            ...parsed
+          }));
+
           return;
         }
-      } catch (e) {
-        console.error("Error parsing saved user:", e);
+      } catch (error) {
+        console.error(
+          'Error parsing saved user:',
+          error
+        );
       }
     }
 
     const demoUser = {
-      name: "Rajesh Farmer",
-      email: "rajesh@farmflow.com",
-      phone: "9876543210",
-      role: "farmer"
+      name: 'Rajesh Farmer',
+      email: 'rajesh@farmflow.com',
+      phone: '9876543210',
+      role: 'farmer'
     };
 
     setUserProfile(demoUser);
+
     localStorage.setItem(
       'farmflow_user',
       JSON.stringify(demoUser)
     );
   }, []);
 
+  /* =======================================================
+     WEATHER
+  ======================================================= */
+
   useEffect(() => {
-    if (!("geolocation" in navigator)) {
+    if (!navigator.geolocation) {
       setWeatherData({
         temp: 'N/A',
-        condition: 'Geolocation is not supported.',
+        condition:
+          'Geolocation is not supported.',
         locationName: 'Unavailable',
-        icon: 'ðŸ“'
+        icon: ICON.pin
       });
+
       return;
     }
 
     navigator.geolocation.getCurrentPosition(
       async (position) => {
-        const lat = position.coords.latitude;
-        const lon = position.coords.longitude;
+        const {
+          latitude,
+          longitude
+        } = position.coords;
 
         try {
-          const weatherRes = await fetch(
-            `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,precipitation&hourly=temperature_2m,weather_code,precipitation_probability&timezone=auto`
+          const weatherResponse =
+            await fetch(
+              `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,weather_code&hourly=temperature_2m,weather_code,precipitation_probability&timezone=auto`
+            );
+
+          if (!weatherResponse.ok) {
+            throw new Error(
+              'Weather request failed'
+            );
+          }
+
+          const weatherJson =
+            await weatherResponse.json();
+
+          let locationName =
+            'Your Location';
+
+          try {
+            const geoResponse =
+              await fetch(
+                `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`
+              );
+
+            if (geoResponse.ok) {
+              const geoJson =
+                await geoResponse.json();
+
+              locationName =
+                geoJson.address?.city ||
+                geoJson.address?.town ||
+                geoJson.address?.village ||
+                geoJson.address?.state ||
+                'Your Location';
+            }
+          } catch (geoError) {
+            console.warn(
+              'Location name unavailable:',
+              geoError
+            );
+          }
+
+          const meta = getWeatherMeta(
+            weatherJson.current?.weather_code
           );
-
-          const weatherJson = await weatherRes.json();
-
-          const geoRes = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`
-          );
-
-          const geoJson = await geoRes.json();
-
-          const locationString =
-            geoJson.address?.city ||
-            geoJson.address?.town ||
-            geoJson.address?.village ||
-            geoJson.address?.state ||
-            "Your Location";
-
-          const currentCode =
-            weatherJson.current.weather_code;
-
-          const meta = getWeatherMeta(currentCode);
 
           setWeatherData({
             temp: `${Math.round(
-              weatherJson.current.temperature_2m
-            )}Â°C`,
-            condition: `${locationString}: ${meta.label}. Humidity: ${weatherJson.current.relative_humidity_2m}%`,
-            locationName: locationString,
+              weatherJson.current
+                ?.temperature_2m ?? 0
+            )}°C`,
+
+            condition: `${locationName}: ${meta.label}. Humidity: ${
+              weatherJson.current
+                ?.relative_humidity_2m ?? 0
+            }%`,
+
+            locationName,
             icon: meta.icon
           });
 
-          if (
-            weatherJson.hourly &&
-            weatherJson.hourly.time
-          ) {
-            const now = new Date();
-            const currentHourNum = now.getHours();
+          const times =
+            weatherJson.hourly?.time || [];
 
-            let startIndex =
-              weatherJson.hourly.time.findIndex((time) => {
-                const date = new Date(time);
+          let startIndex = 0;
 
-                return (
-                  date.getDate() === now.getDate() &&
-                  date.getHours() === currentHourNum
-                );
-              });
+          if (times.length > 0) {
+            const currentHour =
+              new Date().getHours();
 
-            if (startIndex === -1) {
-              startIndex = 0;
+            const foundIndex = times.findIndex(
+              (time) =>
+                new Date(time).getHours() ===
+                currentHour
+            );
+
+            if (foundIndex >= 0) {
+              startIndex = foundIndex;
             }
+          }
 
-            const next24Hours = [];
+          const forecast = [];
 
-            for (
-              let i = startIndex;
-              i <
-              Math.min(
-                startIndex + 24,
-                weatherJson.hourly.time.length
+          for (
+            let i = startIndex;
+            i <
+            Math.min(
+              startIndex + 24,
+              times.length
+            );
+            i += 1
+          ) {
+            const date = new Date(times[i]);
+
+            const metaForHour =
+              getWeatherMeta(
+                weatherJson.hourly
+                  ?.weather_code?.[i]
               );
-              i++
-            ) {
-              const hourDate = new Date(
-                weatherJson.hourly.time[i]
-              );
 
-              const timeLabel =
+            forecast.push({
+              time:
                 i === startIndex
                   ? 'Now'
-                  : hourDate.toLocaleTimeString([], {
-                      hour: 'numeric',
-                      hour12: true
-                    });
+                  : date.toLocaleTimeString(
+                      [],
+                      {
+                        hour: 'numeric',
+                        hour12: true
+                      }
+                    ),
 
-              const code =
-                weatherJson.hourly.weather_code[i];
+              temp: `${Math.round(
+                weatherJson.hourly
+                  ?.temperature_2m?.[i] ?? 0
+              )}°C`,
 
-              const hourMeta = getWeatherMeta(code);
+              rainProb:
+                weatherJson.hourly
+                  ?.precipitation_probability?.[
+                  i
+                ] ?? 0,
 
-              next24Hours.push({
-                time: timeLabel,
-                temp: `${Math.round(
-                  weatherJson.hourly.temperature_2m[i]
-                )}Â°C`,
-                rainProb:
-                  weatherJson.hourly
-                    .precipitation_probability
-                    ? weatherJson.hourly
-                        .precipitation_probability[i]
-                    : 0,
-                icon: hourMeta.icon,
-                label: hourMeta.label
-              });
-            }
-
-            setHourlyForecast(next24Hours);
+              icon: metaForHour.icon,
+              label: metaForHour.label
+            });
           }
-        } catch (err) {
-          console.error("Weather fetch failed", err);
+
+          setHourlyForecast(forecast);
+        } catch (error) {
+          console.error(
+            'Weather fetch failed:',
+            error
+          );
 
           setWeatherData({
             temp: '--',
-            condition: 'Unable to load live weather.',
+            condition:
+              'Unable to load live weather.',
             locationName: 'Weather Error',
-            icon: 'ðŸŒ¤ï¸'
+            icon: ICON.weather
           });
         }
       },
-      (error) => {
-        console.warn(
-          "Geolocation permission denied",
-          error
-        );
 
+      () => {
         setWeatherData({
           temp: 'N/A',
           condition:
             'Location permission denied. Enable GPS for live weather.',
           locationName: 'Location Disabled',
-          icon: 'ðŸ“'
+          icon: ICON.pin
         });
       }
     );
   }, []);
 
+  /* =======================================================
+     LOAD VAO / OFFICER LOCATIONS
+  ======================================================= */
+
   useEffect(() => {
     const fetchVAOs = async () => {
       try {
-        const q = query(
+        const vaoQuery = query(
           collection(db, 'users'),
-          where('role', 'in', ['vao', 'officer'])
+          where('role', 'in', [
+            'vao',
+            'officer'
+          ])
         );
 
-        const querySnapshot = await getDocs(q);
+        const snapshot =
+          await getDocs(vaoQuery);
 
-        const usersList = querySnapshot.docs.map((item) => ({
-          id: item.id,
-          ...item.data()
-        }));
+        const users =
+          snapshot.docs.map((item) => ({
+            id: item.id,
+            ...item.data()
+          }));
 
-        setVaoUsers(usersList);
+        setVaoUsers(users);
 
-        const zones = usersList
-          .map((v) => v.zone)
+        const zones = users
+          .map((user) => user.zone)
           .filter(Boolean);
 
-        setAvailableZones([...new Set(zones)]);
+        setAvailableZones([
+          ...new Set(zones)
+        ]);
       } catch (error) {
         console.error(
-          "Error fetching locations:",
+          'Error fetching VAO locations:',
           error
         );
       }
@@ -583,246 +765,342 @@ const Dashboard = () => {
     fetchVAOs();
   }, []);
 
-  const handleZoneChange = (zone) => {
-    setOrderDetails((prev) => ({
-      ...prev,
-      zone,
-      subPlace: ''
-    }));
-
-    const matchingUsers = vaoUsers.filter(
-      (v) => v.zone === zone
-    );
-
-    const subPlaces = matchingUsers
-      .map(
-        (v) =>
-          v.subPlace ||
-          v.sub_place ||
-          v.subZone ||
-          v.sub_zone ||
-          v.village ||
-          v.location
-      )
-      .filter(Boolean);
-
-    setAvailableSubPlaces([
-      ...new Set(subPlaces)
-    ]);
-  };
+  /* =======================================================
+     FIREBASE ORDERS + CROPS
+  ======================================================= */
 
   useEffect(() => {
-    if (!userProfile.email) return;
+    if (!userProfile.email) {
+      return undefined;
+    }
 
-    const userEmailLower =
+    const email =
       userProfile.email.toLowerCase();
 
-    const qOrders = query(
+    const ordersQuery = query(
       collection(db, 'orders'),
-      where('userEmail', '==', userEmailLower)
+      where('userEmail', '==', email)
     );
 
-    const unsubOrders = onSnapshot(
-      qOrders,
-      async (snapshot) => {
-        snapshot.docChanges().forEach((change) => {
-          if (change.type === 'modified') {
-            const updatedOrder = change.doc.data();
+    const cropsQuery = query(
+      collection(db, 'crops'),
+      where('userEmail', '==', email)
+    );
 
-            setLatestNotification(
-              `ðŸ”” Update: Your ${updatedOrder.item} application status is now "${updatedOrder.status}"!`
-            );
+    const unsubscribeOrders =
+      onSnapshot(
+        ordersQuery,
+        (snapshot) => {
+          snapshot.docChanges().forEach(
+            (change) => {
+              if (change.type === 'modified') {
+                const order =
+                  change.doc.data();
 
-            setShowBanner(true);
-
-            setTimeout(
-              () => setShowBanner(false),
-              7000
-            );
-          }
-        });
-
-        const ordersData = snapshot.docs.map((item) => ({
-          id: item.id,
-          ...item.data()
-        }));
-
-        ordersData.sort(
-          (a, b) =>
-            new Date(b.createdAt) -
-            new Date(a.createdAt)
-        );
-
-        for (const order of ordersData) {
-          if (
-            order.status === 'Procured' &&
-            !order.inventoryDeducted
-          ) {
-            const matchingCrop = myCrops.find(
-              (c) => c.name === order.item
-            );
-
-            if (matchingCrop) {
-              const orderQty =
-                parseFloat(order.quantity) || 0;
-
-              const updatedWeight =
-                matchingCrop.weightKg - orderQty;
-
-              if (updatedWeight <= 0) {
-                await deleteDoc(
-                  doc(
-                    db,
-                    'crops',
-                    matchingCrop.id
-                  )
+                setLatestNotification(
+                  `${ICON.bell} Update: Your ${
+                    order.item
+                  } application status is now "${
+                    order.status
+                  }".`
                 );
-              } else {
-                await updateDoc(
-                  doc(
-                    db,
-                    'crops',
-                    matchingCrop.id
-                  ),
-                  {
-                    weightKg: updatedWeight
-                  }
-                );
+
+                setShowBanner(true);
+
+                setTimeout(() => {
+                  setShowBanner(false);
+                }, 7000);
               }
             }
+          );
 
-            await updateDoc(
-              doc(db, 'orders', order.id),
-              {
-                inventoryDeducted: true
-              }
-            );
-          }
+          const orders =
+            snapshot.docs.map((item) => ({
+              id: item.id,
+              ...item.data()
+            }));
+
+          orders.sort(
+            (a, b) =>
+              new Date(
+                b.createdAt || 0
+              ).getTime() -
+              new Date(
+                a.createdAt || 0
+              ).getTime()
+          );
+
+          setActiveOrders(orders);
         }
+      );
 
-        setActiveOrders(ordersData);
-      }
-    );
+    const unsubscribeCrops =
+      onSnapshot(
+        cropsQuery,
+        (snapshot) => {
+          const crops =
+            snapshot.docs.map((item) => ({
+              id: item.id,
+              ...item.data()
+            }));
 
-    const qCrops = query(
-      collection(db, 'crops'),
-      where(
-        'userEmail',
-        '==',
-        userEmailLower
-      )
-    );
-
-    const unsubCrops = onSnapshot(
-      qCrops,
-      (snapshot) => {
-        const cropsData = snapshot.docs.map(
-          (item) => ({
-            id: item.id,
-            ...item.data()
-          })
-        );
-
-        setMyCrops(cropsData);
-      }
-    );
+          setMyCrops(crops);
+        }
+      );
 
     return () => {
-      unsubOrders();
-      unsubCrops();
+      unsubscribeOrders();
+      unsubscribeCrops();
     };
-  }, [userProfile.email, myCrops]);
+  }, [userProfile.email]);
+
+  /* =======================================================
+     LIVE MARKET SIMULATION
+  ======================================================= */
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setMarketRates((prevRates) => {
-        const newRates = {
-          ...prevRates
+      setMarketRates((previousRates) => {
+        const nextRates = {
+          ...previousRates
         };
 
-        const crops = Object.keys(newRates);
+        const crops =
+          Object.keys(nextRates);
 
-        const randomCrop =
+        const crop =
           crops[
             Math.floor(
-              Math.random() * crops.length
+              Math.random() *
+                crops.length
             )
           ];
 
-        newRates[randomCrop] = Number(
+        nextRates[crop] = Number(
           (
-            newRates[randomCrop] *
+            nextRates[crop] *
             (1 +
-              (Math.random() * 0.04 - 0.02))
+              Math.random() * 0.04 -
+              0.02)
           ).toFixed(2)
         );
 
-        setMarketHistory((prev) => {
-          const updated = {
-            ...prev
-          };
+        setMarketHistory(
+          (previousHistory) => ({
+            ...previousHistory,
+            [crop]: [
+              ...(previousHistory[crop] ||
+                []),
+              nextRates[crop]
+            ].slice(-15)
+          })
+        );
 
-          updated[randomCrop] = [
-            ...updated[randomCrop],
-            newRates[randomCrop]
-          ].slice(-15);
-
-          return updated;
-        });
-
-        return newRates;
+        return nextRates;
       });
     }, 4000);
 
     return () => clearInterval(interval);
   }, []);
 
+  /* =======================================================
+     NAVIGATION
+  ======================================================= */
+
+  const changeTab = (tab) => {
+    setActiveTab(tab);
+    setOrderingItem(null);
+    setIsSidebarOpen(false);
+  };
+
   const handleLogout = () => {
-    localStorage.removeItem('farmflow_user');
-    sessionStorage.removeItem('farmflow_user');
+    localStorage.removeItem(
+      'farmflow_user'
+    );
+
+    sessionStorage.removeItem(
+      'farmflow_user'
+    );
 
     navigate('/login');
   };
 
-  const changeTab = (tab) => {
-    setActiveTab(tab);
+  /* =======================================================
+     ZONE CHANGE
+  ======================================================= */
 
-    if (tab !== 'procurement') {
-      setOrderingItem(null);
-    }
+  const handleZoneChange = (zone) => {
+    setOrderDetails((previous) => ({
+      ...previous,
+      zone,
+      subPlace: ''
+    }));
 
-    setIsSidebarOpen(false);
+    const subPlaces = vaoUsers
+      .filter(
+        (user) => user.zone === zone
+      )
+      .map(
+        (user) =>
+          user.subPlace ||
+          user.sub_place ||
+          user.subZone ||
+          user.sub_zone ||
+          user.village ||
+          user.location
+      )
+      .filter(Boolean)
+      .filter(
+        (value) =>
+          value.toLowerCase() !==
+          'general'
+      );
+
+    setAvailableSubPlaces([
+      ...new Set(subPlaces)
+    ]);
   };
 
-  const submitOrder = async (e) => {
-    e.preventDefault();
+  /* =======================================================
+     ADD CROP
+  ======================================================= */
+
+  const handleAddCrop = async (event) => {
+    event.preventDefault();
+
+    if (
+      !newCrop.name ||
+      !newCrop.weightKg ||
+      !userProfile.email
+    ) {
+      return;
+    }
+
+    try {
+      await addDoc(
+        collection(db, 'crops'),
+        {
+          userEmail:
+            userProfile.email.toLowerCase(),
+
+          name: newCrop.name,
+
+          weightKg: Number(
+            newCrop.weightKg
+          ),
+
+          ratePerKg:
+            marketRates[newCrop.name],
+
+          createdAt:
+            new Date().toISOString()
+        }
+      );
+
+      setNewCrop({
+        name: '',
+        weightKg: ''
+      });
+    } catch (error) {
+      console.error(
+        'Error adding crop:',
+        error
+      );
+
+      alert(
+        'Failed to add crop. Please try again.'
+      );
+    }
+  };
+
+  /* =======================================================
+     DELETE CROP
+  ======================================================= */
+
+  const handleDeleteCrop = async (id) => {
+    try {
+      await deleteDoc(
+        doc(db, 'crops', id)
+      );
+    } catch (error) {
+      console.error(
+        'Error deleting crop:',
+        error
+      );
+
+      alert(
+        'Failed to remove crop.'
+      );
+    }
+  };
+
+  /* =======================================================
+     SUBMIT PROCUREMENT ORDER
+  ======================================================= */
+
+  const submitOrder = async (event) => {
+    event.preventDefault();
+
+    const selectedCrop =
+      myCrops.find(
+        (crop) =>
+          crop.name === orderingItem
+      );
+
+    if (!selectedCrop) {
+      alert(
+        'Please add this crop to your inventory first.'
+      );
+
+      return;
+    }
+
+    const quantity = Number(
+      orderDetails.quantity
+    );
+
+    if (
+      !quantity ||
+      quantity <= 0 ||
+      quantity >
+        Number(selectedCrop.weightKg)
+    ) {
+      alert(
+        `Quantity must be between 1 and ${selectedCrop.weightKg} kg.`
+      );
+
+      return;
+    }
 
     if (
       pattaFile &&
       pattaFile.size > 500 * 1024
     ) {
       alert(
-        "File is too large! Please upload an image under 500KB."
+        'File is too large. Please upload a file under 500KB.'
       );
+
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      let fileDataString = '';
+      let documentUrl = '';
 
       if (pattaFile) {
-        const reader = new FileReader();
-
-        fileDataString =
+        documentUrl =
           await new Promise(
             (resolve, reject) => {
-              reader.onload = () =>
-                resolve(reader.result);
+              const reader =
+                new FileReader();
 
-              reader.onerror = (error) =>
-                reject(error);
+              reader.onload = () =>
+                resolve(
+                  reader.result
+                );
+
+              reader.onerror = reject;
 
               reader.readAsDataURL(
                 pattaFile
@@ -835,19 +1113,19 @@ const Dashboard = () => {
         collection(db, 'orders'),
         {
           userName:
-            userProfile.name || 'Unknown',
+            userProfile.name ||
+            'Unknown',
 
           userPhone:
-            userProfile.phone || 'N/A',
+            userProfile.phone ||
+            'N/A',
 
-          userEmail: userProfile.email
-            ? userProfile.email.toLowerCase()
-            : '',
+          userEmail:
+            userProfile.email.toLowerCase(),
 
           item: orderingItem,
 
-          quantity:
-            orderDetails.quantity,
+          quantity,
 
           zone:
             orderDetails.zone,
@@ -861,8 +1139,7 @@ const Dashboard = () => {
           pattaChitta:
             orderDetails.pattaChitta,
 
-          documentUrl:
-            fileDataString,
+          documentUrl,
 
           datetime:
             'TBD by Officer',
@@ -894,133 +1171,86 @@ const Dashboard = () => {
 
       setPattaFile(null);
     } catch (error) {
-      console.error(error);
+      console.error(
+        'Error submitting order:',
+        error
+      );
+
       alert(
-        "Failed to submit order. Please try again."
+        'Failed to submit order. Please try again.'
       );
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleAddCrop = async (e) => {
-    e.preventDefault();
-
-    if (
-      !newCrop.name ||
-      !newCrop.weightKg ||
-      !userProfile.email
-    ) {
-      return;
-    }
-
-    try {
-      await addDoc(
-        collection(db, 'crops'),
-        {
-          userEmail:
-            userProfile.email.toLowerCase(),
-
-          name:
-            newCrop.name,
-
-          weightKg:
-            parseFloat(
-              newCrop.weightKg
-            ),
-
-          ratePerKg:
-            marketRates[
-              newCrop.name
-            ],
-
-          createdAt:
-            new Date().toISOString()
-        }
-      );
-
-      setNewCrop({
-        name: '',
-        weightKg: ''
-      });
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const handleDeleteCrop = async (
-    idToRemove
-  ) => {
-    try {
-      await deleteDoc(
-        doc(
-          db,
-          'crops',
-          idToRemove
-        )
-      );
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const savedCropData =
-    myCrops.find(
-      (c) => c.name === orderingItem
-    );
-
-  const maxAvailableQuantity =
-    savedCropData
-      ? savedCropData.weightKg
-      : undefined;
+  /* =======================================================
+     PAGE TITLES
+  ======================================================= */
 
   const pageTitle = {
-    dashboard: "Dashboard",
-    profile: l.navProfile.substring(2),
-    crops: l.navCrops.substring(2),
-    procurement: l.navProcurement.substring(2),
-    track: l.navTrack.substring(2),
-    ai: l.navAi.substring(2),
-    help: l.navHelp.substring(2)
+    dashboard: l.dashboard,
+    profile: l.profile,
+    crops: l.crops,
+    procurement: l.procurement,
+    track: l.track,
+    ai: l.ai,
+    help: l.help
   };
 
   const navItems = [
     {
       id: 'dashboard',
-      label: l.navDashboard,
-      icon: 'ðŸ“Š'
+      label: l.dashboard,
+      icon: ICON.chart
     },
     {
       id: 'profile',
-      label: l.navProfile,
-      icon: 'ðŸ‘¤'
+      label: l.profile,
+      icon: ICON.user
     },
     {
       id: 'crops',
-      label: l.navCrops,
-      icon: 'ðŸŒ¾'
+      label: l.crops,
+      icon: ICON.crop
     },
     {
       id: 'procurement',
-      label: l.navProcurement,
-      icon: 'ðŸ›’'
+      label: l.procurement,
+      icon: ICON.cart
     },
     {
       id: 'track',
-      label: l.navTrack,
-      icon: 'ðŸ“¦'
+      label: l.track,
+      icon: ICON.box
     },
     {
       id: 'ai',
-      label: l.navAi,
-      icon: 'ðŸ¤–'
+      label: l.ai,
+      icon: ICON.robot
     }
   ];
+
+  const savedCrop =
+    myCrops.find(
+      (crop) =>
+        crop.name === orderingItem
+    );
+
+  const maxAvailableQuantity =
+    savedCrop
+      ? Number(savedCrop.weightKg)
+      : undefined;
+
+  /* =======================================================
+     RENDER
+  ======================================================= */
 
   return (
     <div className="dashboard-shell">
 
-      {/* Mobile overlay */}
+      {/* MOBILE SIDEBAR OVERLAY */}
+
       {isSidebarOpen && (
         <div
           className="sidebar-overlay"
@@ -1030,7 +1260,10 @@ const Dashboard = () => {
         />
       )}
 
-      {/* SIDEBAR */}
+      {/* =================================================
+          SIDEBAR
+      ================================================= */}
+
       <aside
         className={`dashboard-sidebar ${
           isSidebarOpen
@@ -1038,9 +1271,11 @@ const Dashboard = () => {
             : ''
         }`}
       >
+
         <div className="sidebar-brand">
+
           <div className="brand-icon">
-            ðŸŒ±
+            {ICON.leaf}
           </div>
 
           <div>
@@ -1052,17 +1287,22 @@ const Dashboard = () => {
               AI FARM MANAGEMENT
             </div>
           </div>
+
         </div>
 
         <div className="sidebar-user">
+
           <div className="sidebar-avatar">
-            {(userProfile.name ||
-              'R')
+            {(
+              userProfile.name ||
+              'F'
+            )
               .charAt(0)
               .toUpperCase()}
           </div>
 
           <div className="sidebar-user-info">
+
             <strong>
               {userProfile.name ||
                 'Farmer'}
@@ -1072,7 +1312,9 @@ const Dashboard = () => {
               {userProfile.email ||
                 'FarmFlow User'}
             </span>
+
           </div>
+
         </div>
 
         <div className="sidebar-section-title">
@@ -1080,6 +1322,7 @@ const Dashboard = () => {
         </div>
 
         <nav className="sidebar-nav">
+
           {navItems.map((item) => (
             <button
               key={item.id}
@@ -1093,19 +1336,23 @@ const Dashboard = () => {
                 changeTab(item.id)
               }
             >
+
               <span className="nav-icon">
                 {item.icon}
               </span>
 
               <span className="nav-label">
-                {item.label.substring(2)}
+                {item.label}
               </span>
 
-              {activeTab === item.id && (
+              {activeTab ===
+                item.id && (
                 <span className="active-indicator" />
               )}
+
             </button>
           ))}
+
         </nav>
 
         <div className="sidebar-section-title sidebar-help-title">
@@ -1123,17 +1370,19 @@ const Dashboard = () => {
             changeTab('help')
           }
         >
+
           <span className="nav-icon">
-            â“
+            {ICON.help}
           </span>
 
           <span className="nav-label">
-            {l.navHelp.substring(2)}
+            {l.help}
           </span>
 
           {activeTab === 'help' && (
             <span className="active-indicator" />
           )}
+
         </button>
 
         <div className="sidebar-spacer" />
@@ -1143,7 +1392,10 @@ const Dashboard = () => {
           className="logout-button"
           onClick={handleLogout}
         >
-          <span>â†ª</span>
+          <span>
+            {ICON.logout}
+          </span>
+
           {l.logout}
         </button>
 
@@ -1151,34 +1403,40 @@ const Dashboard = () => {
           <span className="footer-dot" />
           FarmFlow AI v1.0
         </div>
+
       </aside>
 
-      {/* MAIN AREA */}
+      {/* =================================================
+          MAIN AREA
+      ================================================= */}
+
       <main className="dashboard-main">
 
-        {/* TOP HEADER */}
+        {/* HEADER */}
+
         <header className="dashboard-header">
 
           <div className="header-left">
 
             <button
+              type="button"
               className="mobile-menu-button"
               onClick={() =>
                 setIsSidebarOpen(
-                  !isSidebarOpen
+                  (open) => !open
                 )
               }
-              type="button"
               aria-label="Open menu"
             >
-              â˜°
+              ☰
             </button>
 
             <div>
+
               <div className="breadcrumb">
                 FarmFlow AI
                 <span>/</span>
-                Dashboard
+                {pageTitle[activeTab]}
               </div>
 
               <h1>
@@ -1188,12 +1446,15 @@ const Dashboard = () => {
               <p>
                 {l.subtitle}
               </p>
+
             </div>
+
           </div>
 
           <div className="header-right">
 
             <div className="language-switcher">
+
               {['en', 'hi', 'ta'].map(
                 (language) => (
                   <button
@@ -1212,30 +1473,40 @@ const Dashboard = () => {
                   </button>
                 )
               )}
+
             </div>
 
             <div className="market-status">
+
               <span className="pulse-dot" />
+
               <span>
                 {l.liveMarket}
               </span>
+
             </div>
 
             <div className="header-avatar">
-              {(userProfile.name ||
-                'R')
+              {(
+                userProfile.name ||
+                'F'
+              )
                 .charAt(0)
                 .toUpperCase()}
             </div>
+
           </div>
+
         </header>
 
         {/* NOTIFICATION */}
+
         {showBanner &&
           latestNotification && (
             <div className="notification-banner">
+
               <div className="notification-icon">
-                ðŸ””
+                {ICON.bell}
               </div>
 
               <div className="notification-text">
@@ -1248,23 +1519,33 @@ const Dashboard = () => {
                   setShowBanner(false)
                 }
               >
-                Ã—
+                {ICON.close}
               </button>
+
             </div>
           )}
 
+        {/* =================================================
+            CONTENT
+        ================================================= */}
+
         <div className="dashboard-content">
 
-          {/* ================= HELP ================= */}
+          {/* =================================================
+              HELP
+          ================================================= */}
+
           {activeTab === 'help' && (
             <section className="content-section">
 
               <div className="page-intro-card">
+
                 <div className="intro-icon">
-                  â“
+                  {ICON.help}
                 </div>
 
                 <div>
+
                   <span className="eyebrow">
                     SUPPORT CENTER
                   </span>
@@ -1276,30 +1557,32 @@ const Dashboard = () => {
                   <p>
                     {l.helpIntro}
                   </p>
+
                 </div>
+
               </div>
 
               <div className="help-grid">
 
                 {[
                   {
-                    icon: 'ðŸ‘¤',
+                    icon: ICON.user,
                     text: l.helpProfile
                   },
                   {
-                    icon: 'ðŸŒ¾',
+                    icon: ICON.crop,
                     text: l.helpCrops
                   },
                   {
-                    icon: 'ðŸ›’',
+                    icon: ICON.cart,
                     text: l.helpProcurement
                   },
                   {
-                    icon: 'ðŸ“¦',
+                    icon: ICON.box,
                     text: l.helpTrack
                   },
                   {
-                    icon: 'ðŸ¤–',
+                    icon: ICON.robot,
                     text: l.helpAi
                   }
                 ].map(
@@ -1318,47 +1601,61 @@ const Dashboard = () => {
                     </div>
                   )
                 )}
+
               </div>
+
             </section>
           )}
 
-          {/* ================= PROFILE ================= */}
+          {/* =================================================
+              PROFILE
+          ================================================= */}
+
           {activeTab === 'profile' && (
             <section className="content-section">
 
               <div className="profile-hero">
+
                 <div className="large-avatar">
-                  {(userProfile.name ||
-                    'R')
+                  {(
+                    userProfile.name ||
+                    'F'
+                  )
                     .charAt(0)
                     .toUpperCase()}
                 </div>
 
                 <div>
+
                   <span className="eyebrow">
                     FARMER ACCOUNT
                   </span>
 
                   <h2>
                     {userProfile.name ||
-                      'Rajesh Farmer'}
+                      'Farmer'}
                   </h2>
 
                   <p>
                     {userProfile.email ||
-                      'rajesh@farmflow.com'}
+                      'FarmFlow User'}
                   </p>
+
                 </div>
 
                 <div className="verified-badge">
-                  âœ“ Verified
+                  {ICON.check}
+                  {l.verified}
                 </div>
+
               </div>
 
               <div className="section-card">
 
                 <div className="card-heading">
+
                   <div>
+
                     <span className="eyebrow">
                       ACCOUNT
                     </span>
@@ -1366,11 +1663,13 @@ const Dashboard = () => {
                     <h3>
                       {l.userDetails}
                     </h3>
+
                   </div>
 
                   <span className="heading-icon">
-                    ðŸ‘¤
+                    {ICON.user}
                   </span>
+
                 </div>
 
                 <div className="profile-details">
@@ -1382,7 +1681,7 @@ const Dashboard = () => {
 
                     <strong>
                       {userProfile.name ||
-                        'Rajesh Farmer'}
+                        'Farmer'}
                     </strong>
                   </div>
 
@@ -1393,7 +1692,7 @@ const Dashboard = () => {
 
                     <strong>
                       {userProfile.email ||
-                        'rajesh@farmflow.com'}
+                        'N/A'}
                     </strong>
                   </div>
 
@@ -1404,7 +1703,7 @@ const Dashboard = () => {
 
                     <strong>
                       {userProfile.phone ||
-                        '9876543210'}
+                        'N/A'}
                     </strong>
                   </div>
 
@@ -1414,7 +1713,7 @@ const Dashboard = () => {
                     </span>
 
                     <strong>
-                      {l.farmManager}
+                      {l.farmer}
                     </strong>
                   </div>
 
@@ -1425,22 +1724,28 @@ const Dashboard = () => {
 
                     <strong className="status-success">
                       {l.verified}
+                      {ICON.check}
                     </strong>
                   </div>
 
                 </div>
+
               </div>
+
             </section>
           )}
 
-          {/* ================= DASHBOARD ================= */}
+          {/* =================================================
+              DASHBOARD
+          ================================================= */}
+
           {activeTab === 'dashboard' && (
             <section className="content-section">
 
-              {/* Welcome card */}
               <div className="welcome-banner">
 
                 <div>
+
                   <span className="eyebrow">
                     FARM OVERVIEW
                   </span>
@@ -1451,29 +1756,34 @@ const Dashboard = () => {
                       userProfile.name ||
                       'Farmer'
                     ).split(' ')[0]}
-                    ! ðŸ‘‹
+                    ! {ICON.wave}
                   </h2>
 
                   <p>
-                    Here's your farm
-                    activity at a glance.
+                    Here's your farm activity
+                    at a glance.
                   </p>
+
                 </div>
 
                 <div className="welcome-illustration">
-                  ðŸŒ¾
+                  {ICON.crop}
                 </div>
+
               </div>
 
-              {/* Stats */}
+              {/* STATS */}
+
               <div className="stats-grid">
 
                 <div className="stat-card">
+
                   <div className="stat-icon green">
-                    ðŸŒ¾
+                    {ICON.crop}
                   </div>
 
                   <div>
+
                     <span>
                       Total Crops
                     </span>
@@ -1481,15 +1791,19 @@ const Dashboard = () => {
                     <strong>
                       {myCrops.length}
                     </strong>
+
                   </div>
+
                 </div>
 
                 <div className="stat-card">
+
                   <div className="stat-icon blue">
-                    ðŸ“¦
+                    {ICON.box}
                   </div>
 
                   <div>
+
                     <span>
                       Active Orders
                     </span>
@@ -1497,15 +1811,19 @@ const Dashboard = () => {
                     <strong>
                       {activeOrders.length}
                     </strong>
+
                   </div>
+
                 </div>
 
                 <div className="stat-card">
+
                   <div className="stat-icon orange">
-                    ðŸ’°
+                    {ICON.money}
                   </div>
 
                   <div>
+
                     <span>
                       Market Crops
                     </span>
@@ -1515,15 +1833,19 @@ const Dashboard = () => {
                         marketRates
                       ).length}
                     </strong>
+
                   </div>
+
                 </div>
 
                 <div className="stat-card">
+
                   <div className="stat-icon purple">
-                    ðŸ¤–
+                    {ICON.robot}
                   </div>
 
                   <div>
+
                     <span>
                       AI Insights
                     </span>
@@ -1531,21 +1853,27 @@ const Dashboard = () => {
                     <strong>
                       3
                     </strong>
+
                   </div>
+
                 </div>
 
               </div>
 
-              {/* Weather + Pest */}
+              {/* WEATHER + PEST */}
+
               <div className="dashboard-two-column">
 
                 <button
                   type="button"
                   className="weather-card"
                   onClick={() =>
-                    setShowWeatherModal(true)
+                    setShowWeatherModal(
+                      true
+                    )
                   }
                 >
+
                   <div className="card-top-line">
 
                     <div className="card-icon-large weather">
@@ -1553,12 +1881,15 @@ const Dashboard = () => {
                     </div>
 
                     <span className="card-arrow">
-                      â†’
+                      {ICON.arrow}
                     </span>
+
                   </div>
 
                   <div className="weather-main">
+
                     <div>
+
                       <span className="eyebrow">
                         WEATHER
                       </span>
@@ -1566,11 +1897,13 @@ const Dashboard = () => {
                       <h3>
                         {weatherData.temp}
                       </h3>
+
                     </div>
+
                   </div>
 
                   <p className="weather-location">
-                    ðŸ“{' '}
+                    {ICON.pin}{' '}
                     {weatherData.locationName}
                   </p>
 
@@ -1580,8 +1913,11 @@ const Dashboard = () => {
 
                   <div className="card-link">
                     View 24-hour forecast
-                    <span>â†’</span>
+                    <span>
+                      {ICON.arrow}
+                    </span>
                   </div>
+
                 </button>
 
                 <div className="pest-card">
@@ -1589,12 +1925,13 @@ const Dashboard = () => {
                   <div className="card-top-line">
 
                     <div className="card-icon-large pest">
-                      ðŸ›
+                      {ICON.bug}
                     </div>
 
                     <span className="safe-badge">
                       SAFE
                     </span>
+
                   </div>
 
                   <span className="eyebrow">
@@ -1610,18 +1947,25 @@ const Dashboard = () => {
                   </p>
 
                   <div className="pest-status">
+
                     <span className="status-dot" />
+
                     No active threats
+
                   </div>
+
                 </div>
+
               </div>
 
-              {/* Orders */}
+              {/* RECENT ORDERS */}
+
               <div className="section-card">
 
                 <div className="card-heading">
 
                   <div>
+
                     <span className="eyebrow">
                       RECENT ACTIVITY
                     </span>
@@ -1629,17 +1973,20 @@ const Dashboard = () => {
                     <h3>
                       {l.upcomingProcurements}
                     </h3>
+
                   </div>
 
                   <div className="heading-icon">
-                    ðŸ“¦
+                    {ICON.box}
                   </div>
+
                 </div>
 
                 {activeOrders.length === 0 ? (
                   <div className="empty-state">
+
                     <div>
-                      ðŸ“­
+                      {ICON.empty}
                     </div>
 
                     <h4>
@@ -1649,9 +1996,11 @@ const Dashboard = () => {
                     <p>
                       {l.noActiveOrders}
                     </p>
+
                   </div>
                 ) : (
                   <div className="orders-list">
+
                     {activeOrders.map(
                       (order) => (
                         <div
@@ -1662,74 +2011,67 @@ const Dashboard = () => {
                           <div className="order-main">
 
                             <div className="order-icon">
-                              ðŸ“¦
+                              {ICON.box}
                             </div>
 
                             <div>
+
                               <strong>
                                 {order.item}
                               </strong>
 
                               <span>
                                 {order.quantity}{' '}
-                                Units â€¢{' '}
-                                {order.datetime}
+                                kg •{' '}
+                                {order.datetime ||
+                                  'TBD'}
                               </span>
 
                               <small>
-                                ðŸ“{' '}
+                                {ICON.pin}{' '}
                                 {order.zone ||
                                   'Zone'}{' '}
                                 /{' '}
                                 {order.subPlace ||
                                   'General'}
                               </small>
+
                             </div>
+
                           </div>
 
-                          <span
-                            className={`status-badge ${
-                              order.status
-                                ?.toLowerCase()
-                                .includes(
-                                  'vao'
-                                )
-                                ? 'status-purple'
-                                : order.status ===
-                                  'Approved'
-                                ? 'status-green'
-                                : order.status ===
-                                  'Procured'
-                                ? 'status-blue'
-                                : order.status ===
-                                  'Rejected'
-                                ? 'status-red'
-                                : 'status-orange'
-                            }`}
-                          >
-                            {order.status}
+                          <span className="status-badge status-orange">
+                            {order.status ||
+                              'Pending'}
                           </span>
 
                         </div>
                       )
                     )}
+
                   </div>
                 )}
+
               </div>
 
             </section>
           )}
 
-          {/* ================= TRACK ================= */}
+          {/* =================================================
+              TRACK STATUS
+          ================================================= */}
+
           {activeTab === 'track' && (
             <section className="content-section">
 
               <div className="page-intro-card track-intro">
+
                 <div className="intro-icon">
-                  ðŸ“¦
+                  {ICON.box}
                 </div>
 
                 <div>
+
                   <span className="eyebrow">
                     PROCUREMENT TRACKER
                   </span>
@@ -1743,27 +2085,31 @@ const Dashboard = () => {
                     verification, schedules
                     and DBT payment status.
                   </p>
+
                 </div>
+
               </div>
 
               {activeOrders.length === 0 ? (
                 <div className="section-card">
+
                   <div className="empty-state large">
+
                     <div>
-                      ðŸ“­
+                      {ICON.empty}
                     </div>
 
                     <h4>
-                      No procurement
-                      applications
+                      No procurement applications
                     </h4>
 
                     <p>
                       No active procurement
-                      applications found
-                      under your account.
+                      applications found.
                     </p>
+
                   </div>
+
                 </div>
               ) : (
                 <div className="tracking-list">
@@ -1778,6 +2124,7 @@ const Dashboard = () => {
                         <div className="tracking-header">
 
                           <div>
+
                             <span className="eyebrow">
                               APPLICATION
                             </span>
@@ -1789,22 +2136,14 @@ const Dashboard = () => {
                             <small>
                               ID: {order.id}
                             </small>
+
                           </div>
 
-                          <span
-                            className={`status-badge ${
-                              order.status ===
-                              'Procured'
-                                ? 'status-green'
-                                : order.status ===
-                                  'Rejected'
-                                ? 'status-red'
-                                : 'status-orange'
-                            }`}
-                          >
+                          <span className="status-badge status-orange">
                             {order.status ||
                               'Pending Verification'}
                           </span>
+
                         </div>
 
                         <div className="tracking-details">
@@ -1812,8 +2151,10 @@ const Dashboard = () => {
                           <div className="tracking-info">
 
                             <div>
+
                               <span>
-                                ðŸ“ Location
+                                {ICON.pin}
+                                {' '}Location
                               </span>
 
                               <strong>
@@ -1823,35 +2164,44 @@ const Dashboard = () => {
                                 {order.subPlace ||
                                   'General'}
                               </strong>
+
                             </div>
 
                             <div>
+
                               <span>
-                                ðŸ  Address
+                                {ICON.house}
+                                {' '}Address
                               </span>
 
                               <strong>
                                 {order.address ||
                                   'N/A'}
                               </strong>
+
                             </div>
 
                             <div>
+
                               <span>
-                                ðŸ“… Assigned Slot
+                                {ICON.calendar}
+                                {' '}Assigned Slot
                               </span>
 
                               <strong>
                                 {order.datetime ||
                                   'TBD by Officer'}
                               </strong>
+
                             </div>
+
                           </div>
 
                           <div className="dbt-card">
 
                             <span>
-                              ðŸ’³ DBT PAYMENT
+                              {ICON.card}
+                              {' '}DBT PAYMENT
                             </span>
 
                             <strong>
@@ -1861,14 +2211,16 @@ const Dashboard = () => {
 
                             {order.payoutAmount && (
                               <b>
-                                â‚¹
+                                ₹
                                 {
                                   order.payoutAmount
                                 }{' '}
                                 Credited
                               </b>
                             )}
+
                           </div>
+
                         </div>
 
                         <div className="timeline">
@@ -1893,9 +2245,11 @@ const Dashboard = () => {
                               label:
                                 'Slot Scheduled',
                               active:
-                                order.datetime &&
-                                order.datetime !==
-                                  'TBD by Officer'
+                                Boolean(
+                                  order.datetime &&
+                                  order.datetime !==
+                                    'TBD by Officer'
+                                )
                             },
                             {
                               label:
@@ -1910,45 +2264,55 @@ const Dashboard = () => {
                               index
                             ) => (
                               <div
-                                key={index}
+                                key={
+                                  step.label
+                                }
                                 className={`timeline-step ${
                                   step.active
                                     ? 'active'
                                     : ''
                                 }`}
                               >
+
                                 <div className="timeline-dot">
                                   {step.active
-                                    ? 'âœ“'
-                                    : index +
-                                      1}
+                                    ? ICON.check
+                                    : index + 1}
                                 </div>
 
                                 <span>
                                   {step.label}
                                 </span>
+
                               </div>
                             )
                           )}
 
                         </div>
+
                       </div>
                     )
                   )}
 
                 </div>
               )}
+
             </section>
           )}
 
-          {/* ================= CROPS ================= */}
+          {/* =================================================
+              CROPS
+          ================================================= */}
+
           {activeTab === 'crops' && (
             <section className="content-section">
 
               <div className="section-card">
 
                 <div className="card-heading">
+
                   <div>
+
                     <span className="eyebrow">
                       INVENTORY
                     </span>
@@ -1956,27 +2320,32 @@ const Dashboard = () => {
                     <h3>
                       {l.addCropTitle}
                     </h3>
+
                   </div>
 
                   <div className="heading-icon">
-                    ðŸŒ¾
+                    {ICON.crop}
                   </div>
+
                 </div>
 
                 <form
                   onSubmit={handleAddCrop}
                   className="crop-form"
                 >
+
                   <select
                     required
                     value={newCrop.name}
-                    onChange={(e) =>
+                    onChange={(event) =>
                       setNewCrop({
                         ...newCrop,
-                        name: e.target.value
+                        name:
+                          event.target.value
                       })
                     }
                   >
+
                     <option value="">
                       {l.selectCrop}
                     </option>
@@ -1988,13 +2357,14 @@ const Dashboard = () => {
                         key={crop}
                         value={crop}
                       >
-                        {crop} (â‚¹
+                        {crop} (₹
                         {marketRates[
                           crop
                         ].toFixed(2)}
                         /kg)
                       </option>
                     ))}
+
                   </select>
 
                   <input
@@ -2007,11 +2377,11 @@ const Dashboard = () => {
                     value={
                       newCrop.weightKg
                     }
-                    onChange={(e) =>
+                    onChange={(event) =>
                       setNewCrop({
                         ...newCrop,
                         weightKg:
-                          e.target.value
+                          event.target.value
                       })
                     }
                   />
@@ -2020,10 +2390,11 @@ const Dashboard = () => {
                     type="submit"
                     className="primary-button"
                   >
-                    <span>+</span>
-                    {l.addCropBtn}
+                    + {l.addCropBtn}
                   </button>
+
                 </form>
+
               </div>
 
               <div className="section-card">
@@ -2031,6 +2402,7 @@ const Dashboard = () => {
                 <div className="card-heading">
 
                   <div>
+
                     <span className="eyebrow">
                       YOUR FARM
                     </span>
@@ -2038,17 +2410,20 @@ const Dashboard = () => {
                     <h3>
                       {l.myCropInventory}
                     </h3>
+
                   </div>
 
                   <div className="inventory-count">
                     {myCrops.length}
                   </div>
+
                 </div>
 
                 {myCrops.length === 0 ? (
                   <div className="empty-state">
+
                     <div>
-                      ðŸŒ±
+                      {ICON.leaf}
                     </div>
 
                     <h4>
@@ -2058,6 +2433,7 @@ const Dashboard = () => {
                     <p>
                       {l.emptyInventory}
                     </p>
+
                   </div>
                 ) : (
                   <div className="crop-grid">
@@ -2072,20 +2448,22 @@ const Dashboard = () => {
                           <div className="crop-card-top">
 
                             <div className="crop-symbol">
-                              ðŸŒ¾
+                              {ICON.crop}
                             </div>
 
                             <button
                               type="button"
+                              className="delete-button"
                               onClick={() =>
                                 handleDeleteCrop(
                                   crop.id
                                 )
                               }
-                              className="delete-button"
+                              aria-label={`Remove ${crop.name}`}
                             >
-                              Ã—
+                              {ICON.close}
                             </button>
+
                           </div>
 
                           <h4>
@@ -2093,6 +2471,7 @@ const Dashboard = () => {
                           </h4>
 
                           <div className="crop-stat">
+
                             <span>
                               Weight
                             </span>
@@ -2101,36 +2480,48 @@ const Dashboard = () => {
                               {crop.weightKg}{' '}
                               kg
                             </strong>
+
                           </div>
 
                           <div className="crop-stat">
+
                             <span>
                               {l.lockedRate}
                             </span>
 
                             <strong>
-                              â‚¹
+                              ₹
                               {Number(
-                                crop.ratePerKg
+                                crop.ratePerKg ||
+                                  0
                               ).toFixed(2)}
                               /kg
                             </strong>
+
                           </div>
 
                           <div className="crop-value">
+
                             <span>
                               Estimated Value
                             </span>
 
                             <strong>
-                              â‚¹
+                              ₹
                               {(
-                                crop.weightKg *
-                                crop.ratePerKg
+                                Number(
+                                  crop.weightKg ||
+                                    0
+                                ) *
+                                Number(
+                                  crop.ratePerKg ||
+                                    0
+                                )
                               ).toLocaleString(
                                 'en-IN'
                               )}
                             </strong>
+
                           </div>
 
                         </div>
@@ -2139,21 +2530,28 @@ const Dashboard = () => {
 
                   </div>
                 )}
+
               </div>
+
             </section>
           )}
 
-          {/* ================= PROCUREMENT ================= */}
+          {/* =================================================
+              PROCUREMENT MARKET
+          ================================================= */}
+
           {activeTab === 'procurement' &&
             !orderingItem && (
               <section className="content-section">
 
                 <div className="page-intro-card market-intro">
+
                   <div className="intro-icon">
-                    ðŸ“ˆ
+                    {ICON.chart}
                   </div>
 
                   <div>
+
                     <span className="eyebrow">
                       LIVE MARKET
                     </span>
@@ -2164,24 +2562,32 @@ const Dashboard = () => {
 
                     <p>
                       Prices update
-                      automatically every few
-                      seconds.
+                      automatically every
+                      few seconds.
                     </p>
+
                   </div>
 
                   <div className="live-indicator">
+
                     <span />
+
                     LIVE
+
                   </div>
+
                 </div>
 
                 <div className="section-card market-table-card">
 
                   <div className="market-table-wrapper">
+
                     <table className="market-table">
 
                       <thead>
+
                         <tr>
+
                           <th>
                             {l.cropName}
                           </th>
@@ -2197,10 +2603,13 @@ const Dashboard = () => {
                           <th>
                             {l.action}
                           </th>
+
                         </tr>
+
                       </thead>
 
                       <tbody>
+
                         {Object.keys(
                           marketRates
                         ).map((crop) => {
@@ -2230,8 +2639,8 @@ const Dashboard = () => {
 
                           const isCropSaved =
                             myCrops.some(
-                              (c) =>
-                                c.name ===
+                              (item) =>
+                                item.name ===
                                 crop
                             );
 
@@ -2251,33 +2660,43 @@ const Dashboard = () => {
                             <tr key={crop}>
 
                               <td>
+
                                 <div className="table-crop-name">
+
                                   <span>
-                                    ðŸŒ¾
+                                    {ICON.crop}
                                   </span>
 
                                   <strong>
                                     {crop}
                                   </strong>
+
                                 </div>
+
                               </td>
 
                               <td>
+
                                 <div className="past-rates">
+
                                   <span>
-                                    â‚¹{p1}
+                                    ₹{p1}
                                   </span>
 
                                   <span>
-                                    â‚¹{p2}
+                                    ₹{p2}
                                   </span>
+
                                 </div>
+
                               </td>
 
                               <td>
+
                                 <div className="live-price">
 
                                   <div>
+
                                     <strong
                                       className={
                                         trendUp
@@ -2285,7 +2704,7 @@ const Dashboard = () => {
                                           : 'price-down'
                                       }
                                     >
-                                      â‚¹
+                                      ₹
                                       {marketRates[
                                         crop
                                       ].toFixed(
@@ -2295,9 +2714,10 @@ const Dashboard = () => {
 
                                     <small>
                                       {trendUp
-                                        ? 'â†‘ Rising'
-                                        : 'â†“ Falling'}
+                                        ? `${ICON.up} Rising`
+                                        : `${ICON.down} Falling`}
                                     </small>
+
                                   </div>
 
                                   <Sparkline
@@ -2305,10 +2725,13 @@ const Dashboard = () => {
                                       history
                                     }
                                   />
+
                                 </div>
+
                               </td>
 
                               <td>
+
                                 <button
                                   type="button"
                                   disabled={
@@ -2329,20 +2752,28 @@ const Dashboard = () => {
                                     ? l.sellMarket
                                     : 'Add Crop First'}
                                 </button>
+
                               </td>
 
                             </tr>
                           );
                         })}
+
                       </tbody>
 
                     </table>
+
                   </div>
+
                 </div>
+
               </section>
             )}
 
-          {/* ================= ORDER FORM ================= */}
+          {/* =================================================
+              PROCUREMENT FORM
+          ================================================= */}
+
           {activeTab === 'procurement' &&
             orderingItem && (
               <section className="content-section">
@@ -2358,7 +2789,8 @@ const Dashboard = () => {
                       )
                     }
                   >
-                    â† Back to Market
+                    {ICON.back}
+                    {' '}Back to Market
                   </button>
 
                   <div className="order-form-card">
@@ -2366,10 +2798,11 @@ const Dashboard = () => {
                     <div className="order-form-header">
 
                       <div className="form-icon">
-                        ðŸ›’
+                        {ICON.cart}
                       </div>
 
                       <div>
+
                         <span className="eyebrow">
                           PROCUREMENT
                         </span>
@@ -2384,7 +2817,9 @@ const Dashboard = () => {
                             {orderingItem}
                           </strong>
                         </p>
+
                       </div>
+
                     </div>
 
                     <form
@@ -2395,6 +2830,7 @@ const Dashboard = () => {
                     >
 
                       <div className="form-field">
+
                         <label>
                           {l.quantity}
                         </label>
@@ -2414,17 +2850,20 @@ const Dashboard = () => {
                           value={
                             orderDetails.quantity
                           }
-                          onChange={(e) =>
+                          onChange={(event) =>
                             setOrderDetails({
                               ...orderDetails,
                               quantity:
-                                e.target.value
+                                event.target
+                                  .value
                             })
                           }
                         />
+
                       </div>
 
                       <div className="form-field">
+
                         <label>
                           Active Zone
                         </label>
@@ -2434,16 +2873,16 @@ const Dashboard = () => {
                           value={
                             orderDetails.zone
                           }
-                          onChange={(e) =>
+                          onChange={(event) =>
                             handleZoneChange(
-                              e.target.value
+                              event.target
+                                .value
                             )
                           }
                         >
+
                           <option value="">
-                            {
-                              l.selectZone
-                            }
+                            {l.selectZone}
                           </option>
 
                           {availableZones.length ===
@@ -2467,13 +2906,15 @@ const Dashboard = () => {
                               )
                             )
                           )}
+
                         </select>
+
                       </div>
 
                       <div className="form-field">
+
                         <label>
-                          Village /
-                          Sub-place
+                          Village / Sub-place
                         </label>
 
                         <select
@@ -2481,14 +2922,16 @@ const Dashboard = () => {
                           value={
                             orderDetails.subPlace
                           }
-                          onChange={(e) =>
+                          onChange={(event) =>
                             setOrderDetails({
                               ...orderDetails,
                               subPlace:
-                                e.target.value
+                                event.target
+                                  .value
                             })
                           }
                         >
+
                           <option value="">
                             {
                               l.selectSubPlace
@@ -2496,19 +2939,22 @@ const Dashboard = () => {
                           </option>
 
                           {availableSubPlaces.map(
-                            (sub) => (
+                            (subPlace) => (
                               <option
-                                key={sub}
-                                value={sub}
+                                key={subPlace}
+                                value={subPlace}
                               >
-                                {sub}
+                                {subPlace}
                               </option>
                             )
                           )}
+
                         </select>
+
                       </div>
 
                       <div className="form-field">
+
                         <label>
                           Farm Address
                         </label>
@@ -2522,20 +2968,22 @@ const Dashboard = () => {
                           value={
                             orderDetails.address
                           }
-                          onChange={(e) =>
+                          onChange={(event) =>
                             setOrderDetails({
                               ...orderDetails,
                               address:
-                                e.target.value
+                                event.target
+                                  .value
                             })
                           }
                         />
+
                       </div>
 
                       <div className="form-field">
+
                         <label>
-                          Patta / Chitta
-                          Number
+                          Patta / Chitta Number
                         </label>
 
                         <input
@@ -2547,29 +2995,33 @@ const Dashboard = () => {
                           value={
                             orderDetails.pattaChitta
                           }
-                          onChange={(e) =>
+                          onChange={(event) =>
                             setOrderDetails({
                               ...orderDetails,
                               pattaChitta:
-                                e.target.value
+                                event.target
+                                  .value
                             })
                           }
                         />
+
                       </div>
 
                       <div className="form-field">
+
                         <label>
                           {l.uploadDoc}
                         </label>
 
                         <div className="file-input-wrapper">
+
                           <input
                             type="file"
                             accept=".jpg,.jpeg,.png,.pdf"
                             required
-                            onChange={(e) =>
+                            onChange={(event) =>
                               setPattaFile(
-                                e.target
+                                event.target
                                   .files?.[0] ||
                                   null
                               )
@@ -2577,18 +3029,19 @@ const Dashboard = () => {
                           />
 
                           <span>
-                            ðŸ“Ž Choose document
+                            {ICON.clip}
+                            {' '}Choose document
                           </span>
+
                         </div>
 
                         {pattaFile && (
                           <small className="selected-file">
                             Selected:{' '}
-                            {
-                              pattaFile.name
-                            }
+                            {pattaFile.name}
                           </small>
                         )}
+
                       </div>
 
                       <div className="form-actions">
@@ -2602,7 +3055,7 @@ const Dashboard = () => {
                         >
                           {isSubmitting
                             ? 'Processing...'
-                            : `âœ“ ${l.confirmOrder}`}
+                            : `${ICON.check} ${l.confirmOrder}`}
                         </button>
 
                         <button
@@ -2621,25 +3074,33 @@ const Dashboard = () => {
                         </button>
 
                       </div>
+
                     </form>
+
                   </div>
+
                 </div>
+
               </section>
             )}
 
-          {/* ================= AI ================= */}
+          {/* =================================================
+              AI INSIGHTS
+          ================================================= */}
+
           {activeTab === 'ai' && (
             <section className="content-section">
 
               <div className="ai-hero">
 
                 <div className="ai-hero-icon">
-                  ðŸ¤–
+                  {ICON.robot}
                 </div>
 
                 <div>
+
                   <span className="eyebrow">
-                    FARMFLOW INTELLIGENCE
+                    FARMWLOW INTELLIGENCE
                   </span>
 
                   <h2>
@@ -2651,13 +3112,17 @@ const Dashboard = () => {
                     designed to help improve
                     your farm decisions.
                   </p>
+
                 </div>
+
               </div>
 
               <div className="ai-report-card">
 
                 <div className="ai-report-header">
+
                   <div>
+
                     <span className="eyebrow">
                       WEEKLY REPORT
                     </span>
@@ -2665,54 +3130,77 @@ const Dashboard = () => {
                     <h3>
                       {l.aiReport}
                     </h3>
+
                   </div>
 
                   <div className="ai-status">
-                    â— AI Generated
+                    {ICON.spark}
+                    {' '}AI Generated
                   </div>
+
                 </div>
 
                 <div className="ai-insights">
 
                   <div className="ai-insight green">
+
                     <div>
-                      ðŸŒ±
+                      {ICON.leaf}
                     </div>
 
                     <p>
-                      {l.aiTip1}
+                      Nitrogen levels in your
+                      fields may be dropping.
+                      Recommended to apply
+                      Urea by Thursday.
                     </p>
+
                   </div>
 
                   <div className="ai-insight blue">
+
                     <div>
-                      ðŸ“ˆ
+                      {ICON.chart}
                     </div>
 
                     <p>
-                      {l.aiTip2}
+                      Market conditions suggest
+                      reviewing wheat sales
+                      before confirming the next
+                      delivery.
                     </p>
+
                   </div>
 
                   <div className="ai-insight orange">
+
                     <div>
-                      ðŸŒ¦ï¸
+                      {ICON.weather}
                     </div>
 
                     <p>
-                      {l.aiTip3}
+                      Weather analysis shows
+                      low risk of pests for
+                      the next 7 days.
                     </p>
+
                   </div>
 
                 </div>
+
               </div>
+
             </section>
           )}
 
         </div>
+
       </main>
 
-      {/* ================= WEATHER MODAL ================= */}
+      {/* =================================================
+          WEATHER MODAL
+      ================================================= */}
+
       {showWeatherModal && (
         <div
           className="modal-overlay"
@@ -2720,22 +3208,24 @@ const Dashboard = () => {
             setShowWeatherModal(false)
           }
         >
+
           <div
             className="weather-modal"
-            onClick={(e) =>
-              e.stopPropagation()
+            onClick={(event) =>
+              event.stopPropagation()
             }
           >
 
             <div className="modal-header">
 
               <div>
+
                 <span className="eyebrow">
                   LIVE WEATHER
                 </span>
 
                 <h2>
-                  ðŸ“{' '}
+                  {ICON.pin}{' '}
                   {weatherData.locationName}
                 </h2>
 
@@ -2755,7 +3245,9 @@ const Dashboard = () => {
                       ?.split('.')[0] ||
                       ''}
                   </span>
+
                 </div>
+
               </div>
 
               <button
@@ -2766,12 +3258,15 @@ const Dashboard = () => {
                     false
                   )
                 }
+                aria-label="Close weather"
               >
-                Ã—
+                {ICON.close}
               </button>
+
             </div>
 
             <div className="forecast-heading">
+
               <span className="eyebrow">
                 HOURLY FORECAST
               </span>
@@ -2779,6 +3274,7 @@ const Dashboard = () => {
               <h3>
                 Next 24 Hours
               </h3>
+
             </div>
 
             <div className="forecast-scroll">
@@ -2790,15 +3286,16 @@ const Dashboard = () => {
                 </div>
               ) : (
                 hourlyForecast.map(
-                  (hour, idx) => (
+                  (hour, index) => (
                     <div
-                      key={idx}
+                      key={`${hour.time}-${index}`}
                       className={`forecast-item ${
-                        idx === 0
+                        index === 0
                           ? 'forecast-now'
                           : ''
                       }`}
                     >
+
                       <span className="forecast-time">
                         {hour.time}
                       </span>
@@ -2812,24 +3309,22 @@ const Dashboard = () => {
                       </strong>
 
                       <small>
-                        ðŸ’§{' '}
-                        {hour.rainProb ||
-                          0}
-                        %
+                        {ICON.drop}{' '}
+                        {hour.rainProb}%
                       </small>
+
                     </div>
                   )
                 )
               )}
+
             </div>
 
             <div className="modal-footer">
 
-              <div>
-                <span className="weather-condition">
-                  {weatherData.condition}
-                </span>
-              </div>
+              <span className="weather-condition">
+                {weatherData.condition}
+              </span>
 
               <button
                 type="button"
@@ -2846,8 +3341,10 @@ const Dashboard = () => {
             </div>
 
           </div>
+
         </div>
       )}
+
     </div>
   );
 };
