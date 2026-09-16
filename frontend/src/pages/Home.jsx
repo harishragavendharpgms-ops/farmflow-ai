@@ -1,14 +1,220 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Home.css';
+
+const translations = {
+  en: {
+    language: 'Language',
+    brand: 'FarmFlow',
+    smartPlatform: 'SMART AGRICULTURE PLATFORM',
+
+    heroTitle1: 'Better decisions for',
+    heroTitle2: 'every harvest.',
+
+    heroDescription:
+      'FarmFlow AI brings market intelligence, weather signals, procurement workflows and land-document verification into one simple workspace for farmers and field officers.',
+
+    getStarted: 'Get started',
+    alreadyAccount: 'I already have an account',
+
+    secureAccess: 'Secure role-based access',
+    liveData: 'Live market & weather data',
+
+    farmIntelligence: 'Farm intelligence',
+    live: 'LIVE',
+    marketSignal: "Today's market signal",
+    favourable: 'Favourable',
+    opportunity: '↑ 8.4% opportunity',
+
+    weather: 'Weather',
+    goodFieldWork: 'Good for field work',
+
+    procurement: 'Procurement',
+    activeApplications: '3 active applications',
+
+    aiRecommendation: 'AI recommendation',
+    aiText:
+      'Review wheat rates before confirming your next delivery slot.',
+
+    onePlatform: 'ONE PLATFORM',
+    everythingNeeds: 'Everything your farm workflow needs.',
+    everythingDescription:
+      'Designed to reduce paperwork, improve visibility and help teams act faster.',
+
+    marketIntelligence: 'Market intelligence',
+    marketDescription:
+      'Track crop rates and trends so you can make better selling and procurement decisions.',
+
+    aiInsights: 'AI insights',
+    aiDescription:
+      'Turn weather and market signals into practical recommendations for the week ahead.',
+
+    digitalVerification: 'Digital verification',
+    verificationDescription:
+      'Move land documents and applications through farmer, administrator and officer workflows.',
+
+    officialServices: 'OFFICIAL SERVICES',
+    landRecords: 'Land records, one click away.',
+    landDescription:
+      'Access the Tamil Nadu e-Services portal for land ownership, Patta and Chitta records.',
+    openServices: 'Open TN e-Services',
+
+    footerText: 'Smarter agriculture. Simpler workflows.',
+
+    signIn: 'Sign in',
+    createAccount: 'Create account'
+  },
+
+  ta: {
+    language: 'மொழி',
+    brand: 'FarmFlow',
+    smartPlatform: 'ஸ்மார்ட் வேளாண்மை தளம்',
+
+    heroTitle1: 'ஒவ்வொரு அறுவடைக்கும்',
+    heroTitle2: 'சிறந்த முடிவுகள்.',
+
+    heroDescription:
+      'FarmFlow AI மூலம் சந்தை தகவல்கள், வானிலை தகவல்கள், கொள்முதல் செயல்முறைகள் மற்றும் நில ஆவண சரிபார்ப்பை ஒரே எளிய தளத்தில் நிர்வகிக்கலாம்.',
+
+    getStarted: 'தொடங்குங்கள்',
+    alreadyAccount: 'ஏற்கனவே கணக்கு உள்ளது',
+
+    secureAccess: 'பாதுகாப்பான பங்கு அடிப்படையிலான அணுகல்',
+    liveData: 'நேரடி சந்தை மற்றும் வானிலை தகவல்கள்',
+
+    farmIntelligence: 'விவசாய நுண்ணறிவு',
+    live: 'நேரலை',
+    marketSignal: 'இன்றைய சந்தை நிலவரம்',
+    favourable: 'சாதகமானது',
+    opportunity: '↑ 8.4% வாய்ப்பு',
+
+    weather: 'வானிலை',
+    goodFieldWork: 'வயல் பணிக்கு ஏற்றது',
+
+    procurement: 'கொள்முதல்',
+    activeApplications: '3 செயல்பாட்டில் உள்ள விண்ணப்பங்கள்',
+
+    aiRecommendation: 'AI பரிந்துரை',
+    aiText:
+      'அடுத்த விநியோக நேரத்தை உறுதி செய்வதற்கு முன் கோதுமை விலைகளை சரிபார்க்கவும்.',
+
+    onePlatform: 'ஒரே தளம்',
+    everythingNeeds: 'உங்கள் விவசாய பணிகளுக்குத் தேவையான அனைத்தும்.',
+    everythingDescription:
+      'ஆவணப் பணிகளை குறைத்து, தகவல் தெளிவை அதிகரித்து, பணிகளை வேகமாக செய்யும் வகையில் வடிவமைக்கப்பட்டுள்ளது.',
+
+    marketIntelligence: 'சந்தை நுண்ணறிவு',
+    marketDescription:
+      'பயிர்களின் விலை மற்றும் சந்தை போக்குகளை கண்காணித்து சிறந்த விற்பனை மற்றும் கொள்முதல் முடிவுகளை எடுக்கலாம்.',
+
+    aiInsights: 'AI நுண்ணறிவுகள்',
+    aiDescription:
+      'வானிலை மற்றும் சந்தை தகவல்களை அடுத்த வாரத்திற்கான பயனுள்ள பரிந்துரைகளாக மாற்றுங்கள்.',
+
+    digitalVerification: 'டிஜிட்டல் சரிபார்ப்பு',
+    verificationDescription:
+      'விவசாயி, உள்ளூர் வருவாய் நிர்வாகி மற்றும் அலுவலர் செயல்முறைகளில் நில ஆவணங்கள் மற்றும் விண்ணப்பங்களை நிர்வகிக்கலாம்.',
+
+    officialServices: 'அதிகாரப்பூர்வ சேவைகள்',
+    landRecords: 'நில பதிவுகள் — ஒரே கிளிக்கில்.',
+    landDescription:
+      'நில உரிமை, பட்டா மற்றும் சிட்டா பதிவுகளுக்கான தமிழ்நாடு e-Services தளத்தை அணுகுங்கள்.',
+    openServices: 'TN e-Services திறக்கவும்',
+
+    footerText: 'புத்திசாலித்தனமான வேளாண்மை. எளிமையான பணிச்சூழல்.',
+
+    signIn: 'உள்நுழைக',
+    createAccount: 'கணக்கை உருவாக்கவும்'
+  },
+
+  hi: {
+    language: 'भाषा',
+    brand: 'FarmFlow',
+    smartPlatform: 'स्मार्ट कृषि प्लेटफ़ॉर्म',
+
+    heroTitle1: 'हर फसल के लिए',
+    heroTitle2: 'बेहतर निर्णय।',
+
+    heroDescription:
+      'FarmFlow AI किसानों और क्षेत्रीय अधिकारियों के लिए बाजार जानकारी, मौसम संकेत, खरीद प्रक्रियाओं और भूमि दस्तावेज़ सत्यापन को एक सरल प्लेटफ़ॉर्म में लाता है।',
+
+    getStarted: 'शुरू करें',
+    alreadyAccount: 'मेरे पास पहले से खाता है',
+
+    secureAccess: 'सुरक्षित भूमिका-आधारित पहुंच',
+    liveData: 'लाइव बाजार और मौसम डेटा',
+
+    farmIntelligence: 'कृषि जानकारी',
+    live: 'लाइव',
+    marketSignal: 'आज का बाजार संकेत',
+    favourable: 'अनुकूल',
+    opportunity: '↑ 8.4% अवसर',
+
+    weather: 'मौसम',
+    goodFieldWork: 'खेत के काम के लिए अच्छा',
+
+    procurement: 'खरीद',
+    activeApplications: '3 सक्रिय आवेदन',
+
+    aiRecommendation: 'AI सुझाव',
+    aiText:
+      'अगली डिलीवरी स्लॉट की पुष्टि करने से पहले गेहूं की कीमतों की समीक्षा करें।',
+
+    onePlatform: 'एक प्लेटफ़ॉर्म',
+    everythingNeeds: 'आपके कृषि कार्य के लिए आवश्यक सब कुछ।',
+    everythingDescription:
+      'कागजी काम कम करने, जानकारी को बेहतर बनाने और टीमों को तेजी से काम करने में मदद करने के लिए बनाया गया है।',
+
+    marketIntelligence: 'बाजार जानकारी',
+    marketDescription:
+      'फसल की कीमतों और बाजार के रुझानों को ट्रैक करके बेहतर बिक्री और खरीद निर्णय लें।',
+
+    aiInsights: 'AI जानकारी',
+    aiDescription:
+      'मौसम और बाजार संकेतों को आने वाले सप्ताह के लिए उपयोगी सुझावों में बदलें।',
+
+    digitalVerification: 'डिजिटल सत्यापन',
+    verificationDescription:
+      'किसान, स्थानीय राजस्व प्रशासक और अधिकारी प्रक्रियाओं के माध्यम से भूमि दस्तावेज़ और आवेदनों को प्रबंधित करें।',
+
+    officialServices: 'आधिकारिक सेवाएं',
+    landRecords: 'भूमि रिकॉर्ड — एक क्लिक में।',
+    landDescription:
+      'भूमि स्वामित्व, पट्टा और चिट्टा रिकॉर्ड के लिए तमिलनाडु e-Services पोर्टल तक पहुंचें।',
+    openServices: 'TN e-Services खोलें',
+
+    footerText: 'स्मार्ट कृषि। सरल कार्यप्रवाह।',
+
+    signIn: 'साइन इन',
+    createAccount: 'खाता बनाएं'
+  }
+};
 
 const Home = () => {
   const navigate = useNavigate();
 
+  const [language, setLanguage] = useState(() => {
+    return localStorage.getItem('farmflow_language') || 'en';
+  });
+
+  const t = translations[language];
+
+  useEffect(() => {
+    localStorage.setItem('farmflow_language', language);
+  }, [language]);
+
+  const changeLanguage = (newLanguage) => {
+    setLanguage(newLanguage);
+    localStorage.setItem('farmflow_language', newLanguage);
+  };
+
   return (
     <div className="home-page">
 
-      {/* NAVIGATION */}
+      {/* =====================================================
+          NAVIGATION
+      ====================================================== */}
+
       <header className="home-nav">
 
         <div
@@ -16,50 +222,79 @@ const Home = () => {
           onClick={() => navigate('/')}
           role="button"
           tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              navigate('/');
+            }
+          }}
         >
           <span>🌱</span>
-          FarmFlow <b>AI</b>
+          {t.brand} <b>AI</b>
         </div>
 
         <div className="home-nav-actions">
+
+          {/* LANGUAGE SELECTOR */}
+
+          <div className="home-language">
+
+            <span>🌐</span>
+
+            <select
+              value={language}
+              onChange={(e) =>
+                changeLanguage(e.target.value)
+              }
+              aria-label={t.language}
+            >
+              <option value="en">English</option>
+              <option value="ta">தமிழ்</option>
+              <option value="hi">हिन्दी</option>
+            </select>
+
+          </div>
+
           <button
             className="home-nav-login"
             onClick={() => navigate('/login')}
           >
-            Sign in
+            {t.signIn}
           </button>
 
           <button
             className="home-nav-cta"
             onClick={() => navigate('/register')}
           >
-            Create account
+            {t.createAccount}
           </button>
+
         </div>
 
       </header>
 
+      {/* =====================================================
+          MAIN
+      ====================================================== */}
+
       <main>
 
         {/* HERO */}
+
         <section className="home-hero">
 
           <div className="home-hero-copy">
 
             <div className="home-eyebrow">
-              SMART AGRICULTURE PLATFORM
+              {t.smartPlatform}
             </div>
 
             <h1>
-              Better decisions for{' '}
-              <span>every harvest.</span>
+              {t.heroTitle1}{' '}
+              <span>{t.heroTitle2}</span>
             </h1>
 
             <p>
-              FarmFlow AI brings market intelligence, weather
-              signals, procurement workflows and land-document
-              verification into one simple workspace for farmers
-              and field officers.
+              {t.heroDescription}
             </p>
 
             <div className="home-actions">
@@ -68,7 +303,7 @@ const Home = () => {
                 className="home-primary"
                 onClick={() => navigate('/register')}
               >
-                Get started
+                {t.getStarted}
                 <span>→</span>
               </button>
 
@@ -76,48 +311,57 @@ const Home = () => {
                 className="home-secondary"
                 onClick={() => navigate('/login')}
               >
-                I already have an account
+                {t.alreadyAccount}
               </button>
 
             </div>
 
             <div className="home-trust">
-              <span>✓</span>
-              Secure role-based access
 
               <span>✓</span>
-              Live market & weather data
+              {t.secureAccess}
+
+              <span>✓</span>
+              {t.liveData}
+
             </div>
 
           </div>
 
-          {/* INTELLIGENCE PREVIEW */}
+          {/* HERO PREVIEW */}
+
           <div className="home-hero-panel">
 
             <div className="home-panel-glow"></div>
 
             <div className="home-panel-top">
-              <span>Farm intelligence</span>
+
+              <span>
+                {t.farmIntelligence}
+              </span>
 
               <span className="live-dot">
-                ● LIVE
+                ● {t.live}
               </span>
+
             </div>
 
             <div className="home-metric">
 
               <div>
+
                 <small>
-                  Today's market signal
+                  {t.marketSignal}
                 </small>
 
                 <strong>
-                  Favourable
+                  {t.favourable}
                 </strong>
 
                 <em>
-                  ↑ 8.4% opportunity
+                  {t.opportunity}
                 </em>
+
               </div>
 
               <div className="metric-chart">
@@ -138,11 +382,11 @@ const Home = () => {
                 <span>🌤️</span>
 
                 <small>
-                  Weather
+                  {t.weather}
                 </small>
 
                 <b>
-                  Good for field work
+                  {t.goodFieldWork}
                 </b>
               </div>
 
@@ -150,11 +394,11 @@ const Home = () => {
                 <span>📦</span>
 
                 <small>
-                  Procurement
+                  {t.procurement}
                 </small>
 
                 <b>
-                  3 active applications
+                  {t.activeApplications}
                 </b>
               </div>
 
@@ -165,14 +409,15 @@ const Home = () => {
               <span>✦</span>
 
               <div>
+
                 <b>
-                  AI recommendation
+                  {t.aiRecommendation}
                 </b>
 
                 <p>
-                  Review wheat rates before
-                  confirming your next delivery slot.
+                  {t.aiText}
                 </p>
+
               </div>
 
             </div>
@@ -181,26 +426,28 @@ const Home = () => {
 
         </section>
 
-        {/* SERVICES */}
+        {/* =================================================
+            SERVICES
+        ================================================== */}
+
         <section className="home-services">
 
           <div className="section-heading">
 
             <div>
+
               <span>
-                ONE PLATFORM
+                {t.onePlatform}
               </span>
 
               <h2>
-                Everything your farm
-                workflow needs.
+                {t.everythingNeeds}
               </h2>
+
             </div>
 
             <p>
-              Designed to reduce paperwork,
-              improve visibility and help
-              teams act faster.
+              {t.everythingDescription}
             </p>
 
           </div>
@@ -208,73 +455,75 @@ const Home = () => {
           <div className="service-grid">
 
             <article>
+
               <div className="service-icon">
                 📈
               </div>
 
               <h3>
-                Market intelligence
+                {t.marketIntelligence}
               </h3>
 
               <p>
-                Track crop rates and trends
-                so you can make better selling
-                and procurement decisions.
+                {t.marketDescription}
               </p>
+
             </article>
 
             <article>
+
               <div className="service-icon">
                 🤖
               </div>
 
               <h3>
-                AI insights
+                {t.aiInsights}
               </h3>
 
               <p>
-                Turn weather and market signals
-                into practical recommendations
-                for the week ahead.
+                {t.aiDescription}
               </p>
+
             </article>
 
             <article>
+
               <div className="service-icon">
                 🧾
               </div>
 
               <h3>
-                Digital verification
+                {t.digitalVerification}
               </h3>
 
               <p>
-                Move land documents and applications
-                through farmer, VAO and officer workflows.
+                {t.verificationDescription}
               </p>
+
             </article>
 
           </div>
 
         </section>
 
-        {/* LAND SERVICES */}
+        {/* =================================================
+            LAND SERVICES
+        ================================================== */}
+
         <section className="home-land">
 
           <div>
 
             <div className="land-tag">
-              OFFICIAL SERVICES
+              {t.officialServices}
             </div>
 
             <h2>
-              Land records, one click away.
+              {t.landRecords}
             </h2>
 
             <p>
-              Access the Tamil Nadu e-Services
-              portal for land ownership, Patta
-              and Chitta records.
+              {t.landDescription}
             </p>
 
           </div>
@@ -284,14 +533,17 @@ const Home = () => {
             target="_blank"
             rel="noopener noreferrer"
           >
-            Open TN e-Services ↗
+            {t.openServices} ↗
           </a>
 
         </section>
 
       </main>
 
-      {/* FOOTER */}
+      {/* =====================================================
+          FOOTER
+      ====================================================== */}
+
       <footer className="home-footer">
 
         <div>
@@ -299,7 +551,7 @@ const Home = () => {
         </div>
 
         <p>
-          Smarter agriculture. Simpler workflows.
+          {t.footerText}
         </p>
 
       </footer>
@@ -308,4 +560,4 @@ const Home = () => {
   );
 };
 
-export default Home; 
+export default Home;
