@@ -167,7 +167,8 @@ const OfficerDashboard = () => {
 
     try {
       await updateDoc(doc(db, 'orders', id), {
-        datetime: combinedSlot
+        datetime: combinedSlot,
+        rescheduleRequested: false
       });
 
       await triggerSms(
@@ -972,6 +973,12 @@ const OfficerDashboard = () => {
                           <td>
 
                             <div className="officer-slot-box">
+
+                              {order.rescheduleRequested && (
+                                <div style={{ marginBottom: '8px', padding: '6px', background: '#fff0ef', border: '1px solid #fadbd8', borderRadius: '6px', color: '#d9534f', fontSize: '9px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  <span>⚠️</span> Farmer requested a reschedule
+                                </div>
+                              )}
 
                               <label>
                                 PROCUREMENT DATE

@@ -30,6 +30,21 @@ const initialRates = {
   "Potato": 18.00
 };
 
+const cropTranslations = {
+  "Rice (Paddy)": { en: "Rice (Paddy)", hi: "चावल (धान)", ta: "அரிசி (நெல்)" },
+  "Wheat": { en: "Wheat", hi: "गेहूं", ta: "கோதுமை" },
+  "Maize (Corn)": { en: "Maize (Corn)", hi: "मक्का", ta: "மக்காச்சோளம்" },
+  "Cotton": { en: "Cotton", hi: "कपास", ta: "பருத்தி" },
+  "Sugarcane": { en: "Sugarcane", hi: "गन्ना", ta: "கரும்பு" },
+  "Soybean": { en: "Soybean", hi: "सोयाबीन", ta: "சோயாபீன்" },
+  "Mustard": { en: "Mustard", hi: "सरसों", ta: "கடுகு" },
+  "Bajra (Pearl Millet)": { en: "Bajra (Pearl Millet)", hi: "बाजरा", ta: "கம்பு" },
+  "Groundnut": { en: "Groundnut", hi: "मूंगफली", ta: "நிலக்கடலை" },
+  "Tur (Pigeon Pea)": { en: "Tur (Pigeon Pea)", hi: "अरहर (तुअर)", ta: "துவரம் பருப்பு" },
+  "Onion": { en: "Onion", hi: "प्याज", ta: "வெங்காயம்" },
+  "Potato": { en: "Potato", hi: "आलू", ta: "உருளைக்கிழங்கு" }
+};
+
 const generateInitialHistory = (rates) => {
   const history = {};
 
@@ -222,6 +237,8 @@ const Dashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const l = t[lang];
+  
+  const getCropName = (cropKey) => cropTranslations[cropKey]?.[lang] || cropKey;
 
   const [marketRates, setMarketRates] = useState(initialRates);
   const [marketHistory, setMarketHistory] = useState(() =>
@@ -860,6 +877,18 @@ const Dashboard = () => {
       );
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleRequestReschedule = async (orderId) => {
+    if (window.confirm("Are you sure you want to request a new time slot from the Procurement Officer?")) {
+      try {
+        await updateDoc(doc(db, 'orders', orderId), { rescheduleRequested: true });
+        alert("Reschedule request sent successfully!");
+      } catch (error) {
+        console.error(error);
+        alert("Failed to send reschedule request.");
+      }
     }
   };
 
@@ -1566,7 +1595,7 @@ const Dashboard = () => {
 
                             <div>
                               <strong>
-                                {order.item}
+                                {getCropName(order.item)}
                               </strong>
 
                               <span>
@@ -1682,7 +1711,7 @@ const Dashboard = () => {
                             </span>
 
                             <h3>
-                              {order.item}
+                              {getCropName(order.item)}
                             </h3>
 
                             <small>
@@ -1744,6 +1773,28 @@ const Dashboard = () => {
                                 {order.datetime ||
                                   'TBD by Officer'}
                               </strong>
+
+                              {order.datetime &&
+                                order.datetime !==
+                                  'TBD by Officer' &&
+                                order.status !== 'Procured' &&
+                                order.status !== 'Rejected' && (
+                                <div style={{ marginTop: '8px' }}>
+                                  {order.rescheduleRequested ? (
+                                    <span style={{ display: 'inline-block', padding: '4px 8px', background: '#ffefee', color: '#c44945', borderRadius: '4px', fontSize: '9px', fontWeight: 'bold' }}>
+                                      ⏳ Reschedule Requested
+                                    </span>
+                                  ) : (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRequestReschedule(order.id)}
+                                      style={{ padding: '4px 10px', background: '#f5f7f6', border: '1px solid #dce4df', borderRadius: '6px', fontSize: '9px', fontWeight: 'bold', color: '#65746b', cursor: 'pointer' }}
+                                    >
+                                      Request Reschedule
+                                    </button>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </div>
 
@@ -1887,7 +1938,7 @@ const Dashboard = () => {
                         key={crop}
                         value={crop}
                       >
-                        {crop} (₹
+                        {getCropName(crop)} (₹
                         {marketRates[
                           crop
                         ].toFixed(2)}
@@ -1988,7 +2039,7 @@ const Dashboard = () => {
                           </div>
 
                           <h4>
-                            {crop.name}
+                            {getCropName(crop.name)}
                           </h4>
 
                           <div className="crop-stat">
@@ -2156,7 +2207,7 @@ const Dashboard = () => {
                                   </span>
 
                                   <strong>
-                                    {crop}
+                                    {getCropName(crop)}
                                   </strong>
                                 </div>
                               </td>
@@ -2280,7 +2331,7 @@ const Dashboard = () => {
                         <p>
                           {l.applyingFor}{' '}
                           <strong>
-                            {orderingItem}
+                            {getCropName(orderingItem)}
                           </strong>
                         </p>
                       </div>
