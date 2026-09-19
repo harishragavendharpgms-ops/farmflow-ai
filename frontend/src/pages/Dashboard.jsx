@@ -33,7 +33,7 @@ const initialRates = {
 const cropTranslations = {
   "Rice (Paddy)": { en: "Rice (Paddy)", hi: "चावल (धान)", ta: "அரிசி (நெல்)" },
   "Wheat": { en: "Wheat", hi: "गेहूं", ta: "கோதுமை" },
-  "Maize (Corn)": { en: "Maize (Corn)", hi: "मक्का", ta: "மக்காச்சோளம்" },
+  "Maize (Corn)": { en: "Maize (Corn)", hi: "मक्का", ta: "मक्काச்சோளம்" },
   "Cotton": { en: "Cotton", hi: "कपास", ta: "பருத்தி" },
   "Sugarcane": { en: "Sugarcane", hi: "गन्ना", ta: "கரும்பு" },
   "Soybean": { en: "Soybean", hi: "सोयाबीन", ta: "சோயாபீன்" },
@@ -232,7 +232,9 @@ const t = {
 const Dashboard = () => {
   const navigate = useNavigate();
 
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useState(
+    window.location.hash.replace('#', '') || 'dashboard'
+  );
   const [lang, setLang] = useState('en');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -287,6 +289,20 @@ const Dashboard = () => {
     name: '',
     weightKg: ''
   });
+
+  // Handle Browser Back Button Navigation
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '') || 'dashboard';
+      const validTabs = ['dashboard', 'profile', 'crops', 'procurement', 'track', 'ai', 'help'];
+      if (validTabs.includes(hash)) {
+        setActiveTab(hash);
+      }
+    };
+    
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
 
   useEffect(() => {
     const savedUser =
@@ -700,12 +716,10 @@ const Dashboard = () => {
   };
 
   const changeTab = (tab) => {
-    setActiveTab(tab);
-
+    window.location.hash = tab; // Set URL hash for browser history
     if (tab !== 'procurement') {
       setOrderingItem(null);
     }
-
     setIsSidebarOpen(false);
   };
 
@@ -1478,6 +1492,43 @@ const Dashboard = () => {
                   </div>
                 </div>
 
+              </div>
+
+              {/* Quick Navigation Cards */}
+              <div className="section-card" style={{ paddingBottom: '30px' }}>
+                <div className="card-heading" style={{ marginBottom: '15px' }}>
+                  <div>
+                    <span className="eyebrow">QUICK ACCESS</span>
+                    <h3>Dashboard Modules</h3>
+                  </div>
+                  <div className="heading-icon">🧭</div>
+                </div>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '15px' }}>
+                  {navItems.filter(item => item.id !== 'dashboard').map(item => (
+                    <div
+                      key={item.id}
+                      onClick={() => changeTab(item.id)}
+                      style={{ 
+                        padding: '20px 15px', 
+                        borderRadius: '16px', 
+                        border: '1px solid #e1e9e4', 
+                        backgroundColor: '#f9fcf9', 
+                        cursor: 'pointer', 
+                        transition: 'all 0.2s ease', 
+                        textAlign: 'center', 
+                        boxShadow: '0 3px 12px rgba(24,58,40,0.03)' 
+                      }}
+                      onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(24,58,40,0.08)'; e.currentTarget.style.borderColor = '#d4e4da'; }}
+                      onMouseOut={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 3px 12px rgba(24,58,40,0.03)'; e.currentTarget.style.borderColor = '#e1e9e4'; }}
+                    >
+                      <div style={{ width: '42px', height: '42px', margin: '0 auto 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff', borderRadius: '12px', fontSize: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
+                        {item.icon}
+                      </div>
+                      <strong style={{ fontSize: '13px', color: '#1a2b21', display: 'block' }}>{item.label.substring(2)}</strong>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {/* Weather + Pest */}
