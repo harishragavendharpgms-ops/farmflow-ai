@@ -105,7 +105,6 @@ const OfficerDashboard = () => {
       cleanPhone = `+${cleanPhone}`;
     }
 
-    // TextBee configuration retained from your existing workflow.
     const TEXTBEE_DEVICE_ID = "6a9d1e51ccb6c727098825fb";
     const TEXTBEE_API_KEY = "txb_TxrBzRwSdleKWzGtwMlg3bavFWnhAL7v";
 
@@ -168,7 +167,9 @@ const OfficerDashboard = () => {
     try {
       await updateDoc(doc(db, 'orders', id), {
         datetime: combinedSlot,
-        rescheduleRequested: false
+        rescheduleRequested: false,
+        preferredRescheduleDate: null,
+        preferredRescheduleTime: null
       });
 
       await triggerSms(
@@ -975,8 +976,11 @@ const OfficerDashboard = () => {
                             <div className="officer-slot-box">
 
                               {order.rescheduleRequested && (
-                                <div style={{ marginBottom: '8px', padding: '6px', background: '#fff0ef', border: '1px solid #fadbd8', borderRadius: '6px', color: '#d9534f', fontSize: '9px', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                  <span>⚠️</span> Farmer requested a reschedule
+                                <div style={{ marginBottom: '8px', padding: '8px', background: '#fff0ef', border: '1px solid #fadbd8', borderRadius: '6px', color: '#d9534f', fontSize: '9px', fontWeight: 'bold', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                    <span>⚠️</span> Reschedule Requested:
+                                  </div>
+                                  <span style={{ color: '#b53b37' }}>{order.preferredRescheduleDate} at {order.preferredRescheduleTime}</span>
                                 </div>
                               )}
 

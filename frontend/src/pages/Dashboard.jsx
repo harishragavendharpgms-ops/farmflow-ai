@@ -237,7 +237,6 @@ const Dashboard = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const l = t[lang];
-  
   const getCropName = (cropKey) => cropTranslations[cropKey]?.[lang] || cropKey;
 
   const [marketRates, setMarketRates] = useState(initialRates);
@@ -271,8 +270,8 @@ const Dashboard = () => {
   const [showWeatherModal, setShowWeatherModal] = useState(false);
 
   const [myCrops, setMyCrops] = useState([]);
-
   const [orderingItem, setOrderingItem] = useState(null);
+  const [rescheduleInputs, setRescheduleInputs] = useState({});
 
   const [orderDetails, setOrderDetails] = useState({
     zone: '',
@@ -880,10 +879,27 @@ const Dashboard = () => {
     }
   };
 
+  const handleRescheduleInputChange = (orderId, field, value) => {
+    setRescheduleInputs((prev) => ({
+      ...prev,
+      [orderId]: { ...prev[orderId], [field]: value }
+    }));
+  };
+
   const handleRequestReschedule = async (orderId) => {
-    if (window.confirm("Are you sure you want to request a new time slot from the Procurement Officer?")) {
+    const input = rescheduleInputs[orderId];
+    if (!input || !input.date || !input.time) {
+      alert("Please select your preferred date and enter a time.");
+      return;
+    }
+
+    if (window.confirm(`Request a new slot for ${input.date} at ${input.time}?`)) {
       try {
-        await updateDoc(doc(db, 'orders', orderId), { rescheduleRequested: true });
+        await updateDoc(doc(db, 'orders', orderId), { 
+          rescheduleRequested: true,
+          preferredRescheduleDate: input.date,
+          preferredRescheduleTime: input.time
+        });
         alert("Reschedule request sent successfully!");
       } catch (error) {
         console.error(error);
@@ -1779,19 +1795,37 @@ const Dashboard = () => {
                                   'TBD by Officer' &&
                                 order.status !== 'Procured' &&
                                 order.status !== 'Rejected' && (
-                                <div style={{ marginTop: '8px' }}>
+                                <div style={{ marginTop: '12px', padding: '10px', background: '#f8fcf9', borderRadius: '8px', border: '1px solid #e2ece5' }}>
                                   {order.rescheduleRequested ? (
-                                    <span style={{ display: 'inline-block', padding: '4px 8px', background: '#ffefee', color: '#c44945', borderRadius: '4px', fontSize: '9px', fontWeight: 'bold' }}>
-                                      ⏳ Reschedule Requested
+                                    <span style={{ display: 'inline-block', padding: '6px 10px', background: '#ffefee', color: '#c44945', borderRadius: '6px', fontSize: '10px', fontWeight: 'bold' }}>
+                                      ⏳ Requested: {order.preferredRescheduleDate} at {order.preferredRescheduleTime}
                                     </span>
                                   ) : (
-                                    <button
-                                      type="button"
-                                      onClick={() => handleRequestReschedule(order.id)}
-                                      style={{ padding: '4px 10px', background: '#f5f7f6', border: '1px solid #dce4df', borderRadius: '6px', fontSize: '9px', fontWeight: 'bold', color: '#65746b', cursor: 'pointer' }}
-                                    >
-                                      Request Reschedule
-                                    </button>
+                                    <div>
+                                      <span style={{ display: 'block', fontSize: '9px', fontWeight: 'bold', color: '#5b7062', marginBottom: '6px' }}>REQUEST NEW SLOT</span>
+                                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                        <input
+                                          type="date"
+                                          value={rescheduleInputs[order.id]?.date || ''}
+                                          onChange={(e) => handleRescheduleInputChange(order.id, 'date', e.target.value)}
+                                          style={{ padding: '6px', border: '1px solid #dce4df', borderRadius: '6px', fontSize: '10px' }}
+                                        />
+                                        <input
+                                          type="text"
+                                          placeholder="e.g. 10:30 AM"
+                                          value={rescheduleInputs[order.id]?.time || ''}
+                                          onChange={(e) => handleRescheduleInputChange(order.id, 'time', e.target.value)}
+                                          style={{ padding: '6px', border: '1px solid #dce4df', borderRadius: '6px', fontSize: '10px', width: '90px' }}
+                                        />
+                                        <button
+                                          type="button"
+                                          onClick={() => handleRequestReschedule(order.id)}
+                                          style={{ padding: '6px 12px', background: '#2e7d32', border: 'none', borderRadius: '6px', fontSize: '10px', fontWeight: 'bold', color: '#fff', cursor: 'pointer' }}
+                                        >
+                                          Send
+                                        </button>
+                                      </div>
+                                    </div>
                                   )}
                                 </div>
                               )}
