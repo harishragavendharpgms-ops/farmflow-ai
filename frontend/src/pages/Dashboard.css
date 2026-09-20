@@ -290,7 +290,15 @@
 }
 
 /* TAB CONTAINER */
-.v-tab-dashboard,
+.v-tab-dashboard {
+  padding: 24px 28px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  max-width: 1440px;
+  width: 100%;
+}
+
 .v-tab-booking,
 .v-tab-token,
 .v-tab-queue,
@@ -406,11 +414,26 @@
   color: #16a34a !important;
 }
 
-/* DUAL COLUMNS LAYOUT */
-.v-dashboard-dual-grid {
+/* TWO-COLUMN DASHBOARD WORKSPACE */
+.v-dashboard-two-col-layout {
   display: grid;
-  grid-template-columns: 1.45fr 1fr;
+  grid-template-columns: 1fr 370px;
+  gap: 22px;
+  align-items: start;
+}
+
+.v-dash-main-col {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  min-width: 0;
+}
+
+.v-dash-side-col {
+  display: flex;
+  flex-direction: column;
   gap: 18px;
+  width: 100%;
 }
 
 /* ACTIVE BOOKING CARD */
@@ -418,18 +441,17 @@
   background: #ffffff;
   border: 1px solid #e2e8f0;
   border-radius: 16px;
-  padding: 22px;
+  padding: 24px;
   box-shadow: var(--shadow-sm);
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  gap: 16px;
 }
 
 .v-card-top-row {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 18px;
 }
 
 .v-card-subtitle {
@@ -437,12 +459,13 @@
   font-weight: 700;
   color: #64748b;
   letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .v-card-token {
   font-size: 1.6rem;
   font-weight: 800;
-  margin: 2px 0 0;
+  margin: 4px 0 0;
   color: #0f172a;
 }
 
@@ -451,10 +474,9 @@
   grid-template-columns: repeat(2, 1fr);
   gap: 14px;
   background: #f8fafc;
-  padding: 14px 16px;
+  padding: 16px 18px;
   border-radius: 12px;
   border: 1px solid #f1f5f9;
-  margin-bottom: 16px;
 }
 
 .v-spec-item small {
@@ -463,12 +485,36 @@
   font-weight: 700;
   color: #64748b;
   letter-spacing: 0.05em;
-  margin-bottom: 2px;
+  margin-bottom: 3px;
 }
 
 .v-spec-item strong {
-  font-size: 0.9rem;
+  font-size: 0.92rem;
   color: #0f172a;
+  word-break: break-word;
+}
+
+.v-no-orders-prompt {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 18px 20px;
+}
+
+.v-no-orders-prompt p {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.v-booking-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-top: 6px;
 }
 
 .v-link-btn {
@@ -486,75 +532,293 @@
   text-decoration: underline;
 }
 
-/* LIVE QUEUE STATUS (Forest Green Card from Video) */
-.v-live-queue-banner {
-  background: linear-gradient(145deg, #15803d 0%, #166534 100%);
-  border-radius: 16px;
-  padding: 22px 24px;
-  color: #ffffff;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  box-shadow: 0 10px 20px -5px rgba(22, 101, 52, 0.35);
+.v-mini-pdf-btn {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1.5px solid #86efac;
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
 }
 
-.v-lq-head {
+.v-mini-pdf-btn:hover {
+  background: #dcfce7;
+  border-color: #4ade80;
+}
+
+/* =========================================================
+   SIDE COLUMN WIDGETS (Farmer Front-Facing Sidebar)
+   ========================================================= */
+
+.v-side-widget {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.v-side-widget:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.v-side-widget-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.v-side-title-row {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.75rem;
+  font-size: 0.84rem;
   font-weight: 800;
-  letter-spacing: 0.08em;
-  color: #bbf7d0;
+  color: #1e293b;
+  letter-spacing: 0.04em;
+}
+
+.v-side-chip {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+}
+
+.v-side-chip.green { background: #dcfce7; color: #15803d; }
+.v-side-chip.blue { background: #e0f2fe; color: #0369a1; }
+.v-side-chip.purple { background: #f3e8ff; color: #7e22ce; }
+.v-side-chip.yellow { background: #fef3c7; color: #b45309; }
+
+/* 1. Mandi Live Queue Widget */
+.v-live-queue-widget {
+  border-top: 4px solid #16a34a;
 }
 
 .v-lq-pulse {
-  width: 8px;
-  height: 8px;
-  background: #4ade80;
+  width: 9px;
+  height: 9px;
+  background: #16a34a;
   border-radius: 50%;
   display: inline-block;
-  box-shadow: 0 0 0 4px rgba(74, 222, 128, 0.3);
+  box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.25);
+  animation: pulse 1.5s infinite;
 }
 
-.v-lq-body {
+@keyframes pulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.5); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(22, 163, 74, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(22, 163, 74, 0); }
+}
+
+.v-side-lq-body {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 10px;
+  background: #f8fafc;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid #f1f5f9;
+}
+
+.v-side-lq-metric small {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #64748b;
+  letter-spacing: 0.04em;
+}
+
+.v-side-lq-metric h3 {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 3px 0 0;
+}
+
+.v-side-lq-meta {
+  font-size: 0.78rem;
+  color: #475569;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.v-side-lq-meta b {
+  color: #0f172a;
+}
+
+/* 2. Weather Widget */
+.v-weather-widget {
+  border-top: 4px solid #0284c7;
+}
+
+.v-side-weather-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.v-weather-current-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.v-weather-big-icon {
+  font-size: 2.1rem;
+  line-height: 1;
+}
+
+.v-weather-current-row strong {
+  display: block;
+  font-size: 0.88rem;
+  color: #0f172a;
+}
+
+.v-weather-current-row small {
+  font-size: 0.74rem;
+  color: #64748b;
+}
+
+.v-weather-tip-box {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 0.76rem;
+  color: #166534;
+  line-height: 1.35;
+}
+
+/* 3. AI Smart Advisory Widget */
+.v-ai-widget {
+  border-top: 4px solid #8b5cf6;
+}
+
+.v-side-ai-content p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #334155;
+  line-height: 1.45;
+  background: #faf5ff;
+  border: 1px solid #f3e8ff;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+/* 4. Harvest Inventory Summary Widget */
+.v-stock-widget {
+  border-top: 4px solid #10b981;
+}
+
+.v-side-stock-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.v-side-stock-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin: 16px 0;
-}
-
-.v-lq-stat small {
-  display: block;
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: #86efac;
-  letter-spacing: 0.05em;
-  margin-bottom: 4px;
-}
-
-.v-lq-stat h3 {
-  font-size: 1.8rem;
-  font-weight: 800;
-  margin: 0;
-  color: #ffffff;
-}
-
-.v-lq-divider {
-  width: 1px;
-  height: 40px;
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.v-lq-wait {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: #dcfce7;
-  background: rgba(255, 255, 255, 0.12);
-  padding: 6px 12px;
+  padding: 8px 10px;
+  background: #f8fafc;
   border-radius: 8px;
-  display: inline-block;
-  align-self: flex-start;
+  font-size: 0.82rem;
+}
+
+.v-side-stock-item strong {
+  color: #0f172a;
+  display: block;
+}
+
+.v-side-stock-item small {
+  color: #64748b;
+  font-size: 0.72rem;
+}
+
+.v-side-stock-item span {
+  font-weight: 700;
+  color: #15803d;
+}
+
+.v-empty-stock-text {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+/* 5. Kisan Support Widget */
+.v-support-widget {
+  border-top: 4px solid #eab308;
+}
+
+.v-side-support-body {
+  background: #fffbeb;
+  border: 1px solid #fef3c7;
+  border-radius: 10px;
+  padding: 10px 14px;
+  text-align: center;
+}
+
+.v-side-support-body h3 {
+  margin: 0 0 2px;
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #92400e;
+}
+
+.v-side-support-body small {
+  font-size: 0.72rem;
+  color: #b45309;
+}
+
+/* Side Widget Buttons */
+.v-side-widget-btn {
+  width: 100%;
+  padding: 9px 14px;
+  border-radius: 8px;
+  border: none;
+  background: #16a34a;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(22, 163, 74, 0.2);
+}
+
+.v-side-widget-btn:hover {
+  background: #15803d;
+  transform: translateY(-1px);
+}
+
+.v-side-widget-btn.outline {
+  background: #f8fafc;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  box-shadow: none;
+}
+
+.v-side-widget-btn.outline:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+@media (max-width: 1100px) {
+  .v-dashboard-two-col-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* PAYMENT SUMMARY */

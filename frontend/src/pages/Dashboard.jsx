@@ -828,9 +828,10 @@ const Dashboard = () => {
           </div>
         </header>
 
-        {/* TAB 1: DASHBOARD (Original Overview with Sleek Video Aesthetics) */}
+        {/* TAB 1: DASHBOARD (Multi-Column Layout with Quick-Access Side Columns) */}
         {activeTab === 'dashboard' && (
           <div className="v-tab-dashboard">
+            {/* Hero Greeting Card */}
             <div className="v-hero-greeting-card">
               <div>
                 <h1>Good Morning, {userProfile.name} 🌾</h1>
@@ -868,134 +869,296 @@ const Dashboard = () => {
                 <div className="v-kpi-label">ACTIVE APPLICATIONS</div>
                 <div className="v-kpi-value">{activeOrders.length} Applications</div>
               </div>
-              <div className="v-kpi-card">
-                <div className="v-kpi-label">LOCAL WEATHER</div>
+              <div className="v-kpi-card" onClick={() => setShowWeatherModal(true)} style={{ cursor: 'pointer' }}>
+                <div className="v-kpi-label">LOCAL WEATHER (CLICK 12H)</div>
                 <div className="v-kpi-value" style={{ fontSize: '1.25rem' }}>{weatherData.icon} {weatherData.temp}</div>
               </div>
             </div>
 
-            {/* Active Order & Live Queue Banner */}
-            <div className="v-dashboard-dual-grid">
-              <div className="v-active-booking-card">
-                <div className="v-card-top-row">
-                  <div>
-                    <span className="v-card-subtitle">LATEST APPLICATION</span>
-                    <h3 className="v-card-token">
-                      {activeOrders[0] ? activeOrders[0].token : 'No Active Order'}
-                    </h3>
+            {/* TWO-COLUMN DASHBOARD WORKSPACE */}
+            <div className="v-dashboard-two-col-layout">
+              {/* LEFT / MAIN COLUMN */}
+              <div className="v-dash-main-col">
+                {/* Active Application / Gate Pass Card */}
+                <div className="v-active-booking-card">
+                  <div className="v-card-top-row">
+                    <div>
+                      <span className="v-card-subtitle">LATEST PROCUREMENT APPLICATION</span>
+                      <h3 className="v-card-token">
+                        {activeOrders[0] ? activeOrders[0].token : 'No Active Booking'}
+                      </h3>
+                    </div>
+                    {activeOrders[0] && (
+                      <span
+                        className={`pill-badge ${
+                          activeOrders[0].status === 'Procured'
+                            ? 'pill-badge-green'
+                            : activeOrders[0].status === 'VAO Verified'
+                            ? 'pill-badge-blue'
+                            : 'pill-badge-yellow'
+                        }`}
+                      >
+                        {activeOrders[0].status}
+                      </span>
+                    )}
                   </div>
-                  {activeOrders[0] && (
-                    <span className="pill-badge pill-badge-green">
-                      {activeOrders[0].status}
-                    </span>
+
+                  {activeOrders[0] ? (
+                    <div className="v-booking-specs-grid">
+                      <div className="v-spec-item">
+                        <small>CROP & VOLUME</small>
+                        <strong>🌾 {activeOrders[0].item} ({activeOrders[0].quantity} KGs)</strong>
+                      </div>
+                      <div className="v-spec-item">
+                        <small>MANDI ZONE</small>
+                        <strong>📍 {activeOrders[0].zone} {activeOrders[0].subPlace ? `• ${activeOrders[0].subPlace}` : ''}</strong>
+                      </div>
+                      <div className="v-spec-item">
+                        <small>SLOT SCHEDULE</small>
+                        <strong>⏰ {activeOrders[0].datetime || 'Awaiting Officer Allotment'}</strong>
+                      </div>
+                      <div className="v-spec-item">
+                        <small>PATTA / CHITTA</small>
+                        <strong>📄 {activeOrders[0].pattaChitta || 'Submitted'}</strong>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="v-no-orders-prompt">
+                      <p>
+                        You haven't submitted any crop procurement applications yet. Click <b>"Sell to Market"</b> below to book your slot at the nearest mandi.
+                      </p>
+                    </div>
                   )}
-                </div>
 
-                {activeOrders[0] ? (
-                  <div className="v-booking-specs-grid">
-                    <div className="v-spec-item">
-                      <small>CROP</small>
-                      <strong>{activeOrders[0].item} ({activeOrders[0].quantity} KGs)</strong>
-                    </div>
-                    <div className="v-spec-item">
-                      <small>ZONE</small>
-                      <strong>{activeOrders[0].zone} ({activeOrders[0].subPlace})</strong>
-                    </div>
-                    <div className="v-spec-item">
-                      <small>SLOT SCHEDULE</small>
-                      <strong>{activeOrders[0].datetime || 'Awaiting Officer'}</strong>
-                    </div>
-                    <div className="v-spec-item">
-                      <small>VAO STATUS</small>
-                      <strong>{activeOrders[0].status}</strong>
-                    </div>
-                  </div>
-                ) : (
-                  <p style={{ color: '#64748b', fontSize: '0.88rem' }}>
-                    You haven't submitted any crop procurement applications yet. Click "Sell to Market" to get started.
-                  </p>
-                )}
-
-                <button
-                  type="button"
-                  className="v-link-btn"
-                  onClick={() => changeTab('track')}
-                >
-                  View full application timeline →
-                </button>
-              </div>
-
-              {/* Live Queue Banner */}
-              <div className="v-live-queue-banner">
-                <div className="v-lq-head">
-                  <span className="v-lq-pulse" />
-                  <span>MANDI LIVE QUEUE STATUS</span>
-                </div>
-                <div className="v-lq-body">
-                  <div className="v-lq-stat">
-                    <small>NOW WEIGHING</small>
-                    <h3>{activeOrders[0]?.status === 'Processing' ? activeOrders[0].token : 'PDC-A004'}</h3>
-                  </div>
-                  <div className="v-lq-divider" />
-                  <div className="v-lq-stat">
-                    <small>PEOPLE AHEAD</small>
-                    <h3>0 Ahead</h3>
+                  <div className="v-booking-actions-row">
+                    <button
+                      type="button"
+                      className="v-link-btn"
+                      onClick={() => changeTab('track')}
+                    >
+                      View full application timeline →
+                    </button>
+                    {activeOrders[0] && (
+                      <button
+                        type="button"
+                        className="v-mini-pdf-btn"
+                        onClick={() => handleDownloadGatePass(activeOrders[0])}
+                      >
+                        📥 Download Gate Pass PDF
+                      </button>
+                    )}
                   </div>
                 </div>
-                <div className="v-lq-wait">
-                  <span>⏱️ Average Waiting: ~0 mins</span>
+
+                {/* Quick Live Market Rates Table */}
+                <div className="v-table-card">
+                  <div className="v-table-card-header">
+                    <div>
+                      <h4>{l.liveCropMarket}</h4>
+                      <p style={{ margin: 0, fontSize: '0.78rem', color: '#64748b' }}>
+                        Real-time APMC Mandi rates with fluctuating trendlines
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="v-view-all-link"
+                      onClick={() => changeTab('procurement')}
+                    >
+                      View All Crops →
+                    </button>
+                  </div>
+
+                  <div className="v-table-responsive">
+                    <table className="v-clean-table">
+                      <thead>
+                        <tr>
+                          <th>{l.cropName}</th>
+                          <th>{l.pastRates}</th>
+                          <th>{l.liveRate}</th>
+                          <th>{l.action}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {Object.keys(initialRates).slice(0, 4).map((crop) => (
+                          <tr key={crop}>
+                            <td>
+                              <b>{getCropName(crop)}</b>
+                            </td>
+                            <td style={{ width: '120px' }}>
+                              <Sparkline data={marketHistory[crop]} />
+                            </td>
+                            <td>
+                              <b>₹{marketRates[crop]?.toFixed(2)}</b> / Kg
+                            </td>
+                            <td>
+                              <button
+                                type="button"
+                                className="v-btn-procure-action"
+                                onClick={() => {
+                                  setOrderingItem(crop);
+                                  changeTab('procurement');
+                                }}
+                              >
+                                {l.sellMarket}
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Quick Live Market Rates Preview */}
-            <div className="v-table-card">
-              <div className="v-table-card-header">
-                <h4>{l.liveCropMarket}</h4>
-                <button
-                  type="button"
-                  className="v-view-all-link"
-                  onClick={() => changeTab('procurement')}
-                >
-                  View All Rates →
-                </button>
-              </div>
-              <div className="v-table-responsive">
-                <table className="v-clean-table">
-                  <thead>
-                    <tr>
-                      <th>{l.cropName}</th>
-                      <th>{l.pastRates}</th>
-                      <th>{l.liveRate}</th>
-                      <th>{l.action}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {Object.keys(initialRates).slice(0, 4).map((crop) => (
-                      <tr key={crop}>
-                        <td><b>{getCropName(crop)}</b></td>
-                        <td style={{ width: '120px' }}>
-                          <Sparkline data={marketHistory[crop]} />
-                        </td>
-                        <td>
-                          <b>₹{marketRates[crop]?.toFixed(2)}</b> / Kg
-                        </td>
-                        <td>
-                          <button
-                            type="button"
-                            className="v-btn-procure-action"
-                            onClick={() => {
-                              setOrderingItem(crop);
-                              changeTab('procurement');
-                            }}
-                          >
-                            {l.sellMarket}
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              {/* RIGHT / SIDE COLUMN (FRONT-FACING WIDGETS) */}
+              <div className="v-dash-side-col">
+                {/* WIDGET 1: MANDI LIVE QUEUE STATUS */}
+                <div className="v-side-widget v-live-queue-widget">
+                  <div className="v-side-widget-header">
+                    <div className="v-side-title-row">
+                      <span className="v-lq-pulse" />
+                      <strong>MANDI LIVE QUEUE</strong>
+                    </div>
+                    <span className="v-side-chip green">Gate #2 Active</span>
+                  </div>
+
+                  <div className="v-side-lq-body">
+                    <div className="v-side-lq-metric">
+                      <small>NOW WEIGHING</small>
+                      <h3>
+                        {activeOrders[0]?.status === 'Processing'
+                          ? activeOrders[0].token
+                          : 'PDC-A004'}
+                      </h3>
+                    </div>
+                    <div className="v-side-lq-metric">
+                      <small>PEOPLE AHEAD</small>
+                      <h3>0 Ahead</h3>
+                    </div>
+                  </div>
+
+                  <div className="v-side-lq-meta">
+                    <div>⏱️ <b>Avg. Wait:</b> ~12 mins</div>
+                    <div>📍 <b>Yard:</b> {activeOrders[0]?.zone ? `${activeOrders[0].zone} APMC` : 'Central Mandi'}</div>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="v-side-widget-btn"
+                    onClick={() => changeTab('track')}
+                  >
+                    Check Live Status →
+                  </button>
+                </div>
+
+                {/* WIDGET 2: WEATHER & MICROCLIMATE ADVISORY */}
+                <div className="v-side-widget v-weather-widget">
+                  <div className="v-side-widget-header">
+                    <div className="v-side-title-row">
+                      <span>🌤️</span>
+                      <strong>WEATHER & ADVISORY</strong>
+                    </div>
+                    <span className="v-side-chip blue">{weatherData.temp}</span>
+                  </div>
+
+                  <div className="v-side-weather-body">
+                    <div className="v-weather-current-row">
+                      <span className="v-weather-big-icon">{weatherData.icon}</span>
+                      <div>
+                        <strong>{weatherData.condition}</strong>
+                        <small>Field Location: {weatherData.locationName}</small>
+                      </div>
+                    </div>
+                    <div className="v-weather-tip-box">
+                      <span>🌾 <b>Agri Note:</b> Clear sunny skies. Optimal condition for harvesting & open-yard grain drying.</span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="v-side-widget-btn outline"
+                    onClick={() => setShowWeatherModal(true)}
+                  >
+                    View 12-Hour Forecast →
+                  </button>
+                </div>
+
+                {/* WIDGET 3: AI SMART HARVEST ADVISORY */}
+                <div className="v-side-widget v-ai-widget">
+                  <div className="v-side-widget-header">
+                    <div className="v-side-title-row">
+                      <span>🤖</span>
+                      <strong>AI SMART ADVISORY</strong>
+                    </div>
+                    <span className="v-side-chip purple">Trending Up ▲</span>
+                  </div>
+
+                  <div className="v-side-ai-content">
+                    <p>
+                      <b>Paddy (Kuruvai):</b> Mandi rate is up <b>+3.8%</b> this week. Recommended to lock your procurement application early.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="v-side-widget-btn"
+                    onClick={() => changeTab('ai')}
+                  >
+                    Open AI Insights →
+                  </button>
+                </div>
+
+                {/* WIDGET 4: MY CROPS INVENTORY SUMMARY */}
+                <div className="v-side-widget v-stock-widget">
+                  <div className="v-side-widget-header">
+                    <div className="v-side-title-row">
+                      <span>🌾</span>
+                      <strong>MY HARVEST STOCK</strong>
+                    </div>
+                    <span className="v-side-chip green">{totalInventoryWeight} KG</span>
+                  </div>
+
+                  <div className="v-side-stock-list">
+                    {myCrops.length === 0 ? (
+                      <p className="v-empty-stock-text">
+                        No crops added yet. Add crops to estimate asset value.
+                      </p>
+                    ) : (
+                      myCrops.slice(0, 3).map((crop) => (
+                        <div key={crop.id} className="v-side-stock-item">
+                          <div>
+                            <strong>{crop.name}</strong>
+                            <small>{crop.weightKg} kg</small>
+                          </div>
+                          <span>₹{((crop.weightKg || 0) * (marketRates[crop.name] || crop.ratePerKg || 25)).toLocaleString('en-IN')}</span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    className="v-side-widget-btn outline"
+                    onClick={() => changeTab('crops')}
+                  >
+                    Manage Inventory →
+                  </button>
+                </div>
+
+                {/* WIDGET 5: KISAN SUPPORT & HELPLINE */}
+                <div className="v-side-widget v-support-widget">
+                  <div className="v-side-widget-header">
+                    <div className="v-side-title-row">
+                      <span>📞</span>
+                      <strong>TOLL-FREE SUPPORT</strong>
+                    </div>
+                    <span className="v-side-chip yellow">24x7</span>
+                  </div>
+                  <div className="v-side-support-body">
+                    <h3>1800-425-166</h3>
+                    <small>Official Mandi Assistance & Grievances</small>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
