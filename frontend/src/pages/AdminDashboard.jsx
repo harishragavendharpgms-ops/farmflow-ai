@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db, auth } from '../firebase';
 import {
@@ -16,8 +16,13 @@ const AdminDashboard = () => {
 
   const [users, setUsers] = useState([]);
   const [orders, setOrders] = useState([]);
-  const [activeTab, setActiveTab] = useState('farmers');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // Hover states for visual analytics
+  const [hoveredBar, setHoveredBar] = useState(null);
+  const [hoveredPie, setHoveredPie] = useState(null);
 
   const [newUser, setNewUser] = useState({
     name: '',
@@ -29,22 +34,12 @@ const AdminDashboard = () => {
   });
 
   useEffect(() => {
-    const savedUser =
-      localStorage.getItem('farmflow_user') ||
-      sessionStorage.getItem('farmflow_user');
-
-    if (!savedUser) {
-      navigate('/login');
-      return;
-    }
-
     fetchData();
-  }, [navigate]);
+  }, []);
 
   const fetchData = async () => {
     try {
       const userSnap = await getDocs(collection(db, 'users'));
-
       setUsers(
         userSnap.docs.map((userDoc) => ({
           id: userDoc.id,
@@ -53,16 +48,18 @@ const AdminDashboard = () => {
       );
 
       const orderSnap = await getDocs(collection(db, 'orders'));
+      const ordersList = orderSnap.docs.map((orderDoc) => ({
+        id: orderDoc.id,
+        ...orderDoc.data()
+      }));
 
-      setOrders(
-        orderSnap.docs.map((orderDoc) => ({
-          id: orderDoc.id,
-          ...orderDoc.data()
-        }))
+      ordersList.sort(
+        (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
       );
+
+      setOrders(ordersList);
     } catch (error) {
       console.error('Error fetching admin data:', error);
-      alert('Failed to load dashboard data.');
     }
   };
 
@@ -78,7 +75,6 @@ const AdminDashboard = () => {
       );
 
       const user = userCredential.user;
-
       const userProfile = {
         uid: user.uid,
         name: newUser.name,
@@ -90,11 +86,7 @@ const AdminDashboard = () => {
       };
 
       await setDoc(doc(db, 'users', user.uid), userProfile);
-
-      alert(
-        'User account created successfully in Firebase Auth & Firestore!'
-      );
-
+      alert(`User account (${newUser.role.toUpperCase()}) created successfully!`);
       setNewUser({
         name: '',
         email: '',
@@ -103,8 +95,10 @@ const AdminDashboard = () => {
         zone: '',
         subPlace: ''
       });
-
       fetchData();
+      if (newUser.role === 'vao') setActiveTab('vaos');
+      else if (newUser.role === 'officer') setActiveTab('officers');
+      else setActiveTab('farmers');
     } catch (err) {
       console.error(err);
       alert('Error creating user: ' + err.message);
@@ -113,8 +107,8 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleDeleteUser = async (id) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
+  const handleDeleteUser = async (id, userName) => {
+    if (window.confirm(`Are you sure you want to delete user account "${userName || id}"?`)) {
       try {
         await deleteDoc(doc(db, 'users', id));
         fetchData();
@@ -125,688 +119,910 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleDeleteOrder = async (id) => {
+    if (window.confirm(`Are you sure you want to remove procurement order ID: ${id}?`)) {
+      try {
+        await deleteDoc(doc(db, 'orders', id));
+        fetchData();
+      } catch (error) {
+        console.error(error);
+        alert('Failed to delete order.');
+      }
+    }
+  };
+
   const handleLogout = () => {
-    localStorage.clear();
-    sessionStorage.clear();
+    localStorage.removeItem('farmflow_user');
+    sessionStorage.removeItem('farmflow_user');
     navigate('/login');
   };
 
-  const farmers = users.filter((u) => u.role === 'farmer');
-  const vaos = users.filter((u) => u.role === 'vao');
-  const officers = users.filter((u) => u.role === 'officer');
-
-  const pendingOrders = orders.filter(
-    (order) => order.status === 'Pending VAO'
+  // Real user categorizations from Firestore
+  const farmers = useMemo(() => users.filter((u) => u.role === 'farmer'), [users]);
+  const vaos = useMemo(() => users.filter((u) => u.role === 'vao'), [users]);
+  const officers = useMemo(
+    () => users.filter((u) => u.role === 'officer' || u.role === 'operator'),
+    [users]
   );
 
-  const verifiedOrders = orders.filter(
-    (order) => order.status === 'VAO Verified'
+  const pendingOrders = useMemo(
+    () => orders.filter((o) => o.status === 'Pending VAO'),
+    [orders]
+  );
+  const verifiedOrders = useMemo(
+    () => orders.filter((o) => o.status === 'VAO Verified'),
+    [orders]
+  );
+  const procuredOrders = useMemo(
+    () => orders.filter((o) => o.status === 'Procured'),
+    [orders]
   );
 
-  const procuredOrders = orders.filter(
-    (order) => order.status === 'Procured'
-  );
+  // Filtered lists for search
+  const filteredFarmers = useMemo(() => {
+    if (!searchTerm) return farmers;
+    const term = searchTerm.toLowerCase();
+    return farmers.filter(
+      (f) =>
+        f.name?.toLowerCase().includes(term) ||
+        f.email?.toLowerCase().includes(term) ||
+        f.zone?.toLowerCase().includes(term) ||
+        f.phone?.includes(term)
+    );
+  }, [farmers, searchTerm]);
 
-  const navigationItems = [
-    {
-      id: 'farmers',
-      icon: '🌾',
-      label: 'Farmers',
-      count: farmers.length
-    },
-    {
-      id: 'vaos',
-      icon: '🏛️',
-      label: 'Local Revenue Admins',
-      count: vaos.length
-    },
-    {
-      id: 'officers',
-      icon: '🛡️',
-      label: 'Procurement Officers',
-      count: officers.length
-    },
-    {
-      id: 'orders',
-      icon: '📦',
-      label: 'All Orders',
-      count: orders.length
-    }
-  ];
+  const filteredVaos = useMemo(() => {
+    if (!searchTerm) return vaos;
+    const term = searchTerm.toLowerCase();
+    return vaos.filter(
+      (v) =>
+        v.name?.toLowerCase().includes(term) ||
+        v.email?.toLowerCase().includes(term) ||
+        v.zone?.toLowerCase().includes(term) ||
+        v.subPlace?.toLowerCase().includes(term)
+    );
+  }, [vaos, searchTerm]);
+
+  const filteredOfficers = useMemo(() => {
+    if (!searchTerm) return officers;
+    const term = searchTerm.toLowerCase();
+    return officers.filter(
+      (o) =>
+        o.name?.toLowerCase().includes(term) ||
+        o.email?.toLowerCase().includes(term) ||
+        o.zone?.toLowerCase().includes(term) ||
+        o.subPlace?.toLowerCase().includes(term)
+    );
+  }, [officers, searchTerm]);
+
+  const filteredOrders = useMemo(() => {
+    if (!searchTerm) return orders;
+    const term = searchTerm.toLowerCase();
+    return orders.filter(
+      (o) =>
+        o.userName?.toLowerCase().includes(term) ||
+        o.item?.toLowerCase().includes(term) ||
+        o.id?.toLowerCase().includes(term) ||
+        o.zone?.toLowerCase().includes(term) ||
+        o.vaoSignatureDetails?.name?.toLowerCase().includes(term)
+    );
+  }, [orders, searchTerm]);
 
   return (
-    <div className="admin-dashboard">
-      <aside className="admin-sidebar">
-        <div className="admin-brand">
-          <div className="admin-brand-logo">🌱</div>
-
+    <div className="v-adm-shell">
+      {/* SIDEBAR */}
+      <aside className="v-adm-sidebar">
+        <div className="v-adm-brand">
+          <span className="v-adm-leaf">🌱</span>
           <div>
-            <h2>FarmFlow AI</h2>
-            <span>Administration</span>
+            <strong>FarmFlow <span>AI</span></strong>
+            <small>ADMIN CONSOLE</small>
           </div>
         </div>
 
-        <div className="sidebar-section-label">MAIN MENU</div>
+        <div className="v-adm-menu-label">MAIN NAVIGATION</div>
 
-        <nav className="admin-navigation">
+        <nav className="v-adm-nav">
           <button
-            className={`sidebar-item ${
-              activeTab === 'create' ? 'active' : ''
-            }`}
-            onClick={() => setActiveTab('create')}
+            type="button"
+            className={`v-adm-nav-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
+            onClick={() => { setActiveTab('dashboard'); setSearchTerm(''); }}
           >
-            <span className="sidebar-icon">➕</span>
-            <span>Create Account</span>
+            <span>📊</span>
+            <span>Dashboard</span>
           </button>
 
-          {navigationItems.map((item) => (
-            <button
-              key={item.id}
-              className={`sidebar-item ${
-                activeTab === item.id ? 'active' : ''
-              }`}
-              onClick={() => setActiveTab(item.id)}
-            >
-              <span className="sidebar-icon">{item.icon}</span>
+          <button
+            type="button"
+            className={`v-adm-nav-btn ${activeTab === 'farmers' ? 'active' : ''}`}
+            onClick={() => { setActiveTab('farmers'); setSearchTerm(''); }}
+          >
+            <span>🌾</span>
+            <span>Farmers</span>
+            <span className="v-nav-badge">{farmers.length}</span>
+          </button>
 
-              <span className="sidebar-label">{item.label}</span>
+          <button
+            type="button"
+            className={`v-adm-nav-btn ${activeTab === 'vaos' ? 'active' : ''}`}
+            onClick={() => { setActiveTab('vaos'); setSearchTerm(''); }}
+          >
+            <span>🏛️</span>
+            <span>Revenue Admins (VAO)</span>
+            <span className="v-nav-badge highlight">{vaos.length}</span>
+          </button>
 
-              <span className="sidebar-count">{item.count}</span>
-            </button>
-          ))}
+          <button
+            type="button"
+            className={`v-adm-nav-btn ${activeTab === 'officers' ? 'active' : ''}`}
+            onClick={() => { setActiveTab('officers'); setSearchTerm(''); }}
+          >
+            <span>🛡️</span>
+            <span>Procurement Officers</span>
+            <span className="v-nav-badge">{officers.length}</span>
+          </button>
+
+          <button
+            type="button"
+            className={`v-adm-nav-btn ${activeTab === 'orders' ? 'active' : ''}`}
+            onClick={() => { setActiveTab('orders'); setSearchTerm(''); }}
+          >
+            <span>📦</span>
+            <span>All Procurements</span>
+            <span className="v-nav-badge">{orders.length}</span>
+          </button>
+
+          <button
+            type="button"
+            className={`v-adm-nav-btn ${activeTab === 'create' ? 'active' : ''}`}
+            onClick={() => { setActiveTab('create'); setSearchTerm(''); }}
+          >
+            <span>➕</span>
+            <span>Add User</span>
+          </button>
         </nav>
 
-        <div className="sidebar-bottom">
-          <div className="admin-sidebar-card">
-            <div className="sidebar-card-icon">⚙️</div>
-
+        <div className="v-adm-sidebar-bottom">
+          <div className="v-admin-badge-footer">
+            <div className="v-admin-avatar">A</div>
             <div>
-              <strong>System Control</strong>
-              <span>Administrative access</span>
+              <strong>Super Administrator</strong>
+              <small>All Permissions Active</small>
             </div>
           </div>
-
-          <button className="sidebar-logout" onClick={handleLogout}>
-            <span>↪</span>
-            Log Out
+          <button type="button" className="v-adm-bottom-btn v-adm-logout-btn" onClick={handleLogout}>
+            <span>🚪</span> Sign Out
           </button>
         </div>
       </aside>
 
-      <main className="admin-main">
-        <header className="admin-topbar">
-          <div>
-            <div className="breadcrumb">
-              FarmFlow AI <span>/</span> Administration
-            </div>
-
-            <h1>Admin Control Center</h1>
-
-            <p>
-              Manage users, administrative roles and procurement activity.
-            </p>
+      {/* MAIN CONTAINER */}
+      <main className="v-adm-main">
+        {/* TOP BAR */}
+        <header className="v-adm-topbar">
+          <div className="v-adm-topbar-left">
+            <span className="topbar-logo-text">FarmFlow AI Administration Portal</span>
           </div>
 
-          <div className="admin-profile">
-            <div className="profile-avatar">A</div>
-
-            <div className="profile-details">
-              <strong>System Administrator</strong>
-              <span>Administrator</span>
+          <div className="v-adm-topbar-right">
+            <div className="v-admin-user-pill">
+              <span className="v-dollar-icon">🛡️</span>
+              <span>System Administrator</span>
             </div>
           </div>
         </header>
 
-        <section className="admin-stat-grid">
-          <StatCard
-            icon="👨‍🌾"
-            label="Registered Farmers"
-            value={farmers.length}
-            detail="Active farmer accounts"
-          />
+        {/* ========================================================
+            TAB 1: SYSTEM OVERVIEW & CHARTS
+            ======================================================== */}
+        {activeTab === 'dashboard' && (
+          <div className="v-adm-content">
+            <div className="v-adm-page-header">
+              <h1>System Overview</h1>
+              <p>Real-time statistics across farmers, revenue administration, and mandi procurement centres.</p>
+            </div>
 
-          <StatCard
-            icon="🏛️"
-            label="Local Revenue Admins"
-            value={vaos.length}
-            detail="Verification administrators"
-          />
+            {/* 5 KPI Stat Cards */}
+            <div className="v-adm-stat-cards-row">
+              <div className="v-adm-stat-card bar-green" onClick={() => setActiveTab('farmers')} style={{ cursor: 'pointer' }}>
+                <small>Total Farmers</small>
+                <h2>{farmers.length}</h2>
+                <div className="v-stat-sub">Registered across zones</div>
+              </div>
 
-          <StatCard
-            icon="🛡️"
-            label="Procurement Officers"
-            value={officers.length}
-            detail="Field procurement team"
-          />
+              <div className="v-adm-stat-card bar-blue" onClick={() => setActiveTab('vaos')} style={{ cursor: 'pointer' }}>
+                <small>Revenue Admins (VAO)</small>
+                <h2>{vaos.length}</h2>
+                <div className="v-stat-sub">Jurisdiction officers</div>
+              </div>
 
-          <StatCard
-            icon="📦"
-            label="Total Orders"
-            value={orders.length}
-            detail="All procurement applications"
-          />
-        </section>
+              <div className="v-adm-stat-card bar-purple" onClick={() => setActiveTab('officers')} style={{ cursor: 'pointer' }}>
+                <small>Procurement Officers</small>
+                <h2>{officers.length}</h2>
+                <div className="v-stat-sub">Mandi field staff</div>
+              </div>
 
-        <section className="admin-secondary-stats">
-          <div className="mini-stat">
-            <div className="mini-stat-icon pending">⏳</div>
-            <div>
-              <span>Pending Verification</span>
-              <strong>{pendingOrders.length}</strong>
+              <div className="v-adm-stat-card bar-yellow" onClick={() => setActiveTab('orders')} style={{ cursor: 'pointer' }}>
+                <small>Pending VAO Review</small>
+                <h2>{pendingOrders.length}</h2>
+                <div className="v-stat-sub">Awaiting verification</div>
+              </div>
+
+              <div className="v-adm-stat-card bar-pink" onClick={() => setActiveTab('orders')} style={{ cursor: 'pointer' }}>
+                <small>Total Procurements</small>
+                <h2>{orders.length}</h2>
+                <div className="v-stat-sub">{procuredOrders.length} fully procured</div>
+              </div>
+            </div>
+
+            {/* Analytics Row: Bar Chart & Donut Chart */}
+            <div className="v-adm-charts-grid">
+              {/* Chart 1: Procurement by Centre */}
+              <div className="v-adm-chart-card">
+                <div className="v-chart-card-head">
+                  <h4>Procurement Volume by Centre (Current Week)</h4>
+                </div>
+
+                <div className="v-barchart-container">
+                  <div className="v-barchart-legend">
+                    <span><i className="sq-green" /> Grade A (Quintals)</span>
+                    <span><i className="sq-blue" /> Grade B (Quintals)</span>
+                  </div>
+
+                  <div className="v-svg-barchart">
+                    {[
+                      { name: 'Trichy Central', a: 420, b: 260 },
+                      { name: 'Lalgudi Mandi', a: 310, b: 380 },
+                      { name: 'Manapparai Centre', a: 220, b: 490 },
+                      { name: 'Thuraiyur APMC', a: 350, b: 410 }
+                    ].map((centre) => (
+                      <div
+                        key={centre.name}
+                        className="v-barchart-col"
+                        onMouseEnter={() => setHoveredBar(centre)}
+                        onMouseLeave={() => setHoveredBar(null)}
+                      >
+                        <div className="v-bars-wrapper">
+                          <div
+                            className="v-bar bar-grade-a"
+                            style={{ height: `${(centre.a / 600) * 150}px` }}
+                          />
+                          <div
+                            className="v-bar bar-grade-b"
+                            style={{ height: `${(centre.b / 600) * 150}px` }}
+                          />
+                        </div>
+                        <span className="v-bar-label">{centre.name}</span>
+
+                        {hoveredBar?.name === centre.name && (
+                          <div className="v-bar-tooltip">
+                            <strong>{centre.name}</strong>
+                            <div>Grade A: {centre.a} Qtl</div>
+                            <div>Grade B: {centre.b} Qtl</div>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Chart 2: Crop Distribution Donut Chart */}
+              <div className="v-adm-chart-card">
+                <div className="v-chart-card-head">
+                  <h4>Crop Distribution (Active Mandi Intake)</h4>
+                </div>
+
+                <div className="v-piechart-container">
+                  <svg viewBox="0 0 200 200" width="220" height="220" className="v-pie-svg">
+                    <path
+                      d="M 100 100 L 100 10 A 90 90 0 0 1 179.3 142.3 Z"
+                      fill="#10b981"
+                      className="pie-slice"
+                      onMouseEnter={() => setHoveredPie({ crop: 'Paddy', percent: '35%', qty: '420 Qtl' })}
+                      onMouseLeave={() => setHoveredPie(null)}
+                    />
+                    <path
+                      d="M 100 100 L 179.3 142.3 A 90 90 0 0 1 56.4 180.2 Z"
+                      fill="#f59e0b"
+                      className="pie-slice"
+                      onMouseEnter={() => setHoveredPie({ crop: 'Wheat', percent: '25%', qty: '300 Qtl' })}
+                      onMouseLeave={() => setHoveredPie(null)}
+                    />
+                    <path
+                      d="M 100 100 L 56.4 180.2 A 90 90 0 0 1 20.7 57.7 Z"
+                      fill="#3b82f6"
+                      className="pie-slice"
+                      onMouseEnter={() => setHoveredPie({ crop: 'Maize', percent: '22%', qty: '264 Qtl' })}
+                      onMouseLeave={() => setHoveredPie(null)}
+                    />
+                    <path
+                      d="M 100 100 L 20.7 57.7 A 90 90 0 0 1 100 10 Z"
+                      fill="#8b5cf6"
+                      className="pie-slice"
+                      onMouseEnter={() => setHoveredPie({ crop: 'Cotton', percent: '18%', qty: '216 Qtl' })}
+                      onMouseLeave={() => setHoveredPie(null)}
+                    />
+                    <circle cx="100" cy="100" r="32" fill="#ffffff" />
+                  </svg>
+
+                  <div className="v-pie-legend">
+                    <div><span style={{ background: '#10b981' }} /> Paddy 35%</div>
+                    <div><span style={{ background: '#f59e0b' }} /> Wheat 25%</div>
+                    <div><span style={{ background: '#3b82f6' }} /> Maize 22%</div>
+                    <div><span style={{ background: '#8b5cf6' }} /> Cotton 18%</div>
+                  </div>
+
+                  {hoveredPie && (
+                    <div className="v-pie-tooltip-box">
+                      <strong>{hoveredPie.crop}: {hoveredPie.percent}</strong>
+                      <small>{hoveredPie.qty}</small>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
+        )}
 
-          <div className="mini-stat">
-            <div className="mini-stat-icon verified">✓</div>
-            <div>
-              <span>VAO Verified</span>
-              <strong>{verifiedOrders.length}</strong>
+        {/* ========================================================
+            TAB 2: LOCAL REVENUE ADMINISTRATORS (VAO)
+            ======================================================== */}
+        {activeTab === 'vaos' && (
+          <div className="v-adm-content">
+            <div className="v-adm-page-header-row">
+              <div className="v-adm-page-header">
+                <h1>Local Revenue Administrators (VAO)</h1>
+                <p>Village Administrative Officers assigned to verify farmer land records and Patta/Chitta.</p>
+              </div>
+
+              <div className="v-adm-actions-bar">
+                <div className="v-adm-search-input">
+                  <span>⌕</span>
+                  <input
+                    type="text"
+                    placeholder="Search VAO by name, email, or zone..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                  {searchTerm && <button onClick={() => setSearchTerm('')}>×</button>}
+                </div>
+                <button
+                  type="button"
+                  className="v-btn-green-sm"
+                  onClick={() => { setNewUser({ ...newUser, role: 'vao' }); setActiveTab('create'); }}
+                >
+                  ➕ Add VAO Account
+                </button>
+              </div>
+            </div>
+
+            <div className="v-adm-table-card">
+              <div className="v-table-responsive">
+                <table className="v-clean-table v-adm-table">
+                  <thead>
+                    <tr>
+                      <th>OFFICER NAME</th>
+                      <th>EMAIL ADDRESS</th>
+                      <th>JURISDICTION ZONE</th>
+                      <th>SUB-PLACE / VILLAGE</th>
+                      <th>STATUS</th>
+                      <th>ACTIONS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredVaos.length === 0 ? (
+                      <tr>
+                        <td colSpan="6" className="v-empty-table-cell">
+                          <div className="v-empty-table-box">
+                            <span className="v-empty-emoji">🏛️</span>
+                            <strong>No Local Revenue Administrators Found</strong>
+                            <p>
+                              {searchTerm
+                                ? 'No VAO accounts match your search query.'
+                                : 'No VAO officer accounts have been registered yet.'}
+                            </p>
+                            <button
+                              type="button"
+                              className="v-btn-green-sm"
+                              onClick={() => { setNewUser({ ...newUser, role: 'vao' }); setActiveTab('create'); }}
+                            >
+                              Provision VAO Account
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredVaos.map((v) => (
+                        <tr key={v.id}>
+                          <td>
+                            <div className="v-user-cell">
+                              <div className="v-avatar-circle v-avatar-purple">
+                                {(v.name || 'V').charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <strong>{v.name || 'Unnamed VAO'}</strong>
+                                <small>ID: {v.id.slice(0, 8)}...</small>
+                              </div>
+                            </div>
+                          </td>
+                          <td>
+                            <span className="v-email-text">{v.email}</span>
+                          </td>
+                          <td>
+                            <span className="v-zone-chip">
+                              📍 {v.zone || 'Unassigned'}
+                            </span>
+                          </td>
+                          <td>
+                            <span className="v-subplace-chip">
+                              🏘️ {v.subPlace || 'General'}
+                            </span>
+                          </td>
+                          <td>
+                            <span className="pill-badge pill-badge-green">Active Officer</span>
+                          </td>
+                          <td>
+                            <button
+                              type="button"
+                              className="v-btn-op-action revoke"
+                              onClick={() => handleDeleteUser(v.id, v.name)}
+                              title="Delete VAO Account"
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
+        )}
 
-          <div className="mini-stat">
-            <div className="mini-stat-icon procured">📦</div>
-            <div>
-              <span>Completed Procurement</span>
-              <strong>{procuredOrders.length}</strong>
+        {/* ========================================================
+            TAB 3: PROCUREMENT OFFICERS
+            ======================================================== */}
+        {activeTab === 'officers' && (
+          <div className="v-adm-content">
+            <div className="v-adm-page-header-row">
+              <div className="v-adm-page-header">
+                <h1>Procurement Officers</h1>
+                <p>Mandi and APMC field officers responsible for token intake, physical inspection, and DBT.</p>
+              </div>
+
+              <div className="v-adm-actions-bar">
+                <div className="v-adm-search-input">
+                  <span>⌕</span>
+                  <input
+                    type="text"
+                    placeholder="Search officer by name, email, or mandi..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                  {searchTerm && <button onClick={() => setSearchTerm('')}>×</button>}
+                </div>
+                <button
+                  type="button"
+                  className="v-btn-green-sm"
+                  onClick={() => { setNewUser({ ...newUser, role: 'officer' }); setActiveTab('create'); }}
+                >
+                  ➕ Add Officer Account
+                </button>
+              </div>
+            </div>
+
+            <div className="v-adm-table-card">
+              <div className="v-table-responsive">
+                <table className="v-clean-table v-adm-table">
+                  <thead>
+                    <tr>
+                      <th>OFFICER NAME</th>
+                      <th>EMAIL ADDRESS</th>
+                      <th>ASSIGNED ZONE</th>
+                      <th>MANDI / CENTRE</th>
+                      <th>STATUS</th>
+                      <th>ACTIONS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredOfficers.length === 0 ? (
+                      <tr>
+                        <td colSpan="6" className="v-empty-table-cell">
+                          <div className="v-empty-table-box">
+                            <span className="v-empty-emoji">🛡️</span>
+                            <strong>No Procurement Officers Found</strong>
+                            <p>
+                              {searchTerm
+                                ? 'No officer accounts match your search query.'
+                                : 'No procurement officers registered yet in your system.'}
+                            </p>
+                            <button
+                              type="button"
+                              className="v-btn-green-sm"
+                              onClick={() => { setNewUser({ ...newUser, role: 'officer' }); setActiveTab('create'); }}
+                            >
+                              Provision Officer Account
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredOfficers.map((op) => (
+                        <tr key={op.id}>
+                          <td>
+                            <div className="v-user-cell">
+                              <div className="v-avatar-circle v-avatar-blue">
+                                {(op.name || 'O').charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <strong>{op.name || 'Unnamed Officer'}</strong>
+                                <small>ID: {op.id.slice(0, 8)}...</small>
+                              </div>
+                            </div>
+                          </td>
+                          <td>
+                            <span className="v-email-text">{op.email}</span>
+                          </td>
+                          <td>
+                            <span className="v-zone-chip">
+                              📍 {op.zone || 'General'}
+                            </span>
+                          </td>
+                          <td>
+                            <span className="v-subplace-chip">
+                              🏢 {op.subPlace || 'Main APMC Yard'}
+                            </span>
+                          </td>
+                          <td>
+                            <span className="pill-badge pill-badge-green">Active Officer</span>
+                          </td>
+                          <td>
+                            <button
+                              type="button"
+                              className="v-btn-op-action revoke"
+                              onClick={() => handleDeleteUser(op.id, op.name)}
+                              title="Delete Officer Account"
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
-        </section>
+        )}
 
-        <div className="admin-content">
-          {activeTab === 'create' && (
-            <CreateAccountSection
-              newUser={newUser}
-              setNewUser={setNewUser}
-              handleCreateUser={handleCreateUser}
-              isSubmitting={isSubmitting}
-            />
-          )}
+        {/* ========================================================
+            TAB 4: FARMERS LIST
+            ======================================================== */}
+        {activeTab === 'farmers' && (
+          <div className="v-adm-content">
+            <div className="v-adm-page-header-row">
+              <div className="v-adm-page-header">
+                <h1>Registered Farmers</h1>
+                <p>Active farmers across procurement zones with linked land and crops.</p>
+              </div>
 
-          {activeTab === 'farmers' && (
-            <UserTable
-              title="Registered Farmers"
-              subtitle="All farmer accounts currently registered in FarmFlow AI."
-              list={farmers}
-              onDelete={handleDeleteUser}
-              icon="🌾"
-            />
-          )}
+              <div className="v-adm-actions-bar">
+                <div className="v-adm-search-input">
+                  <span>⌕</span>
+                  <input
+                    type="text"
+                    placeholder="Search farmer by name, email, or phone..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                  {searchTerm && <button onClick={() => setSearchTerm('')}>×</button>}
+                </div>
+              </div>
+            </div>
 
-          {activeTab === 'vaos' && (
-            <UserTable
-              title="Local Revenue Administrators"
-              subtitle="Officials responsible for local application verification."
-              list={vaos}
-              onDelete={handleDeleteUser}
-              showZone={true}
-              icon="🏛️"
-            />
-          )}
+            <div className="v-adm-table-card">
+              <div className="v-table-responsive">
+                <table className="v-clean-table v-adm-table">
+                  <thead>
+                    <tr>
+                      <th>FARMER NAME</th>
+                      <th>EMAIL ADDRESS</th>
+                      <th>CONTACT PHONE</th>
+                      <th>ZONE & SUB-PLACE</th>
+                      <th>ACTIONS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredFarmers.length === 0 ? (
+                      <tr>
+                        <td colSpan="5" className="v-empty-table-cell">
+                          <div className="v-empty-table-box">
+                            <span className="v-empty-emoji">🌾</span>
+                            <strong>No Farmers Registered</strong>
+                            <p>Farmers who register on FarmFlow AI will appear in this directory.</p>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredFarmers.map((farmer) => (
+                        <tr key={farmer.id}>
+                          <td>
+                            <div className="v-user-cell">
+                              <div className="v-avatar-circle v-avatar-green">
+                                {(farmer.name || 'F').charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <strong>{farmer.name || 'Registered Farmer'}</strong>
+                                <small>UID: {farmer.id.slice(0, 8)}...</small>
+                              </div>
+                            </div>
+                          </td>
+                          <td>
+                            <span className="v-email-text">{farmer.email || 'N/A'}</span>
+                          </td>
+                          <td>
+                            <span className="v-phone-text">📞 {farmer.phone || 'N/A'}</span>
+                          </td>
+                          <td>
+                            <span className="v-zone-chip">
+                              📍 {farmer.zone || 'General'} {farmer.subPlace ? `• ${farmer.subPlace}` : ''}
+                            </span>
+                          </td>
+                          <td>
+                            <button
+                              type="button"
+                              className="v-btn-op-action revoke"
+                              onClick={() => handleDeleteUser(farmer.id, farmer.name)}
+                              title="Delete Farmer Account"
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
 
-          {activeTab === 'officers' && (
-            <UserTable
-              title="Procurement Officers"
-              subtitle="Officers responsible for procurement operations."
-              list={officers}
-              onDelete={handleDeleteUser}
-              showZone={true}
-              icon="🛡️"
-            />
-          )}
+        {/* ========================================================
+            TAB 5: ALL ORDERS & PROCUREMENTS (WITH VAO COLUMN)
+            ======================================================== */}
+        {activeTab === 'orders' && (
+          <div className="v-adm-content">
+            <div className="v-adm-page-header-row">
+              <div className="v-adm-page-header">
+                <h1>All System Procurements</h1>
+                <p>Complete lifecycle overview of farmer bookings, VAO verifications, and mandi procurements.</p>
+              </div>
 
-          {activeTab === 'orders' && (
-            <OrdersTable orders={orders} />
-          )}
-        </div>
+              <div className="v-adm-actions-bar">
+                <div className="v-adm-search-input">
+                  <span>⌕</span>
+                  <input
+                    type="text"
+                    placeholder="Search by farmer, crop, ID, or VAO..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                  {searchTerm && <button onClick={() => setSearchTerm('')}>×</button>}
+                </div>
+              </div>
+            </div>
+
+            <div className="v-adm-table-card">
+              <div className="v-table-responsive">
+                <table className="v-clean-table v-adm-table">
+                  <thead>
+                    <tr>
+                      <th>APPLICATION ID & FARMER</th>
+                      <th>CROP & QUANTITY</th>
+                      <th>MANDI / LOCATION</th>
+                      <th style={{ minWidth: '200px' }}>VAO VERIFICATION STATUS</th>
+                      <th>OVERALL STATUS</th>
+                      <th>ACTIONS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredOrders.length === 0 ? (
+                      <tr>
+                        <td colSpan="6" className="v-empty-table-cell">
+                          <div className="v-empty-table-box">
+                            <span className="v-empty-emoji">📦</span>
+                            <strong>No Procurement Orders Found</strong>
+                            <p>Orders submitted by farmers will be displayed here in real time.</p>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredOrders.map((o) => {
+                        const isVaoVerified = o.status === 'VAO Verified' || o.status === 'Procured' || Boolean(o.vaoSignatureDetails);
+                        const vaoOfficer = o.vaoSignatureDetails?.name || (isVaoVerified ? 'Assigned VAO' : null);
+                        const vaoDate = o.vaoSignatureDetails?.date;
+
+                        return (
+                          <tr key={o.id}>
+                            <td>
+                              <div className="v-order-farmer-cell">
+                                <strong>{o.userName || 'Farmer'}</strong>
+                                <small>App ID: {o.id.slice(0, 10)}</small>
+                                <span className="v-email-text">{o.userEmail || o.userPhone || ''}</span>
+                              </div>
+                            </td>
+                            <td>
+                              <div className="v-crop-info-cell">
+                                <span className="v-crop-name-pill">🌾 {o.item || 'Crop'}</span>
+                                <b>{o.quantity || 0} kg</b>
+                              </div>
+                            </td>
+                            <td>
+                              <span className="v-zone-chip">
+                                📍 {o.zone || 'No Zone'} {o.subPlace ? `• ${o.subPlace}` : ''}
+                              </span>
+                            </td>
+                            {/* VAO COLUMN: Never empty */}
+                            <td>
+                              {isVaoVerified ? (
+                                <div className="v-vao-verified-box">
+                                  <div className="v-vao-verified-tag">
+                                    <span>✓</span> Verified by {vaoOfficer}
+                                  </div>
+                                  {vaODate && <small className="v-vao-date">On {vaODate}</small>}
+                                  {o.pattaChitta && <small className="v-patta-chip">Patta: {o.pattaChitta}</small>}
+                                </div>
+                              ) : o.status === 'Pending VAO' ? (
+                                <div className="v-vao-pending-box">
+                                  <span className="pill-badge pill-badge-yellow">⏳ Pending VAO Review</span>
+                                  <small className="v-vao-hint">Zone: {o.zone || 'Local'}</small>
+                                </div>
+                              ) : (
+                                <span className="v-text-muted">Awaiting VAO Action</span>
+                              )}
+                            </td>
+                            <td>
+                              <span
+                                className={`pill-badge ${
+                                  o.status === 'Procured'
+                                    ? 'pill-badge-green'
+                                    : o.status === 'VAO Verified'
+                                    ? 'pill-badge-blue'
+                                    : 'pill-badge-yellow'
+                                }`}
+                              >
+                                {o.status || 'Pending'}
+                              </span>
+                            </td>
+                            <td>
+                              <button
+                                type="button"
+                                className="v-btn-op-action revoke"
+                                onClick={() => handleDeleteOrder(o.id)}
+                                title="Delete Order"
+                              >
+                                Delete
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================
+            TAB 6: ADD USER FORM
+            ======================================================== */}
+        {activeTab === 'create' && (
+          <div className="v-adm-content">
+            <div className="v-adm-page-header">
+              <h1>Provision User Account</h1>
+              <p>Create credentials for Local Revenue Administrators (VAO), Procurement Officers, or Farmers.</p>
+            </div>
+
+            <div className="v-adm-form-card">
+              <form onSubmit={handleCreateUser}>
+                <div className="v-adm-form-grid">
+                  <div className="v-form-field">
+                    <label>Full Name</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Ramesh Kumar"
+                      value={newUser.name}
+                      onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="v-form-field">
+                    <label>Email Address</label>
+                    <input
+                      type="email"
+                      required
+                      placeholder="e.g. ramesh@farmflow.gov.in"
+                      value={newUser.email}
+                      onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="v-form-field">
+                    <label>Password</label>
+                    <input
+                      type="password"
+                      required
+                      placeholder="Minimum 6 characters"
+                      value={newUser.password}
+                      onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="v-form-field">
+                    <label>Assigned System Role</label>
+                    <select
+                      value={newUser.role}
+                      onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                    >
+                      <option value="vao">🏛️ Local Revenue Administrator (VAO)</option>
+                      <option value="officer">🛡️ Procurement Officer / Mandi Staff</option>
+                      <option value="farmer">🌾 Farmer</option>
+                    </select>
+                  </div>
+
+                  <div className="v-form-field">
+                    <label>Jurisdiction District / Zone</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Trichy"
+                      value={newUser.zone}
+                      onChange={(e) => setNewUser({ ...newUser, zone: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="v-form-field">
+                    <label>Sub-Place / Village / Mandi Yard</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Lalgudi Central / APMC #402"
+                      value={newUser.subPlace}
+                      onChange={(e) => setNewUser({ ...newUser, subPlace: e.target.value })}
+                    />
+                  </div>
+                </div>
+
+                <div className="v-form-footer-action">
+                  <div className="v-security-note">
+                    <span>🔐</span>
+                    <div>
+                      <strong>Encrypted Firebase Security</strong>
+                      <small>User will be authenticated via Firebase Auth and registered in Firestore.</small>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="v-btn-green-step"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? 'Creating Account...' : 'Provision User Account ✓'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </main>
     </div>
-  );
-};
-
-const StatCard = ({ icon, label, value, detail }) => {
-  return (
-    <div className="stat-card">
-      <div className="stat-card-top">
-        <div className="stat-icon">{icon}</div>
-
-        <span className="stat-live">
-          <span></span>
-          Live
-        </span>
-      </div>
-
-      <div className="stat-value">{value}</div>
-
-      <div className="stat-label">{label}</div>
-
-      <div className="stat-detail">{detail}</div>
-    </div>
-  );
-};
-
-const CreateAccountSection = ({
-  newUser,
-  setNewUser,
-  handleCreateUser,
-  isSubmitting
-}) => {
-  return (
-    <section className="content-card create-account-card">
-      <div className="content-card-header">
-        <div className="section-heading">
-          <div className="section-heading-icon">➕</div>
-
-          <div>
-            <h2>Create New Account</h2>
-            <p>
-              Add a Farmer, Local Revenue Administrator or Procurement Officer.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <form className="create-form" onSubmit={handleCreateUser}>
-        <div className="form-section-title">
-          <span>01</span>
-          Personal Information
-        </div>
-
-        <div className="form-grid">
-          <div className="form-group">
-            <label>Full Name</label>
-
-            <div className="input-wrapper">
-              <span>👤</span>
-
-              <input
-                type="text"
-                placeholder="Enter full name"
-                required
-                value={newUser.name}
-                onChange={(e) =>
-                  setNewUser({
-                    ...newUser,
-                    name: e.target.value
-                  })
-                }
-              />
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label>Email Address</label>
-
-            <div className="input-wrapper">
-              <span>✉️</span>
-
-              <input
-                type="email"
-                placeholder="Enter email address"
-                required
-                value={newUser.email}
-                onChange={(e) =>
-                  setNewUser({
-                    ...newUser,
-                    email: e.target.value
-                  })
-                }
-              />
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label>Password</label>
-
-            <div className="input-wrapper">
-              <span>🔒</span>
-
-              <input
-                type="password"
-                placeholder="Create secure password"
-                required
-                value={newUser.password}
-                onChange={(e) =>
-                  setNewUser({
-                    ...newUser,
-                    password: e.target.value
-                  })
-                }
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="form-section-title second">
-          <span>02</span>
-          Role & Jurisdiction
-        </div>
-
-        <div className="form-grid">
-          <div className="form-group">
-            <label>Account Role</label>
-
-            <div className="input-wrapper">
-              <span>🛡️</span>
-
-              <select
-                value={newUser.role}
-                onChange={(e) =>
-                  setNewUser({
-                    ...newUser,
-                    role: e.target.value
-                  })
-                }
-              >
-                <option value="vao">
-                  Local Revenue Administrator
-                </option>
-
-                <option value="officer">
-                  Procurement Officer
-                </option>
-
-                <option value="farmer">Farmer</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label>Zone</label>
-
-            <div className="input-wrapper">
-              <span>📍</span>
-
-              <input
-                type="text"
-                placeholder="e.g. Trichy"
-                required
-                value={newUser.zone}
-                onChange={(e) =>
-                  setNewUser({
-                    ...newUser,
-                    zone: e.target.value
-                  })
-                }
-              />
-            </div>
-          </div>
-
-          <div className="form-group">
-            <label>
-              Sub-Place / Village
-              <small>Optional</small>
-            </label>
-
-            <div className="input-wrapper">
-              <span>🏘️</span>
-
-              <input
-                type="text"
-                placeholder="Enter village or sub-place"
-                value={newUser.subPlace}
-                onChange={(e) =>
-                  setNewUser({
-                    ...newUser,
-                    subPlace: e.target.value
-                  })
-                }
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="form-footer">
-          <div className="form-security-note">
-            <span>🔐</span>
-
-            <div>
-              <strong>Secure account creation</strong>
-              <p>
-                Account credentials are securely registered through Firebase.
-              </p>
-            </div>
-          </div>
-
-          <button
-            type="submit"
-            className="create-account-button"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <>
-                <span className="button-spinner"></span>
-                Creating...
-              </>
-            ) : (
-              <>
-                Create Account
-                <span>→</span>
-              </>
-            )}
-          </button>
-        </div>
-      </form>
-    </section>
-  );
-};
-
-const UserTable = ({
-  title,
-  subtitle,
-  list,
-  onDelete,
-  showZone = false,
-  icon
-}) => {
-  return (
-    <section className="content-card table-card">
-      <div className="content-card-header">
-        <div className="section-heading">
-          <div className="section-heading-icon">{icon}</div>
-
-          <div>
-            <h2>{title}</h2>
-            <p>{subtitle}</p>
-          </div>
-        </div>
-
-        <div className="record-count">
-          {list.length} <span>records</span>
-        </div>
-      </div>
-
-      {list.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-icon">📭</div>
-
-          <h3>No users found</h3>
-
-          <p>
-            There are currently no users in this category.
-          </p>
-        </div>
-      ) : (
-        <div className="table-container">
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Email</th>
-
-                {showZone && (
-                  <th>Zone & Sub-Place</th>
-                )}
-
-                <th>Account</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {list.map((u) => (
-                <tr key={u.id}>
-                  <td>
-                    <div className="user-cell">
-                      <div className="user-avatar">
-                        {u.name
-                          ? u.name.charAt(0).toUpperCase()
-                          : 'U'}
-                      </div>
-
-                      <div>
-                        <strong>{u.name || 'Unnamed User'}</strong>
-                        <span>User ID: {u.id.slice(0, 8)}...</span>
-                      </div>
-                    </div>
-                  </td>
-
-                  <td>
-                    <span className="email-cell">
-                      {u.email}
-                    </span>
-                  </td>
-
-                  {showZone && (
-                    <td>
-                      <div className="location-cell">
-                        <strong>{u.zone || 'None'}</strong>
-
-                        <span>
-                          {u.subPlace || 'General'}
-                        </span>
-                      </div>
-                    </td>
-                  )}
-
-                  <td>
-                    <span className="active-badge">
-                      <span></span>
-                      Active
-                    </span>
-                  </td>
-
-                  <td>
-                    <button
-                      className="delete-button"
-                      onClick={() => onDelete(u.id)}
-                    >
-                      <span>🗑️</span>
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </section>
-  );
-};
-
-const OrdersTable = ({ orders }) => {
-  const getStatusClass = (status) => {
-    if (status === 'Procured') return 'status-procured';
-    if (status === 'VAO Verified') return 'status-verified';
-    if (status === 'Pending VAO') return 'status-pending';
-
-    return 'status-default';
-  };
-
-  return (
-    <section className="content-card table-card">
-      <div className="content-card-header">
-        <div className="section-heading">
-          <div className="section-heading-icon">📦</div>
-
-          <div>
-            <h2>All System Procurements</h2>
-            <p>
-              Complete overview of procurement applications across the system.
-            </p>
-          </div>
-        </div>
-
-        <div className="record-count">
-          {orders.length} <span>orders</span>
-        </div>
-      </div>
-
-      {orders.length === 0 ? (
-        <div className="empty-state">
-          <div className="empty-icon">📦</div>
-
-          <h3>No orders found</h3>
-
-          <p>
-            Procurement applications will appear here.
-          </p>
-        </div>
-      ) : (
-        <div className="table-container">
-          <table className="admin-table orders-table">
-            <thead>
-              <tr>
-                <th>Farmer</th>
-                <th>Crop & Quantity</th>
-                <th>Location</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {orders.map((o) => (
-                <tr key={o.id}>
-                  <td>
-                    <div className="farmer-order-cell">
-                      <strong>
-                        {o.userName || 'Farmer'}
-                      </strong>
-
-                      <span>{o.userEmail || 'No email'}</span>
-                    </div>
-                  </td>
-
-                  <td>
-                    <div className="crop-cell">
-                      <strong>{o.item || 'Unknown Crop'}</strong>
-
-                      <span>
-                        {o.quantity || 0} kg
-                      </span>
-                    </div>
-                  </td>
-
-                  <td>
-                    <div className="location-cell">
-                      <strong>
-                        {o.zone || 'No Zone'}
-                      </strong>
-
-                      <span>
-                        {o.subPlace || 'General'}
-                      </span>
-                    </div>
-                  </td>
-
-                  <td>
-                    <span
-                      className={`order-status ${getStatusClass(
-                        o.status
-                      )}`}
-                    >
-                      <span></span>
-                      {o.status || 'Unknown'}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </section>
   );
 };
 

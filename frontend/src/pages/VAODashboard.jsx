@@ -17,7 +17,8 @@ const VAODashboard = () => {
 
   const [orders, setOrders] = useState([]);
   const [userProfile, setUserProfile] = useState({});
-  const [modalImage, setModalImage] = useState(null);
+  const [modalDocument, setModalDocument] = useState(null);
+  const [modalTitle, setModalTitle] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [activeFilter, setActiveFilter] = useState('pending');
   const [isSigning, setIsSigning] = useState(null);
@@ -29,7 +30,8 @@ const VAODashboard = () => {
 
     if (savedUser) {
       try {
-        setUserProfile(JSON.parse(savedUser));
+        const parsed = JSON.parse(savedUser);
+        setUserProfile(parsed);
       } catch (error) {
         console.error('Invalid saved user:', error);
         navigate('/login');
@@ -56,8 +58,7 @@ const VAODashboard = () => {
         }));
 
         allZoneOrders.sort(
-          (a, b) =>
-            new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+          (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
         );
 
         setOrders(allZoneOrders);
@@ -73,19 +74,15 @@ const VAODashboard = () => {
   const triggerSms = async (phoneNumber, message) => {
     if (!phoneNumber || phoneNumber === 'N/A') return;
 
-    let cleanPhone = phoneNumber
-      .toString()
-      .replace(/[^\d+]/g, '');
-
+    let cleanPhone = phoneNumber.toString().replace(/[^\d+]/g, '');
     if (cleanPhone.length === 10) {
       cleanPhone = `+91${cleanPhone}`;
     } else if (!cleanPhone.startsWith('+')) {
       cleanPhone = `+${cleanPhone}`;
     }
 
-    // TextBee configuration retained from your existing workflow.
-    const TEXTBEE_DEVICE_ID = "6a9d1e51ccb6c727098825fb";
-    const TEXTBEE_API_KEY = "txb_TxrBzRwSdleKWzGtwMlg3bavFWnhAL7v";
+    const TEXTBEE_DEVICE_ID = '6a9d1e51ccb6c727098825fb';
+    const TEXTBEE_API_KEY = 'txb_TxrBzRwSdleKWzGtwMlg3bavFWnhAL7v';
 
     try {
       const res = await fetch(
@@ -104,32 +101,22 @@ const VAODashboard = () => {
       );
 
       const data = await res.json();
-
       if (!res.ok) {
-        throw new Error(
-          data.message || 'Failed to send SMS via TextBee'
-        );
+        throw new Error(data.message || 'Failed to send SMS via TextBee');
       }
-
       console.log('SMS sent successfully via TextBee:', data);
     } catch (err) {
-      console.warn(
-        'TextBee SMS dispatch failed:',
-        err.message
-      );
+      console.warn('TextBee SMS dispatch failed:', err.message);
     }
   };
 
   const handleVerify = async (order) => {
     if (isSigning) return;
-
     setIsSigning(order.id);
 
     try {
       const now = new Date();
-
-      const vaoName = userProfile.name || 'VAO Officer';
-
+      const vaoName = userProfile.name || 'Local Revenue Officer';
       const vaoDesignation = userProfile.subPlace
         ? `VAO / ${userProfile.subPlace}`
         : 'Village Administrative Officer';
@@ -139,993 +126,601 @@ const VAODashboard = () => {
 
       const docPdf = new jsPDF();
 
-      // -----------------------------------
-      // PDF HEADER
-      // -----------------------------------
+      // Official Certificate Header
+      docPdf.setFillColor(22, 101, 52);
+      docPdf.rect(0, 0, 210, 24, 'F');
 
       docPdf.setFont('helvetica', 'bold');
       docPdf.setFontSize(16);
-      docPdf.text(
-        'FARMFLOW AI - OFFICIAL VERIFIED CERTIFICATE',
-        20,
-        20
-      );
+      docPdf.setTextColor(255, 255, 255);
+      docPdf.text('FARMFLOW AI - OFFICIAL VERIFIED CERTIFICATE', 20, 16);
 
+      docPdf.setTextColor(30, 41, 59);
       docPdf.setFontSize(11);
       docPdf.setFont('helvetica', 'normal');
 
+      docPdf.text(`Application ID: ${order.id}`, 20, 38);
+      docPdf.text(`Farmer Name: ${order.userName || 'N/A'}`, 20, 48);
+      docPdf.text(`Crop & Harvest: ${order.item || 'N/A'} (${order.quantity || 0} kg)`, 20, 58);
       docPdf.text(
-        `Application ID: ${order.id}`,
+        `Zone & Jurisdiction: ${order.zone || 'N/A'} ${order.subPlace ? `/ ${order.subPlace}` : ''}`,
         20,
-        35
+        68
       );
+      docPdf.text(`Patta / Chitta Record: ${order.pattaChitta || 'N/A'}`, 20, 78);
 
-      docPdf.text(
-        `Farmer Name: ${order.userName || 'N/A'}`,
-        20,
-        45
-      );
+      docPdf.setDrawColor(203, 213, 225);
+      docPdf.line(20, 88, 190, 88);
 
-      docPdf.text(
-        `Crop/Item: ${order.item || 'N/A'} (${order.quantity || 0}kg)`,
-        20,
-        55
-      );
-
-      docPdf.text(
-        `Zone / Location: ${order.zone || 'N/A'} ${
-          order.subPlace ? `/ ${order.subPlace}` : ''
-        }`,
-        20,
-        65
-      );
-
-      docPdf.text(
-        `Patta/Chitta No: ${order.pattaChitta || 'N/A'}`,
-        20,
-        75
-      );
-
-      docPdf.line(20, 85, 190, 85);
-
-      // -----------------------------------
-      // DIGITAL SIGNATURE BOX
-      // -----------------------------------
-
-      docPdf.rect(130, 100, 65, 45);
-
-      docPdf.setFont('courier', 'normal');
-      docPdf.setFontSize(9);
-
-      docPdf.text(
-        '--- -----',
-        147,
-        107,
-        { align: 'center' }
-      );
-
-      docPdf.setFont('courier', 'bold');
-
-      docPdf.text(
-        'Digitally signed:',
-        162,
-        114,
-        { align: 'center' }
-      );
-
-      docPdf.text(
-        vaoName.toUpperCase(),
-        162,
-        121,
-        { align: 'center' }
-      );
+      // Digital signature box
+      docPdf.setDrawColor(22, 163, 74);
+      docPdf.setFillColor(240, 253, 244);
+      docPdf.roundedRect(125, 100, 70, 48, 3, 3, 'FD');
 
       docPdf.setFont('courier', 'normal');
       docPdf.setFontSize(8);
+      docPdf.setTextColor(21, 128, 61);
+      docPdf.text('--- GOVERNMENT VERIFICATION SEAL ---', 160, 107, { align: 'center' });
 
-      docPdf.text(
-        vaoDesignation,
-        162,
-        127,
-        { align: 'center' }
-      );
+      docPdf.setFont('courier', 'bold');
+      docPdf.setFontSize(9);
+      docPdf.setTextColor(15, 23, 42);
+      docPdf.text('Digitally Authenticated:', 160, 115, { align: 'center' });
+      docPdf.text(vaoName.toUpperCase(), 160, 122, { align: 'center' });
 
-      docPdf.text(
-        dateStr,
-        162,
-        134,
-        { align: 'center' }
-      );
+      docPdf.setFont('courier', 'normal');
+      docPdf.setFontSize(8);
+      docPdf.setTextColor(71, 85, 105);
+      docPdf.text(vaoDesignation, 160, 128, { align: 'center' });
+      docPdf.text(`Date: ${dateStr}`, 160, 134, { align: 'center' });
+      docPdf.text(`Time: ${timeStr}`, 160, 140, { align: 'center' });
 
-      docPdf.text(
-        timeStr,
-        162,
-        140,
-        { align: 'center' }
-      );
+      const signedPdfBase64 = docPdf.output('datauristring');
 
-      const signedPdfBase64 =
-        docPdf.output('datauristring');
+      // Update Firestore
+      await updateDoc(doc(db, 'orders', order.id), {
+        status: 'VAO Verified',
+        vaoSignatureDetails: {
+          name: vaoName,
+          designation: vaoDesignation,
+          date: dateStr,
+          time: timeStr
+        },
+        documentUrl: signedPdfBase64
+      });
 
-      // -----------------------------------
-      // FIRESTORE UPDATE
-      // -----------------------------------
+      // Send SMS alert to farmer via TextBee
+      const farmerPhone = order.userPhone;
+      const farmerName = order.userName || 'Farmer';
+      const crop = order.item || 'Crop';
+      const qty = order.quantity || '0';
+      const zone = userProfile.zone || order.zone || 'Jurisdiction';
 
-      await updateDoc(
-        doc(db, 'orders', order.id),
-        {
-          status: 'VAO Verified',
-          vaoSignatureDetails: {
-            name: vaoName,
-            designation: vaoDesignation,
-            date: dateStr,
-            time: timeStr
-          },
-          documentUrl: signedPdfBase64
-        }
-      );
+      const smsText = `Dear ${farmerName}, your land document for ${crop} (${qty}kg) has been VERIFIED by VAO (${zone}). Your application is approved for mandi procurement. - FarmFlow AI`;
 
-      // -----------------------------------
-      // SMS NOTIFICATION
-      // -----------------------------------
+      await triggerSms(farmerPhone, smsText);
 
-      await triggerSms(
-        order.userPhone,
-        `FarmFlow AI: Your application for ${order.quantity}kg ${order.item} has been successfully verified and E-Signed by the VAO.`
-      );
-
-      alert(
-        'Document successfully E-Signed, stamped inside the PDF, and SMS alert sent to Farmer!'
-      );
-    } catch (error) {
-      console.error(error);
-      alert(
-        'Failed to verify and sign document.'
-      );
+      alert(`Application ${order.id.slice(0, 8)} successfully verified and digitally signed!`);
+    } catch (err) {
+      console.error('Error verifying order:', err);
+      alert('Verification failed: ' + err.message);
     } finally {
       setIsSigning(null);
     }
   };
 
   const handleLogout = () => {
-    localStorage.clear();
-    sessionStorage.clear();
+    localStorage.removeItem('farmflow_user');
+    sessionStorage.removeItem('farmflow_user');
     navigate('/login');
   };
 
   const pendingOrders = useMemo(
-    () =>
-      orders.filter(
-        (order) => order.status === 'Pending VAO'
-      ),
+    () => orders.filter((o) => o.status === 'Pending VAO'),
     [orders]
   );
-
   const verifiedOrders = useMemo(
-    () =>
-      orders.filter(
-        (order) => order.status === 'VAO Verified'
-      ),
+    () => orders.filter((o) => o.status === 'VAO Verified' || o.status === 'Procured'),
     [orders]
   );
 
   const filteredOrders = useMemo(() => {
-    let list =
-      activeFilter === 'pending'
-        ? pendingOrders
-        : activeFilter === 'verified'
-        ? verifiedOrders
-        : orders;
+    let list = orders;
+    if (activeFilter === 'pending') {
+      list = pendingOrders;
+    } else if (activeFilter === 'verified') {
+      list = verifiedOrders;
+    }
 
     if (!searchTerm.trim()) return list;
+    const term = searchTerm.toLowerCase();
 
-    const search = searchTerm.toLowerCase();
+    return list.filter(
+      (o) =>
+        o.userName?.toLowerCase().includes(term) ||
+        o.item?.toLowerCase().includes(term) ||
+        o.id?.toLowerCase().includes(term) ||
+        o.pattaChitta?.toLowerCase().includes(term) ||
+        o.subPlace?.toLowerCase().includes(term)
+    );
+  }, [orders, activeFilter, pendingOrders, verifiedOrders, searchTerm]);
 
-    return list.filter((order) => {
-      return (
-        String(order.userName || '')
-          .toLowerCase()
-          .includes(search) ||
-        String(order.userEmail || '')
-          .toLowerCase()
-          .includes(search) ||
-        String(order.item || '')
-          .toLowerCase()
-          .includes(search) ||
-        String(order.pattaChitta || '')
-          .toLowerCase()
-          .includes(search) ||
-        String(order.subPlace || '')
-          .toLowerCase()
-          .includes(search) ||
-        String(order.id || '')
-          .toLowerCase()
-          .includes(search)
-      );
-    });
-  }, [
-    activeFilter,
-    orders,
-    pendingOrders,
-    verifiedOrders,
-    searchTerm
-  ]);
-
-  const getStatusClass = (status) => {
-    if (status === 'Pending VAO') {
-      return 'vao-status vao-status-pending';
-    }
-
-    if (status === 'VAO Verified') {
-      return 'vao-status vao-status-verified';
-    }
-
-    return 'vao-status';
+  const openDocumentPreview = (url, title) => {
+    setModalDocument(url);
+    setModalTitle(title);
   };
 
   return (
-    <div className="vao-dashboard">
-
+    <div className="vao-shell">
       {/* SIDEBAR */}
-
       <aside className="vao-sidebar">
-
-        <div className="vao-sidebar-brand">
-          <div className="vao-brand-mark">
-            🌱
-          </div>
-
+        <div className="vao-brand">
+          <span className="vao-leaf">🌱</span>
           <div>
-            <div className="vao-brand-name">
-              FarmFlow <span>AI</span>
-            </div>
-
-            <div className="vao-brand-subtitle">
-              Smart Agriculture
-            </div>
+            <strong>FarmFlow <span>AI</span></strong>
+            <small>REVENUE ADMIN (VAO)</small>
           </div>
         </div>
 
-        <div className="vao-sidebar-section">
-          <span>WORKSPACE</span>
-        </div>
+        <div className="vao-menu-label">VERIFICATION WORKSPACE</div>
 
-        <nav className="vao-sidebar-nav">
-
+        <nav className="vao-nav">
           <button
-            className="vao-nav-item vao-nav-item-active"
+            type="button"
+            className={`vao-nav-btn ${activeFilter === 'pending' ? 'active' : ''}`}
             onClick={() => setActiveFilter('pending')}
           >
-            <span className="vao-nav-icon">▣</span>
-            <span>Verification Queue</span>
-
-            <span className="vao-nav-count">
-              {pendingOrders.length}
-            </span>
+            <div className="vao-nav-btn-left">
+              <span>⏳</span>
+              <span>Verification Queue</span>
+            </div>
+            <span className="vao-nav-badge warning">{pendingOrders.length}</span>
           </button>
 
           <button
-            className="vao-nav-item"
+            type="button"
+            className={`vao-nav-btn ${activeFilter === 'verified' ? 'active' : ''}`}
             onClick={() => setActiveFilter('verified')}
           >
-            <span className="vao-nav-icon">✓</span>
-            <span>Verified Records</span>
+            <div className="vao-nav-btn-left">
+              <span>✓</span>
+              <span>Verified Records</span>
+            </div>
+            <span className="vao-nav-badge success">{verifiedOrders.length}</span>
           </button>
 
           <button
-            className="vao-nav-item"
+            type="button"
+            className={`vao-nav-btn ${activeFilter === 'all' ? 'active' : ''}`}
             onClick={() => setActiveFilter('all')}
           >
-            <span className="vao-nav-icon">◫</span>
-            <span>All Applications</span>
+            <div className="vao-nav-btn-left">
+              <span>📋</span>
+              <span>All Applications</span>
+            </div>
+            <span className="vao-nav-badge default">{orders.length}</span>
           </button>
-
         </nav>
 
-        <div className="vao-sidebar-spacer"></div>
-
-        <div className="vao-sidebar-profile">
-
-          <div className="vao-profile-avatar">
-            {(userProfile.name || 'V').charAt(0).toUpperCase()}
+        {/* JURISDICTION COVERAGE CARD */}
+        <div className="vao-sidebar-jurisdiction">
+          <div className="vao-jurisdiction-label">
+            <span>📍</span>
+            <span>ASSIGNED JURISDICTION</span>
           </div>
-
-          <div className="vao-profile-info">
-            <strong>
-              {userProfile.name || 'VAO Officer'}
-            </strong>
-
-            <span>
-              Local Revenue Administrator
-            </span>
-          </div>
-
+          <strong>{userProfile.zone || 'Loading...'}</strong>
+          <small>{userProfile.subPlace || 'All village administrative circles'}</small>
         </div>
 
-        <button
-          className="vao-logout-btn"
-          onClick={handleLogout}
-        >
-          <span>↪</span>
-          Sign out
-        </button>
-
+        <div className="vao-sidebar-bottom">
+          <div className="vao-officer-card">
+            <div className="vao-officer-avatar">
+              {(userProfile.name || 'V').charAt(0).toUpperCase()}
+            </div>
+            <div className="vao-officer-info">
+              <strong>{userProfile.name || 'Local Officer'}</strong>
+              <small>Revenue Admin (VAO)</small>
+            </div>
+          </div>
+          <button type="button" className="vao-logout-btn" onClick={handleLogout}>
+            <span>🚪</span> Sign Out
+          </button>
+        </div>
       </aside>
 
-      {/* MAIN */}
-
+      {/* MAIN CONTAINER */}
       <main className="vao-main">
-
         {/* TOPBAR */}
-
         <header className="vao-topbar">
-
           <div className="vao-topbar-left">
-
-            <div className="vao-mobile-logo">
-              🌱
-            </div>
-
-            <div>
-              <div className="vao-page-kicker">
-                VERIFICATION WORKSPACE
-              </div>
-
-              <h1>
-                Document Verification
-              </h1>
-            </div>
-
+            <span className="vao-topbar-title">Land & Crop Verification Workspace</span>
           </div>
 
           <div className="vao-topbar-right">
-
-            <div className="vao-location-chip">
-              <span>⌖</span>
-              <div>
-                <small>Jurisdiction</small>
-                <strong>
-                  {userProfile.zone || 'Loading...'}
-                </strong>
-              </div>
+            <div className="vao-jurisdiction-chip">
+              <span>📍</span>
+              <span>Zone: <b>{userProfile.zone || 'Tamil Nadu'}</b></span>
             </div>
 
-            <div className="vao-user-chip">
-              <div className="vao-user-chip-avatar">
-                {(userProfile.name || 'V')
-                  .charAt(0)
-                  .toUpperCase()}
-              </div>
-
-              <div>
-                <strong>
-                  {userProfile.name || 'Officer'}
-                </strong>
-
-                <span>VAO</span>
-              </div>
+            <div className="vao-officer-pill">
+              <span className="vao-pill-icon">🧑‍💼</span>
+              <span>{userProfile.name || 'Revenue Officer'}</span>
             </div>
-
           </div>
-
         </header>
 
+        {/* CONTENT */}
         <div className="vao-content">
-
-          {/* WELCOME */}
-
-          <section className="vao-welcome">
-
+          {/* WELCOME BANNER */}
+          <section className="vao-welcome-banner">
             <div>
-
-              <div className="vao-welcome-label">
-                GOOD DAY, OFFICER
-              </div>
-
+              <div className="vao-welcome-badge">OFFICIAL JURISDICTION DESK</div>
               <h2>
-                Welcome back,{' '}
-                <span>
-                  {userProfile.name || 'Officer'}
-                </span>
+                Welcome back, <span>{userProfile.name || 'Officer'}</span>
               </h2>
-
               <p>
-                Review and verify farmer land documents
-                submitted within your jurisdiction.
+                Authenticate farmer Patta/Chitta land documents and issue cryptographic clearance certificates for mandi procurement.
               </p>
-
             </div>
 
-            <div className="vao-jurisdiction-card">
-
-              <div className="vao-jurisdiction-icon">
-                ⌖
-              </div>
-
-              <div>
-                <small>YOUR JURISDICTION</small>
-
-                <strong>
-                  {userProfile.zone || 'Not assigned'}
-                </strong>
-
-                <span>
-                  All villages & sub-places
-                </span>
-              </div>
-
+            <div className="vao-banner-stat-box">
+              <small>PENDING APPROVAL</small>
+              <strong>{pendingOrders.length} Farmers</strong>
+              <span>Awaiting review in {userProfile.zone || 'your zone'}</span>
             </div>
-
           </section>
 
-          {/* STAT CARDS */}
-
-          <section className="vao-stat-grid">
-
-            <div className="vao-stat-card">
-
-              <div className="vao-stat-icon vao-stat-icon-orange">
-                ⏳
+          {/* 4 KPI CARDS */}
+          <section className="vao-stat-cards-grid">
+            <div
+              className="vao-stat-card bar-yellow"
+              onClick={() => setActiveFilter('pending')}
+              style={{ cursor: 'pointer' }}
+            >
+              <div className="vao-stat-card-head">
+                <small>Pending Verification</small>
+                <span className="vao-stat-icon-wrap amber">⏳</span>
               </div>
-
-              <div className="vao-stat-content">
-                <span>Pending verification</span>
-
-                <strong>
-                  {pendingOrders.length}
-                </strong>
-
-                <small>
-                  Applications awaiting review
-                </small>
-              </div>
-
+              <h2>{pendingOrders.length}</h2>
+              <div className="vao-stat-sub">Requires land document review</div>
             </div>
 
-            <div className="vao-stat-card">
-
-              <div className="vao-stat-icon vao-stat-icon-green">
-                ✓
+            <div
+              className="vao-stat-card bar-green"
+              onClick={() => setActiveFilter('verified')}
+              style={{ cursor: 'pointer' }}
+            >
+              <div className="vao-stat-card-head">
+                <small>Verified Records</small>
+                <span className="vao-stat-icon-wrap emerald">✓</span>
               </div>
-
-              <div className="vao-stat-content">
-                <span>Verified records</span>
-
-                <strong>
-                  {verifiedOrders.length}
-                </strong>
-
-                <small>
-                  Successfully e-signed
-                </small>
-              </div>
-
+              <h2>{verifiedOrders.length}</h2>
+              <div className="vao-stat-sub">Digitally signed & approved</div>
             </div>
 
-            <div className="vao-stat-card">
-
-              <div className="vao-stat-icon vao-stat-icon-blue">
-                ◫
+            <div
+              className="vao-stat-card bar-blue"
+              onClick={() => setActiveFilter('all')}
+              style={{ cursor: 'pointer' }}
+            >
+              <div className="vao-stat-card-head">
+                <small>Total Applications</small>
+                <span className="vao-stat-icon-wrap blue">📋</span>
               </div>
-
-              <div className="vao-stat-content">
-                <span>Total applications</span>
-
-                <strong>
-                  {orders.length}
-                </strong>
-
-                <small>
-                  In your jurisdiction
-                </small>
-              </div>
-
+              <h2>{orders.length}</h2>
+              <div className="vao-stat-sub">Registered in {userProfile.zone || 'zone'}</div>
             </div>
 
-            <div className="vao-stat-card">
-
-              <div className="vao-stat-icon vao-stat-icon-purple">
-                ✦
+            <div className="vao-stat-card bar-purple">
+              <div className="vao-stat-card-head">
+                <small>Digital Verification</small>
+                <span className="vao-stat-icon-wrap purple">🛡️</span>
               </div>
-
-              <div className="vao-stat-content">
-                <span>Digital workflow</span>
-
-                <strong>Active</strong>
-
-                <small>
-                  Secure verification system
-                </small>
-              </div>
-
+              <h2>Active</h2>
+              <div className="vao-stat-sub">SMS & 256-bit e-signature</div>
             </div>
-
           </section>
 
-          {/* WORKSPACE */}
-
+          {/* WORKSPACE CARD */}
           <section className="vao-workspace-card">
-
-            <div className="vao-workspace-header">
-
+            <div className="vao-workspace-header-row">
               <div>
-
-                <div className="vao-section-label">
-                  APPLICATIONS
-                </div>
-
                 <h3>
                   {activeFilter === 'pending'
-                    ? 'Pending Document Verifications'
+                    ? 'Pending Land Document Verifications'
                     : activeFilter === 'verified'
-                    ? 'Verified Records'
-                    : 'All Applications'}
+                    ? 'Verified & Approved Records'
+                    : 'All Zone Applications'}
                 </h3>
-
-                <p>
-                  Applications from your assigned
-                  jurisdiction.
-                </p>
-
+                <p>Applications submitted by registered farmers in your jurisdiction.</p>
               </div>
 
-              <div className="vao-workspace-tools">
-
-                <div className="vao-search">
-
+              {/* SEARCH & FILTERS */}
+              <div className="vao-tools-bar">
+                <div className="vao-search-box">
                   <span>⌕</span>
-
                   <input
                     type="text"
-                    placeholder="Search farmer, crop, ID..."
+                    placeholder="Search farmer, crop, Patta, or ID..."
                     value={searchTerm}
-                    onChange={(e) =>
-                      setSearchTerm(e.target.value)
-                    }
+                    onChange={(e) => setSearchTerm(e.target.value)}
                   />
-
-                  {searchTerm && (
-                    <button
-                      type="button"
-                      onClick={() => setSearchTerm('')}
-                    >
-                      ×
-                    </button>
-                  )}
-
+                  {searchTerm && <button onClick={() => setSearchTerm('')}>×</button>}
                 </div>
 
-              </div>
-
-            </div>
-
-            {/* FILTERS */}
-
-            <div className="vao-filter-row">
-
-              <button
-                className={
-                  activeFilter === 'pending'
-                    ? 'vao-filter vao-filter-active'
-                    : 'vao-filter'
-                }
-                onClick={() =>
-                  setActiveFilter('pending')
-                }
-              >
-                Pending
-                <span>{pendingOrders.length}</span>
-              </button>
-
-              <button
-                className={
-                  activeFilter === 'verified'
-                    ? 'vao-filter vao-filter-active'
-                    : 'vao-filter'
-                }
-                onClick={() =>
-                  setActiveFilter('verified')
-                }
-              >
-                Verified
-                <span>{verifiedOrders.length}</span>
-              </button>
-
-              <button
-                className={
-                  activeFilter === 'all'
-                    ? 'vao-filter vao-filter-active'
-                    : 'vao-filter'
-                }
-                onClick={() =>
-                  setActiveFilter('all')
-                }
-              >
-                All
-                <span>{orders.length}</span>
-              </button>
-
-            </div>
-
-            {/* TABLE */}
-
-            {filteredOrders.length === 0 ? (
-
-              <div className="vao-empty-state">
-
-                <div className="vao-empty-icon">
-                  {searchTerm ? '⌕' : '✓'}
-                </div>
-
-                <h3>
-                  {searchTerm
-                    ? 'No matching applications'
-                    : activeFilter === 'pending'
-                    ? 'Verification queue is clear'
-                    : 'No applications found'}
-                </h3>
-
-                <p>
-                  {searchTerm
-                    ? 'Try searching with a different farmer name, crop or application ID.'
-                    : activeFilter === 'pending'
-                    ? 'There are currently no pending applications requiring verification in your jurisdiction.'
-                    : 'No records are currently available for this view.'}
-                </p>
-
-                {searchTerm && (
+                <div className="vao-filter-pill-group">
                   <button
-                    className="vao-clear-search"
-                    onClick={() => setSearchTerm('')}
+                    type="button"
+                    className={`vao-filter-pill ${activeFilter === 'pending' ? 'active' : ''}`}
+                    onClick={() => setActiveFilter('pending')}
                   >
-                    Clear search
+                    Pending ({pendingOrders.length})
                   </button>
-                )}
-
+                  <button
+                    type="button"
+                    className={`vao-filter-pill ${activeFilter === 'verified' ? 'active' : ''}`}
+                    onClick={() => setActiveFilter('verified')}
+                  >
+                    Verified ({verifiedOrders.length})
+                  </button>
+                  <button
+                    type="button"
+                    className={`vao-filter-pill ${activeFilter === 'all' ? 'active' : ''}`}
+                    onClick={() => setActiveFilter('all')}
+                  >
+                    All ({orders.length})
+                  </button>
+                </div>
               </div>
+            </div>
 
-            ) : (
-
-              <div className="vao-table-wrapper">
-
-                <table className="vao-table">
-
-                  <thead>
+            {/* ORDERS TABLE */}
+            <div className="vao-table-responsive">
+              <table className="vao-clean-table">
+                <thead>
+                  <tr>
+                    <th>FARMER & APPLICATION</th>
+                    <th>CROP & QUANTITY</th>
+                    <th>LAND DOCUMENT (PATTA)</th>
+                    <th>VILLAGE LOCATION</th>
+                    <th>VERIFICATION STATUS</th>
+                    <th>ACTIONS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredOrders.length === 0 ? (
                     <tr>
-                      <th>Farmer & application</th>
-                      <th>Land document</th>
-                      <th>Location</th>
-                      <th>Status</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-
-                    {filteredOrders.map((order) => (
-
-                      <tr key={order.id}>
-
-                        {/* FARMER */}
-
-                        <td>
-
-                          <div className="vao-farmer-cell">
-
-                            <div className="vao-farmer-avatar">
-                              {(order.userName || 'F')
-                                .charAt(0)
-                                .toUpperCase()}
-                            </div>
-
-                            <div className="vao-farmer-info">
-
-                              <strong>
-                                {order.userName || 'Farmer'}
-                              </strong>
-
-                              <span>
-                                {order.item || 'N/A'}{' '}
-                                <b>
-                                  • {order.quantity || 0} kg
-                                </b>
-                              </span>
-
-                              <small>
-                                {order.userEmail || 'No email'}
-                              </small>
-
-                              <small className="vao-phone">
-                                {order.userPhone || 'No phone'}
-                              </small>
-
-                            </div>
-
-                          </div>
-
-                          <div className="vao-application-id">
-                            ID: {order.id}
-                          </div>
-
-                        </td>
-
-                        {/* DOCUMENT */}
-
-                        <td>
-
-                          <div className="vao-document-cell">
-
-                            <div className="vao-document-icon">
-                              ▤
-                            </div>
-
-                            <div>
-
-                              <strong>
-                                Patta / Chitta
-                              </strong>
-
-                              <span>
-                                No. {order.pattaChitta || 'N/A'}
-                              </span>
-
-                            </div>
-
-                          </div>
-
-                          {order.documentUrl && (
-                            <button
-                              className="vao-view-document"
-                              onClick={() =>
-                                setModalImage(
-                                  order.documentUrl
-                                )
-                              }
-                            >
-                              <span>◉</span>
-                              View document
-                            </button>
-                          )}
-
-                        </td>
-
-                        {/* LOCATION */}
-
-                        <td>
-
-                          <div className="vao-location-cell">
-
-                            <span className="vao-location-main">
-                              ⌖ {order.zone || 'N/A'}
-                            </span>
-
-                            <span className="vao-location-sub">
-                              {order.subPlace ||
-                                'General'}
-                            </span>
-
-                          </div>
-
-                        </td>
-
-                        {/* STATUS */}
-
-                        <td>
-
-                          <span
-                            className={getStatusClass(
-                              order.status
-                            )}
-                          >
-                            <i></i>
-                            {order.status || 'Unknown'}
+                      <td colSpan="6" className="vao-empty-cell">
+                        <div className="vao-empty-box">
+                          <span className="vao-empty-icon">
+                            {searchTerm ? '🔍' : activeFilter === 'pending' ? '🎉' : '📂'}
                           </span>
+                          <strong>
+                            {searchTerm
+                              ? 'No matching applications found'
+                              : activeFilter === 'pending'
+                              ? 'Verification queue is completely clear!'
+                              : 'No application records in this view.'}
+                          </strong>
+                          <p>
+                            {searchTerm
+                              ? 'Try searching with a different farmer name, crop, or Patta number.'
+                              : activeFilter === 'pending'
+                              ? 'All farmer land documents in your jurisdiction have been authenticated.'
+                              : 'New applications will appear here as farmers submit them.'}
+                          </p>
+                          {searchTerm && (
+                            <button
+                              type="button"
+                              className="vao-btn-outline"
+                              onClick={() => setSearchTerm('')}
+                            >
+                              Clear Search
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredOrders.map((order) => {
+                      const isVerified = order.status === 'VAO Verified' || order.status === 'Procured';
 
-                          {order.vaoSignatureDetails && (
-                            <div className="vao-signed-info">
-                              Signed{' '}
-                              {order.vaoSignatureDetails.date}
+                      return (
+                        <tr key={order.id}>
+                          {/* FARMER CELL */}
+                          <td>
+                            <div className="vao-farmer-cell">
+                              <div className="vao-avatar-circle">
+                                {(order.userName || 'F').charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <strong>{order.userName || 'Farmer'}</strong>
+                                <small>App ID: {order.id.slice(0, 10)}</small>
+                                <span className="vao-contact-text">
+                                  📞 {order.userPhone || 'No Phone'}
+                                </span>
+                              </div>
                             </div>
-                          )}
+                          </td>
 
-                        </td>
+                          {/* CROP CELL */}
+                          <td>
+                            <div className="vao-crop-cell">
+                              <span className="vao-crop-pill">🌾 {order.item || 'Crop'}</span>
+                              <b>{order.quantity || 0} kg</b>
+                            </div>
+                          </td>
 
-                        {/* ACTION */}
+                          {/* LAND DOCUMENT CELL */}
+                          <td>
+                            <div className="vao-doc-cell">
+                              <div className="vao-patta-box">
+                                <span className="vao-patta-label">PATTA / CHITTA</span>
+                                <strong>No. {order.pattaChitta || 'N/A'}</strong>
+                              </div>
 
-                        <td>
-
-                          {order.status ===
-                          'Pending VAO' ? (
-
-                            <button
-                              className="vao-sign-btn"
-                              onClick={() =>
-                                handleVerify(order)
-                              }
-                              disabled={
-                                isSigning === order.id
-                              }
-                            >
-
-                              {isSigning === order.id ? (
-                                <>
-                                  <span className="vao-spinner"></span>
-                                  Signing...
-                                </>
-                              ) : (
-                                <>
-                                  <span>✍</span>
-                                  E-Sign & Verify
-                                </>
+                              {order.documentUrl && (
+                                <button
+                                  type="button"
+                                  className="vao-doc-preview-btn"
+                                  onClick={() =>
+                                    openDocumentPreview(
+                                      order.documentUrl,
+                                      `Land Document - ${order.userName || 'Farmer'} (Patta: ${order.pattaChitta || 'N/A'})`
+                                    )
+                                  }
+                                >
+                                  <span>👁️</span> Preview Document
+                                </button>
                               )}
+                            </div>
+                          </td>
 
-                            </button>
+                          {/* LOCATION */}
+                          <td>
+                            <div className="vao-location-cell">
+                              <span className="vao-zone-pill">📍 {order.zone || 'Zone'}</span>
+                              <span className="vao-subplace-text">
+                                🏘️ {order.subPlace || 'General'}
+                              </span>
+                            </div>
+                          </td>
 
-                          ) : (
+                          {/* STATUS */}
+                          <td>
+                            {isVerified ? (
+                              <div className="vao-status-verified-box">
+                                <span className="pill-badge pill-badge-green">✓ VAO Verified</span>
+                                {order.vaoSignatureDetails && (
+                                  <small className="vao-sign-date">
+                                    Signed by {order.vaoSignatureDetails.name || 'VAO'} on {order.vaoSignatureDetails.date}
+                                  </small>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="vao-status-pending-box">
+                                <span className="pill-badge pill-badge-yellow">⏳ Pending VAO</span>
+                                <small className="vao-action-hint">Awaiting Land Record E-Sign</small>
+                              </div>
+                            )}
+                          </td>
 
-                            <button
-                              className="vao-review-btn"
-                              onClick={() =>
-                                order.documentUrl &&
-                                setModalImage(
-                                  order.documentUrl
-                                )
-                              }
-                            >
-                              View certificate
-                            </button>
+                          {/* ACTION BUTTON */}
+                          <td>
+                            {order.status === 'Pending VAO' ? (
+                              <button
+                                type="button"
+                                className="vao-btn-verify-action"
+                                onClick={() => handleVerify(order)}
+                                disabled={isSigning === order.id}
+                              >
+                                {isSigning === order.id ? (
+                                  <>
+                                    <span className="vao-btn-spinner" />
+                                    <span>Verifying & Signing...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <span>✍</span>
+                                    <span>E-Sign & Verify</span>
+                                  </>
+                                )}
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                className="vao-btn-view-cert"
+                                onClick={() =>
+                                  order.documentUrl &&
+                                  openDocumentPreview(
+                                    order.documentUrl,
+                                    `Official Verification Certificate - ${order.userName || 'Farmer'}`
+                                  )
+                                }
+                              >
+                                <span>📄</span> View Certificate
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
 
-                          )}
-
-                        </td>
-
-                      </tr>
-
-                    ))}
-
-                  </tbody>
-
-                </table>
-
+          {/* SECURITY & AUDIT FOOTER */}
+          <footer className="vao-security-footer">
+            <div className="vao-sec-badge">
+              <span>🔐</span>
+              <div>
+                <strong>Cryptographic Audit Trail</strong>
+                <small>Every e-signature is stamped with official timestamp, officer credentials, and SMS verification.</small>
               </div>
-
-            )}
-
-          </section>
-
-          {/* INFORMATION FOOTER */}
-
-          <section className="vao-security-banner">
-
-            <div className="vao-security-icon">
-              ✓
             </div>
-
-            <div>
-              <strong>
-                Secure document verification
-              </strong>
-
-              <p>
-                Verified applications are digitally
-                signed and recorded in FarmFlow AI.
-                The farmer is notified after successful
-                verification.
-              </p>
+            <div className="vao-sec-status">
+              <span className="pulse-dot" />
+              <span>Tamper-Proof Governance Active</span>
             </div>
-
-            <div className="vao-security-status">
-              <span></span>
-              System active
-            </div>
-
-          </section>
-
+          </footer>
         </div>
-
       </main>
 
-      {/* DOCUMENT MODAL */}
-
-      {modalImage && (
-
+      {/* DOCUMENT PREVIEW MODAL */}
+      {modalDocument && (
         <div
-          className="vao-modal-overlay"
+          className="vao-modal-backdrop"
           onClick={(e) => {
-            if (
-              e.target === e.currentTarget
-            ) {
-              setModalImage(null);
-            }
+            if (e.target === e.currentTarget) setModalDocument(null);
           }}
         >
-
-          <div className="vao-document-modal">
-
-            <div className="vao-modal-header">
-
+          <div className="vao-preview-modal">
+            <div className="vao-modal-head">
               <div>
-
-                <div className="vao-modal-kicker">
-                  DOCUMENT PREVIEW
-                </div>
-
-                <h3>
-                  Patta / Chitta Document
-                </h3>
-
-                <p>
-                  Review the submitted land document
-                  before verification.
-                </p>
-
+                <small className="vao-modal-kicker">GOVERNMENT DOCUMENT INSPECTION</small>
+                <h3>{modalTitle || 'Document Preview'}</h3>
               </div>
-
               <button
+                type="button"
                 className="vao-modal-close"
-                onClick={() =>
-                  setModalImage(null)
-                }
-                aria-label="Close preview"
+                onClick={() => setModalDocument(null)}
               >
-                ×
+                ✕
               </button>
-
             </div>
 
-            <div className="vao-document-preview">
-
-              {modalImage.startsWith(
-                'data:application/pdf'
-              ) ||
-              modalImage
-                .toLowerCase()
-                .includes('.pdf') ? (
-
+            <div className="vao-modal-body">
+              {modalDocument.startsWith('data:application/pdf') ||
+              modalDocument.toLowerCase().includes('.pdf') ? (
                 <iframe
-                  src={modalImage}
-                  title="PDF Document Preview"
+                  src={modalDocument}
+                  title="Document Preview"
+                  className="vao-preview-iframe"
                 />
-
               ) : (
-
-                <div className="vao-image-preview">
-
-                  <img
-                    src={modalImage}
-                    alt="Patta Document"
-                  />
-
+                <div className="vao-preview-img-wrap">
+                  <img src={modalDocument} alt="Land Record Preview" />
                 </div>
-
               )}
-
             </div>
 
-            <div className="vao-modal-footer">
-
+            <div className="vao-modal-foot">
               <div className="vao-modal-note">
-                <span>🔒</span>
-                Document preview is securely displayed.
+                <span>🔒</span> Official digital record for FarmFlow AI revenue verification.
               </div>
-
               <button
-                className="vao-modal-close-btn"
-                onClick={() =>
-                  setModalImage(null)
-                }
+                type="button"
+                className="vao-btn-outline"
+                onClick={() => setModalDocument(null)}
               >
-                Close preview
+                Close Preview
               </button>
-
             </div>
-
           </div>
-
         </div>
-
       )}
-
     </div>
   );
 };

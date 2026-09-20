@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { db } from '../firebase';
 import {
@@ -12,9 +12,10 @@ import {
   doc,
   updateDoc
 } from 'firebase/firestore';
-
+import jsPDF from 'jspdf';
 import './Dashboard.css';
 
+// Original Crop Rates
 const initialRates = {
   "Rice (Paddy)": 22.50,
   "Wheat": 25.00,
@@ -33,7 +34,7 @@ const initialRates = {
 const cropTranslations = {
   "Rice (Paddy)": { en: "Rice (Paddy)", hi: "चावल (धान)", ta: "அரிசி (நெல்)" },
   "Wheat": { en: "Wheat", hi: "गेहूं", ta: "கோதுமை" },
-  "Maize (Corn)": { en: "Maize (Corn)", hi: "मक्का", ta: "मक्काச்சோளம்" },
+  "Maize (Corn)": { en: "Maize (Corn)", hi: "मक्का", ta: "மக்காச்சோளம்" },
   "Cotton": { en: "Cotton", hi: "कपास", ta: "பருத்தி" },
   "Sugarcane": { en: "Sugarcane", hi: "गन्ना", ta: "கரும்பு" },
   "Soybean": { en: "Soybean", hi: "सोयाबीन", ta: "சோயாபீன்" },
@@ -47,30 +48,25 @@ const cropTranslations = {
 
 const generateInitialHistory = (rates) => {
   const history = {};
-
   Object.keys(rates).forEach((crop) => {
     let current = rates[crop];
     const pastRates = [];
-
     for (let i = 0; i < 10; i++) {
       current = current * (1 + ((Math.random() * 0.06) - 0.03));
       pastRates.unshift(current);
     }
-
     pastRates.push(rates[crop]);
     history[crop] = pastRates;
   });
-
   return history;
 };
 
+// SVG Sparkline
 const Sparkline = ({ data }) => {
   if (!data || data.length < 2) return null;
-
   const min = Math.min(...data);
   const max = Math.max(...data);
   const range = max - min || 1;
-
   const isUp = data[data.length - 1] >= data[data.length - 2];
 
   const points = data
@@ -106,10 +102,10 @@ const getWeatherMeta = (code) => {
   if (code >= 50 && code < 80) return { label: "Rainy", icon: "🌧️" };
   if (code >= 80 && code < 90) return { label: "Showers", icon: "🌦️" };
   if (code >= 90) return { label: "Thunderstorm", icon: "⛈️" };
-
   return { label: "Clear", icon: "🌤️" };
 };
 
+// Original Translations Preserved
 const t = {
   en: {
     navDashboard: "📊 Dashboard",
@@ -120,7 +116,6 @@ const t = {
     navAi: "🤖 AI Insights",
     navHelp: "❓ Help",
     logout: "Log Out",
-    module: "Module",
     subtitle: "Manage your smart farm operations seamlessly.",
     liveMarket: "Live Market Active",
     userDetails: "User Details",
@@ -158,123 +153,204 @@ const t = {
     uploadDoc: "Upload Patta/Chitta (JPG/PDF, Max 500KB)",
     confirmOrder: "Submit to VAO",
     cancel: "Cancel",
-    upcomingProcurements: "Upcoming Procurements",
+    upcomingProcurements: "Upcoming Procurements & Gate Passes",
     noActiveOrders: "No active orders at the moment.",
     aiAnalysis: "AI Analysis",
     aiReport: "Weekly Insight Report generated:",
-    aiTip1:
-      "Nitrogen levels in your fields may be dropping. Recommended to apply Urea by Thursday.",
-    aiTip2:
-      "Market conditions suggest holding wheat sales for 2 weeks to maximize profit.",
-    aiTip3:
-      "Weather analysis shows low risk of pests for the next 7 days.",
+    aiTip1: "Nitrogen levels in your fields may be dropping. Recommended to apply Urea by Thursday.",
+    aiTip2: "Market conditions suggest holding wheat sales for 2 weeks to maximize profit.",
+    aiTip3: "Weather analysis shows low risk of pests for the next 7 days.",
     helpTitle: "Help & Guide",
-    helpIntro:
-      "Welcome to FarmFlow AI! Here is how to use your dashboard:",
-    helpProfile:
-      "Profile: View your registered account details and status.",
-    helpCrops:
-      "My Crops: Add your harvested crops, enter the weight, and see the estimated live market value.",
-    helpProcurement:
-      "Procurement: View live fluctuating market rates. You can apply to sell your crops or buy farming supplies.",
-    helpTrack:
-      "Track Status: Monitor your VAO verification progress, assigned time slots, and direct benefit transfer (DBT) payouts.",
-    helpAi:
-      "AI Insights: Read weekly AI-generated advice to maximize your farm's profit and health."
-  },
-
-  hi: {
-    navDashboard: "📊 डैशबोर्ड", navProfile: "👤 मेरी प्रोफ़ाइल", navCrops: "🌾 मेरी फसलें",
-    navProcurement: "🛒 खरीद", navTrack: "📦 स्थिति ट्रैक करें", navAi: "🤖 AI अंतर्दृष्टि", navHelp: "❓ सहायता",
-    logout: "लॉग आउट", module: "मॉड्यूल", subtitle: "अपने स्मार्ट फार्म संचालन को आसानी से प्रबंधित करें।",
-    liveMarket: "लाइव मार्केट सक्रिय", userDetails: "उपयोगकर्ता विवरण", fullName: "पूरा नाम:", emailAddr: "ईमेल पता:",
-    phoneNumber: "फ़ोन नंबर:", role: "भूमिका:", farmManager: "किसान", accountStatus: "खाता स्थिति:", verified: "सत्यापित 🟢",
-    weather: "स्थानीय मौसम", pestAlert: "कीट चेतावनी", pestDesc: "आपके क्षेत्र में कोई सक्रिय खतरा नहीं मिला।",
-    addCropTitle: "नई फसल इन्वेंटरी जोड़ें", selectCrop: "-- प्रमुख भारतीय फसल चुनें --", weightKg: "वजन (किग्रा)", addCropBtn: "फसल जोड़ें",
-    myCropInventory: "मेरी फसल इन्वेंटरी", emptyInventory: "आपकी इन्वेंटरी अभी खाली है।", lockedRate: "लॉक की गई दर:", remove: "हटाएं",
-    liveCropMarket: "लाइव फसल बाजार मूल्य", cropName: "फसल का नाम", pastRates: "पिछली दरें", liveRate: "लाइव दर और रुझान", action: "कार्रवाई",
-    sellMarket: "बाजार में बेचें", procurementApp: "खरीद आवेदन", applyingFor: "इसके लिए आवेदन:", quantity: "मात्रा (किग्रा / बैग)",
-    selectZone: "-- सक्रिय ज़ोन चुनें --", selectSubPlace: "-- गांव / उप-स्थान चुनें --", farmAddress: "विशिष्ट खेत का पता",
-    pattaChitta: "पट्टा / चिट्टा दस्तावेज़ संख्या", uploadDoc: "पट्टा/चिट्टा अपलोड करें (JPG/PDF, अधिकतम 500KB)", confirmOrder: "VAO को भेजें",
-    cancel: "रद्द करें", upcomingProcurements: "आगामी खरीद", noActiveOrders: "अभी कोई सक्रिय आदेश नहीं है।", aiAnalysis: "AI विश्लेषण",
-    aiReport: "साप्ताहिक अंतर्दृष्टि रिपोर्ट तैयार:", aiTip1: "आपके खेतों में नाइट्रोजन का स्तर कम हो सकता है। गुरुवार तक यूरिया डालने की सलाह है।",
-    aiTip2: "बाजार की स्थिति लाभ बढ़ाने के लिए गेहूं की बिक्री 2 सप्ताह रोकने का सुझाव देती है।",
-    aiTip3: "मौसम विश्लेषण अगले 7 दिनों में कीटों के कम जोखिम को दर्शाता है।", helpTitle: "सहायता और मार्गदर्शिका",
-    helpIntro: "FarmFlow AI में आपका स्वागत है! अपना डैशबोर्ड इस्तेमाल करने का तरीका यहां है:",
-    helpProfile: "प्रोफ़ाइल: अपने पंजीकृत खाते का विवरण और स्थिति देखें।", helpCrops: "मेरी फसलें: फसल जोड़ें, वजन दर्ज करें और अनुमानित लाइव बाजार मूल्य देखें।",
-    helpProcurement: "खरीद: लाइव बाजार दरें देखें और फसल बेचने या कृषि आपूर्ति खरीदने के लिए आवेदन करें।",
-    helpTrack: "स्थिति ट्रैक करें: VAO सत्यापन, स्लॉट और DBT भुगतान की निगरानी करें।", helpAi: "AI अंतर्दृष्टि: खेत के लाभ और स्वास्थ्य के लिए AI की सलाह पढ़ें।"
+    helpIntro: "Welcome to FarmFlow AI! Here is how to use your dashboard:",
+    helpProfile: "Profile: View your registered account details and status.",
+    helpCrops: "My Crops: Add your harvested crops, enter weight, and monitor live estimated market values.",
+    helpProcurement: "Procurement: View live fluctuating market rates and apply to sell crops through VAO verification.",
+    helpTrack: "Track Status: Monitor your VAO verification progress, download official Gate Passes, and track DBT payouts.",
+    helpAi: "AI Insights: Read weekly AI-generated advice to maximize your farm's profit and health."
   },
   ta: {
-    navDashboard: "📊 டாஷ்போர்டு", navProfile: "👤 என் சுயவிவரம்", navCrops: "🌾 என் பயிர்கள்",
-    navProcurement: "🛒 கொள்முதல்", navTrack: "📦 நிலை கண்காணிப்பு", navAi: "🤖 AI ஆலோசனைகள்", navHelp: "❓ உதவி",
-    logout: "வெளியேறு", module: "பிரிவு", subtitle: "உங்கள் ஸ்மார்ட் பண்ணை செயல்பாடுகளை எளிதாக நிர்வகிக்கவும்.",
-    liveMarket: "நேரடி சந்தை செயல்பாட்டில்", userDetails: "பயனர் விவரங்கள்", fullName: "முழு பெயர்:", emailAddr: "மின்னஞ்சல்:",
-    phoneNumber: "தொலைபேசி எண்:", role: "பங்கு:", farmManager: "விவசாயி", accountStatus: "கணக்கு நிலை:", verified: "சரிபார்க்கப்பட்டது 🟢",
-    weather: "உள்ளூர் வானிலை", pestAlert: "பூச்சி எச்சரிக்கை", pestDesc: "உங்கள் பகுதியில் செயலில் உள்ள அச்சுறுத்தல்கள் இல்லை.",
-    addCropTitle: "புதிய பயிரை சேர்க்கவும்", selectCrop: "-- இந்திய பயிரைத் தேர்ந்தெடுக்கவும் --", weightKg: "எடை (கிலோ)", addCropBtn: "பயிரைச் சேர்க்கவும்",
-    myCropInventory: "என் பயிர் இருப்பு", emptyInventory: "உங்கள் இருப்பு தற்போது காலியாக உள்ளது.", lockedRate: "பூட்டப்பட்ட விலை:", remove: "நீக்கு",
-    liveCropMarket: "நேரடி பயிர் சந்தை விலைகள்", cropName: "பயிர் பெயர்", pastRates: "கடந்த விலைகள்", liveRate: "நேரடி விலை & போக்கு", action: "செயல்",
-    sellMarket: "சந்தையில் விற்கவும்", procurementApp: "கொள்முதல் விண்ணப்பம்", applyingFor: "இதற்கான விண்ணப்பம்:", quantity: "அளவு (கிலோ / பைகள்)",
-    selectZone: "-- செயலில் உள்ள மண்டலத்தைத் தேர்ந்தெடுக்கவும் --", selectSubPlace: "-- கிராமம் / துணை இடத்தைத் தேர்ந்தெடுக்கவும் --", farmAddress: "குறிப்பிட்ட பண்ணை முகவரி",
-    pattaChitta: "பட்டா / சிட்டா ஆவண எண்", uploadDoc: "பட்டா/சிட்டாவை பதிவேற்றவும் (JPG/PDF, அதிகபட்சம் 500KB)", confirmOrder: "VAO-க்கு சமர்ப்பிக்கவும்",
-    cancel: "ரத்து செய்", upcomingProcurements: "வரவிருக்கும் கொள்முதல்கள்", noActiveOrders: "தற்போது செயலில் உள்ள ஆர்டர்கள் இல்லை.", aiAnalysis: "AI பகுப்பாய்வு",
-    aiReport: "வாராந்திர நுண்ணறிவு அறிக்கை:", aiTip1: "உங்கள் வயல்களில் நைட்ரஜன் அளவு குறையக்கூடும். வியாழக்கிழமைக்குள் யூரியா பயன்படுத்த பரிந்துரைக்கப்படுகிறது.",
+    navDashboard: "📊 டாஷ்போர்டு",
+    navProfile: "👤 என் சுயவிவரம்",
+    navCrops: "🌾 என் பயிர்கள்",
+    navProcurement: "🛒 கொள்முதல்",
+    navTrack: "📦 நிலை கண்காணிப்பு",
+    navAi: "🤖 AI ஆலோசனைகள்",
+    navHelp: "❓ உதவி",
+    logout: "வெளியேறு",
+    subtitle: "உங்கள் ஸ்மார்ட் பண்ணை செயல்பாடுகளை எளிதாக நிர்வகிக்கவும்.",
+    liveMarket: "நேரடி சந்தை செயல்பாட்டில்",
+    userDetails: "பயனர் விவரங்கள்",
+    fullName: "முழு பெயர்:",
+    emailAddr: "மின்னஞ்சல்:",
+    phoneNumber: "தொலைபேசி எண்:",
+    role: "பங்கு:",
+    farmManager: "விவசாயி",
+    accountStatus: "கணக்கு நிலை:",
+    verified: "சரிபார்க்கப்பட்டது 🟢",
+    weather: "உள்ளூர் வானிலை",
+    pestAlert: "பூச்சி எச்சரிக்கை",
+    pestDesc: "உங்கள் பகுதியில் செயலில் உள்ள அச்சுறுத்தல்கள் இல்லை.",
+    addCropTitle: "புதிய பயிரை சேர்க்கவும்",
+    selectCrop: "-- இந்திய பயிரைத் தேர்ந்தெடுக்கவும் --",
+    weightKg: "எடை (கிலோ)",
+    addCropBtn: "பயிரைச் சேர்க்கவும்",
+    myCropInventory: "என் பயிர் இருப்பு",
+    emptyInventory: "உங்கள் இருப்பு தற்போது காலியாக உள்ளது.",
+    lockedRate: "பூட்டப்பட்ட விலை:",
+    remove: "நீக்கு",
+    liveCropMarket: "நேரடி பயிர் சந்தை விலைகள்",
+    cropName: "பயிர் பெயர்",
+    pastRates: "கடந்த விலைகள்",
+    liveRate: "நேரடி விலை & போக்கு",
+    action: "செயல்",
+    sellMarket: "சந்தையில் விற்கவும்",
+    procurementApp: "கொள்முதல் விண்ணப்பம்",
+    applyingFor: "இதற்கான விண்ணப்பம்:",
+    quantity: "அளவு (கிலோ / பைகள்)",
+    selectZone: "-- செயலில் உள்ள மண்டலத்தைத் தேர்ந்தெடுக்கவும் --",
+    selectSubPlace: "-- கிராமம் / துணை இடத்தைத் தேர்ந்தெடுக்கவும் --",
+    farmAddress: "குறிப்பிட்ட பண்ணை முகவரி",
+    pattaChitta: "பட்டா / சிட்டா ஆவண எண்",
+    uploadDoc: "பட்டா/சிட்டாவை பதிவேற்றவும் (JPG/PDF, அதிகபட்சம் 500KB)",
+    confirmOrder: "VAO-க்கு சமர்ப்பிக்கவும்",
+    cancel: "ரத்து செய்",
+    upcomingProcurements: "வரவிருக்கும் கொள்முதல்கள்",
+    noActiveOrders: "தற்போது செயலில் உள்ள ஆர்டர்கள் இல்லை.",
+    aiAnalysis: "AI பகுப்பாய்வு",
+    aiReport: "வாராந்திர நுண்ணறிவு அறிக்கை:",
+    aiTip1: "உங்கள் வயல்களில் நைட்ரஜன் அளவு குறையக்கூடும். வியாழக்கிழமைக்குள் யூரியா பயன்படுத்த பரிந்துரைக்கப்படுகிறது.",
     aiTip2: "லாபத்தை அதிகரிக்க கோதுமை விற்பனையை 2 வாரங்கள் தாமதப்படுத்த சந்தை நிலைமைகள் பரிந்துரைக்கின்றன.",
-    aiTip3: "அடுத்த 7 நாட்களில் பூச்சி தாக்குதல் அபாயம் குறைவாக இருக்கும் என வானிலை பகுப்பாய்வு காட்டுகிறது.", helpTitle: "உதவி மற்றும் வழிகாட்டி",
+    aiTip3: "அடுத்த 7 நாட்களில் பூச்சி தாக்குதல் அபாயம் குறைவாக இருக்கும் என வானிலை பகுப்பாய்வு காட்டுகிறது.",
+    helpTitle: "உதவி மற்றும் வழிகாட்டி",
     helpIntro: "FarmFlow AI-க்கு வரவேற்கிறோம்! உங்கள் டாஷ்போர்டை பயன்படுத்துவது எப்படி:",
-    helpProfile: "சுயவிவரம்: உங்கள் பதிவு செய்யப்பட்ட கணக்கு விவரங்களையும் நிலையையும் பார்க்கவும்.", helpCrops: "என் பயிர்கள்: அறுவடை பயிர்களைச் சேர்த்து, எடையைப் பதிவு செய்து, நேரடி சந்தை மதிப்பைப் பார்க்கவும்.",
-    helpProcurement: "கொள்முதல்: நேரடி சந்தை விலைகளைப் பார்த்து, பயிர்களை விற்க அல்லது விவசாயப் பொருட்களை வாங்க விண்ணப்பிக்கவும்.",
-    helpTrack: "நிலை கண்காணிப்பு: VAO சரிபார்ப்பு, ஒதுக்கப்பட்ட நேரம் மற்றும் DBT கட்டணங்களை கண்காணிக்கவும்.", helpAi: "AI ஆலோசனைகள்: பண்ணை லாபம் மற்றும் ஆரோக்கியத்தை மேம்படுத்த AI ஆலோசனைகளைப் படிக்கவும்."
+    helpProfile: "சுயவிவரம்: உங்கள் பதிவு செய்யப்பட்ட கணக்கு விவரங்களையும் நிலையையும் பார்க்கவும்.",
+    helpCrops: "என் பயிர்கள்: அறுவடை பயிர்களைச் சேர்த்து, எடையைப் பதிவு செய்து, நேரடி சந்தை மதிப்பைப் பார்க்கவும்.",
+    helpProcurement: "கொள்முதல்: நேரடி சந்தை விலைகளைப் பார்த்து, பயிர்களை விற்க விண்ணப்பிக்கவும்.",
+    helpTrack: "நிலை கண்காணிப்பு: VAO சரிபார்ப்பு, கேட் பாஸ் மற்றும் DBT கட்டணங்களை கண்காணிக்கவும்.",
+    helpAi: "AI ஆலோசனைகள்: பண்ணை லாபம் மற்றும் ஆரோக்கியத்தை மேம்படுத்த AI ஆலோசனைகளைப் படிக்கவும்."
+  },
+  hi: {
+    navDashboard: "📊 डैशबोर्ड",
+    navProfile: "👤 मेरी प्रोफ़ाइल",
+    navCrops: "🌾 मेरी फसलें",
+    navProcurement: "🛒 खरीद",
+    navTrack: "📦 स्थिति ट्रैक करें",
+    navAi: "🤖 AI अंतर्दृष्टि",
+    navHelp: "❓ सहायता",
+    logout: "लॉग आउट",
+    subtitle: "अपने स्मार्ट फार्म संचालन को आसानी से प्रबंधित करें।",
+    liveMarket: "लाइव मार्केट सक्रिय",
+    userDetails: "उपयोगकर्ता विवरण",
+    fullName: "पूरा नाम:",
+    emailAddr: "ईमेल पता:",
+    phoneNumber: "फ़ोन नंबर:",
+    role: "भूमिका:",
+    farmManager: "किसान",
+    accountStatus: "खाता स्थिति:",
+    verified: "सत्यापित 🟢",
+    weather: "स्थानीय मौसम",
+    pestAlert: "कीट चेतावनी",
+    pestDesc: "आपके क्षेत्र में कोई सक्रिय खतरा नहीं मिला।",
+    addCropTitle: "नई फसल इन्वेंटरी जोड़ें",
+    selectCrop: "-- प्रमुख भारतीय फसल चुनें --",
+    weightKg: "वजन (किग्रा)",
+    addCropBtn: "फसल जोड़ें",
+    myCropInventory: "मेरी फसल इन्वेंटरी",
+    emptyInventory: "आपकी इन्वेंटरी अभी खाली है।",
+    lockedRate: "लॉक की गई दर:",
+    remove: "हटाएं",
+    liveCropMarket: "लाइव फसल बाजार मूल्य",
+    cropName: "फसल का नाम",
+    pastRates: "पिछली दरें",
+    liveRate: "लाइव दर और रुझान",
+    action: "कार्रवाई",
+    sellMarket: "बाजार में बेचें",
+    procurementApp: "खरीद आवेदन",
+    applyingFor: "इसके लिए आवेदन:",
+    quantity: "मात्रा (किग्रा / बैग)",
+    selectZone: "-- सक्रिय ज़ोन चुनें --",
+    selectSubPlace: "-- गांव / उप-स्थान चुनें --",
+    farmAddress: "विशिष्ट खेत का पता",
+    pattaChitta: "पट्टा / चिट्टा दस्तावेज़ संख्या",
+    uploadDoc: "पट्टा/चिट्टा अपलोड करें (JPG/PDF, अधिकतम 500KB)",
+    confirmOrder: "VAO को भेजें",
+    cancel: "रद्द करें",
+    upcomingProcurements: "आगामी खरीद",
+    noActiveOrders: "अभी कोई सक्रिय आदेश नहीं है।",
+    aiAnalysis: "AI विश्लेषण",
+    aiReport: "साप्ताहिक अंतर्दृष्टि रिपोर्ट तैयार:",
+    aiTip1: "आपके खेतों में नाइट्रोजन का स्तर कम हो सकता है। गुरुवार तक यूरिया डालने की सलाह है।",
+    aiTip2: "बाजार की स्थिति लाभ बढ़ाने के लिए गेहूं की बिक्री 2 सप्ताह रोकने का सुझाव देती है।",
+    aiTip3: "मौसम विश्लेषण अगले 7 दिनों में कीटों के कम जोखिम को दर्शाता है।",
+    helpTitle: "सहायता और मार्गदर्शिका",
+    helpIntro: "FarmFlow AI में आपका स्वागत है! अपना डैशबोर्ड इस्तेमाल करने का तरीका यहां है:",
+    helpProfile: "प्रोफ़ाइल: अपने पंजीकृत खाते का विवरण और स्थिति देखें।",
+    helpCrops: "मेरी फसलें: फसल जोड़ें, वजन दर्ज करें और लाइव बाजार मूल्य देखें।",
+    helpProcurement: "खरीद: लाइव दरें देखें और फसल बेचने के लिए VAO सत्यापन को आवेदन करें।",
+    helpTrack: "स्थिति ट्रैक करें: VAO सत्यापन, गेट पास और DBT भुगतान की निगरानी करें।",
+    helpAi: "AI अंतर्दृष्टि: खेत के लाभ और स्वास्थ्य के लिए AI की सलाह पढ़ें।"
   }
 };
 
 const Dashboard = () => {
   const navigate = useNavigate();
 
+  // Active Tab: Original names
   const [activeTab, setActiveTab] = useState(
     window.location.hash.replace('#', '') || 'dashboard'
   );
   const [lang, setLang] = useState('en');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
-  const l = t[lang];
+  const l = t[lang] || t.en;
   const getCropName = (cropKey) => cropTranslations[cropKey]?.[lang] || cropKey;
 
+  // Market Rates & History
   const [marketRates, setMarketRates] = useState(initialRates);
   const [marketHistory, setMarketHistory] = useState(() =>
     generateInitialHistory(initialRates)
   );
 
-  const [activeOrders, setActiveOrders] = useState([]);
+  // User Profile
   const [userProfile, setUserProfile] = useState({
-    name: '',
-    email: '',
-    phone: ''
+    name: 'Rajesh Farmer',
+    email: 'rajesh@farmflow.com',
+    phone: '9876543210',
+    role: 'farmer'
   });
 
+  // Orders & Crops
+  const [activeOrders, setActiveOrders] = useState([]);
+  const [myCrops, setMyCrops] = useState([]);
+  const [orderingItem, setOrderingItem] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Locations / VAO
   const [vaoUsers, setVaoUsers] = useState([]);
   const [availableZones, setAvailableZones] = useState([]);
   const [availableSubPlaces, setAvailableSubPlaces] = useState([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Notifications banner
   const [latestNotification, setLatestNotification] = useState(null);
   const [showBanner, setShowBanner] = useState(false);
 
+  // Weather State
   const [weatherData, setWeatherData] = useState({
-    temp: '--',
-    condition: 'Fetching location weather...',
-    locationName: 'Detecting location...',
+    temp: '29°C',
+    condition: 'Sunny • Humidity 60%',
+    locationName: 'Local Field',
     icon: '🌤️'
   });
-
   const [hourlyForecast, setHourlyForecast] = useState([]);
   const [showWeatherModal, setShowWeatherModal] = useState(false);
 
-  const [myCrops, setMyCrops] = useState([]);
-  const [orderingItem, setOrderingItem] = useState(null);
-  const [rescheduleInputs, setRescheduleInputs] = useState({});
+  // Reschedule Modal
+  const [showRescheduleModal, setShowRescheduleModal] = useState(false);
+  const [selectedOrderForReschedule, setSelectedOrderForReschedule] = useState(null);
+  const [rescheduleDate, setRescheduleDate] = useState('');
+  const [rescheduleTime, setRescheduleTime] = useState('09:00 AM - 11:00 AM');
 
+  // Order Details Form
   const [orderDetails, setOrderDetails] = useState({
     zone: '',
     subPlace: '',
@@ -282,15 +358,15 @@ const Dashboard = () => {
     quantity: '',
     pattaChitta: ''
   });
-
   const [pattaFile, setPattaFile] = useState(null);
 
+  // New Crop Form
   const [newCrop, setNewCrop] = useState({
     name: '',
     weightKg: ''
   });
 
-  // Handle Browser Back Button Navigation
+  // Handle hash change for browser history
   useEffect(() => {
     const handleHashChange = () => {
       const hash = window.location.hash.replace('#', '') || 'dashboard';
@@ -299,11 +375,11 @@ const Dashboard = () => {
         setActiveTab(hash);
       }
     };
-    
     window.addEventListener('hashchange', handleHashChange);
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
+  // Load Saved User
   useEffect(() => {
     const savedUser =
       localStorage.getItem('farmflow_user') ||
@@ -312,7 +388,6 @@ const Dashboard = () => {
     if (savedUser) {
       try {
         const parsed = JSON.parse(savedUser);
-
         if (parsed && parsed.email) {
           setUserProfile(parsed);
           return;
@@ -321,166 +396,51 @@ const Dashboard = () => {
         console.error("Error parsing saved user:", e);
       }
     }
-
-    const demoUser = {
-      name: "Rajesh Farmer",
-      email: "rajesh@farmflow.com",
-      phone: "9876543210",
-      role: "farmer"
-    };
-
-    setUserProfile(demoUser);
-    localStorage.setItem(
-      'farmflow_user',
-      JSON.stringify(demoUser)
-    );
   }, []);
 
+  // Geolocation & Live Weather
   useEffect(() => {
-    if (!("geolocation" in navigator)) {
-      setWeatherData({
-        temp: 'N/A',
-        condition: 'Geolocation is not supported.',
-        locationName: 'Unavailable',
-        icon: '📍'
-      });
-      return;
-    }
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        async (pos) => {
+          try {
+            const lat = pos.coords.latitude;
+            const lon = pos.coords.longitude;
+            const res = await fetch(
+              `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code&hourly=temperature_2m,weather_code&timezone=auto`
+            );
+            const data = await res.json();
+            const meta = getWeatherMeta(data.current.weather_code);
+            setWeatherData({
+              temp: `${Math.round(data.current.temperature_2m)}°C`,
+              condition: `${meta.label}. Humidity: ${data.current.relative_humidity_2m}%`,
+              locationName: 'Local Field',
+              icon: meta.icon
+            });
 
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const lat = position.coords.latitude;
-        const lon = position.coords.longitude;
-
-        try {
-          const weatherRes = await fetch(
-            `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,weather_code,precipitation&hourly=temperature_2m,weather_code,precipitation_probability&timezone=auto`
-          );
-
-          const weatherJson = await weatherRes.json();
-
-          const geoRes = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`
-          );
-
-          const geoJson = await geoRes.json();
-
-          const locationString =
-            geoJson.address?.city ||
-            geoJson.address?.town ||
-            geoJson.address?.village ||
-            geoJson.address?.state ||
-            "Your Location";
-
-          const currentCode =
-            weatherJson.current.weather_code;
-
-          const meta = getWeatherMeta(currentCode);
-
-          setWeatherData({
-            temp: `${Math.round(
-              weatherJson.current.temperature_2m
-            )}°C`,
-            condition: `${locationString}: ${meta.label}. Humidity: ${weatherJson.current.relative_humidity_2m}%`,
-            locationName: locationString,
-            icon: meta.icon
-          });
-
-          if (
-            weatherJson.hourly &&
-            weatherJson.hourly.time
-          ) {
-            const now = new Date();
-            const currentHourNum = now.getHours();
-
-            let startIndex =
-              weatherJson.hourly.time.findIndex((time) => {
-                const date = new Date(time);
-
-                return (
-                  date.getDate() === now.getDate() &&
-                  date.getHours() === currentHourNum
-                );
-              });
-
-            if (startIndex === -1) {
-              startIndex = 0;
+            if (data.hourly && data.hourly.time) {
+              const nextHours = [];
+              for (let i = 0; i < Math.min(12, data.hourly.time.length); i++) {
+                const d = new Date(data.hourly.time[i]);
+                const hMeta = getWeatherMeta(data.hourly.weather_code[i]);
+                nextHours.push({
+                  time: d.toLocaleTimeString([], { hour: 'numeric', hour12: true }),
+                  temp: `${Math.round(data.hourly.temperature_2m[i])}°C`,
+                  icon: hMeta.icon
+                });
+              }
+              setHourlyForecast(nextHours);
             }
-
-            const next24Hours = [];
-
-            for (
-              let i = startIndex;
-              i <
-              Math.min(
-                startIndex + 24,
-                weatherJson.hourly.time.length
-              );
-              i++
-            ) {
-              const hourDate = new Date(
-                weatherJson.hourly.time[i]
-              );
-
-              const timeLabel =
-                i === startIndex
-                  ? 'Now'
-                  : hourDate.toLocaleTimeString([], {
-                      hour: 'numeric',
-                      hour12: true
-                    });
-
-              const code =
-                weatherJson.hourly.weather_code[i];
-
-              const hourMeta = getWeatherMeta(code);
-
-              next24Hours.push({
-                time: timeLabel,
-                temp: `${Math.round(
-                  weatherJson.hourly.temperature_2m[i]
-                )}°C`,
-                rainProb:
-                  weatherJson.hourly
-                    .precipitation_probability
-                    ? weatherJson.hourly
-                        .precipitation_probability[i]
-                    : 0,
-                icon: hourMeta.icon,
-                label: hourMeta.label
-              });
-            }
-
-            setHourlyForecast(next24Hours);
+          } catch (e) {
+            console.error("Weather error:", e);
           }
-        } catch (err) {
-          console.error("Weather fetch failed", err);
-
-          setWeatherData({
-            temp: '--',
-            condition: 'Unable to load live weather.',
-            locationName: 'Weather Error',
-            icon: '🌤️'
-          });
-        }
-      },
-      (error) => {
-        console.warn(
-          "Geolocation permission denied",
-          error
-        );
-
-        setWeatherData({
-          temp: 'N/A',
-          condition:
-            'Location permission denied. Enable GPS for live weather.',
-          locationName: 'Location Disabled',
-          icon: '📍'
-        });
-      }
-    );
+        },
+        () => console.warn("GPS disabled")
+      );
+    }
   }, []);
 
+  // Fetch VAO Locations
   useEffect(() => {
     const fetchVAOs = async () => {
       try {
@@ -488,2398 +448,1153 @@ const Dashboard = () => {
           collection(db, 'users'),
           where('role', 'in', ['vao', 'officer'])
         );
-
-        const querySnapshot = await getDocs(q);
-
-        const usersList = querySnapshot.docs.map((item) => ({
-          id: item.id,
-          ...item.data()
-        }));
-
+        const snap = await getDocs(q);
+        const usersList = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
         setVaoUsers(usersList);
-
-        const zones = usersList
-          .map((v) => v.zone)
-          .filter(Boolean);
-
+        const zones = usersList.map((v) => v.zone).filter(Boolean);
         setAvailableZones([...new Set(zones)]);
-      } catch (error) {
-        console.error(
-          "Error fetching locations:",
-          error
-        );
+      } catch (err) {
+        console.error(err);
       }
     };
-
     fetchVAOs();
   }, []);
 
   const handleZoneChange = (zone) => {
-    setOrderDetails((prev) => ({
-      ...prev,
-      zone,
-      subPlace: ''
-    }));
-
-    const matchingUsers = vaoUsers.filter(
-      (v) => v.zone === zone
-    );
-
-    const subPlaces = matchingUsers
-      .map(
-        (v) =>
-          v.subPlace ||
-          v.sub_place ||
-          v.subZone ||
-          v.sub_zone ||
-          v.village ||
-          v.location
-      )
-      .filter(Boolean);
-
-    setAvailableSubPlaces([
-      ...new Set(subPlaces)
-    ]);
+    setOrderDetails((prev) => ({ ...prev, zone, subPlace: '' }));
+    const matching = vaoUsers.filter((v) => v.zone === zone);
+    const subPlaces = matching.map((v) => v.subPlace || v.sub_place || v.village).filter(Boolean);
+    setAvailableSubPlaces([...new Set(subPlaces)]);
   };
 
+  // Listen to Firestore Orders & Crops
   useEffect(() => {
     if (!userProfile.email) return;
-
-    const userEmailLower =
-      userProfile.email.toLowerCase();
+    const emailLower = userProfile.email.toLowerCase();
 
     const qOrders = query(
       collection(db, 'orders'),
-      where('userEmail', '==', userEmailLower)
+      where('userEmail', '==', emailLower)
     );
 
-    const unsubOrders = onSnapshot(
-      qOrders,
-      async (snapshot) => {
-        snapshot.docChanges().forEach((change) => {
-          if (change.type === 'modified') {
-            const updatedOrder = change.doc.data();
-
-            setLatestNotification(
-              `🔔 Update: Your ${updatedOrder.item} application status is now "${updatedOrder.status}"!`
-            );
-
-            setShowBanner(true);
-
-            setTimeout(
-              () => setShowBanner(false),
-              7000
-            );
-          }
-        });
-
-        const ordersData = snapshot.docs.map((item) => ({
-          id: item.id,
-          ...item.data()
-        }));
-
-        ordersData.sort(
-          (a, b) =>
-            new Date(b.createdAt) -
-            new Date(a.createdAt)
-        );
-
-        for (const order of ordersData) {
-          if (
-            order.status === 'Procured' &&
-            !order.inventoryDeducted
-          ) {
-            const matchingCrop = myCrops.find(
-              (c) => c.name === order.item
-            );
-
-            if (matchingCrop) {
-              const orderQty =
-                parseFloat(order.quantity) || 0;
-
-              const updatedWeight =
-                matchingCrop.weightKg - orderQty;
-
-              if (updatedWeight <= 0) {
-                await deleteDoc(
-                  doc(
-                    db,
-                    'crops',
-                    matchingCrop.id
-                  )
-                );
-              } else {
-                await updateDoc(
-                  doc(
-                    db,
-                    'crops',
-                    matchingCrop.id
-                  ),
-                  {
-                    weightKg: updatedWeight
-                  }
-                );
-              }
-            }
-
-            await updateDoc(
-              doc(db, 'orders', order.id),
-              {
-                inventoryDeducted: true
-              }
-            );
-          }
-        }
-
-        setActiveOrders(ordersData);
-      }
-    );
+    const unsubOrders = onSnapshot(qOrders, (snap) => {
+      const ordersData = snap.docs.map((d) => ({
+        id: d.id,
+        ...d.data(),
+        token: d.data().token || `PDC-${d.id.slice(-6).toUpperCase()}`
+      }));
+      ordersData.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+      setActiveOrders(ordersData);
+    });
 
     const qCrops = query(
       collection(db, 'crops'),
-      where(
-        'userEmail',
-        '==',
-        userEmailLower
-      )
+      where('userEmail', '==', emailLower)
     );
 
-    const unsubCrops = onSnapshot(
-      qCrops,
-      (snapshot) => {
-        const cropsData = snapshot.docs.map(
-          (item) => ({
-            id: item.id,
-            ...item.data()
-          })
-        );
-
-        setMyCrops(cropsData);
-      }
-    );
+    const unsubCrops = onSnapshot(qCrops, (snap) => {
+      const cropsData = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+      setMyCrops(cropsData);
+    });
 
     return () => {
       unsubOrders();
       unsubCrops();
     };
-  }, [userProfile.email, myCrops]);
+  }, [userProfile.email]);
 
+  // Live Market Fluctuation
   useEffect(() => {
     const interval = setInterval(() => {
-      setMarketRates((prevRates) => {
-        const newRates = {
-          ...prevRates
-        };
-
+      setMarketRates((prev) => {
+        const newRates = { ...prev };
         const crops = Object.keys(newRates);
+        const rand = crops[Math.floor(Math.random() * crops.length)];
+        newRates[rand] = Number((newRates[rand] * (1 + (Math.random() * 0.04 - 0.02))).toFixed(2));
 
-        const randomCrop =
-          crops[
-            Math.floor(
-              Math.random() * crops.length
-            )
-          ];
-
-        newRates[randomCrop] = Number(
-          (
-            newRates[randomCrop] *
-            (1 +
-              (Math.random() * 0.04 - 0.02))
-          ).toFixed(2)
-        );
-
-        setMarketHistory((prev) => {
-          const updated = {
-            ...prev
-          };
-
-          updated[randomCrop] = [
-            ...updated[randomCrop],
-            newRates[randomCrop]
-          ].slice(-15);
-
-          return updated;
+        setMarketHistory((hist) => {
+          const upd = { ...hist };
+          upd[rand] = [...(upd[rand] || []), newRates[rand]].slice(-15);
+          return upd;
         });
-
         return newRates;
       });
     }, 4000);
-
     return () => clearInterval(interval);
   }, []);
+
+  const changeTab = (tab) => {
+    window.location.hash = tab;
+    setActiveTab(tab);
+    if (tab !== 'procurement') setOrderingItem(null);
+    setIsSidebarOpen(false);
+  };
 
   const handleLogout = () => {
     localStorage.removeItem('farmflow_user');
     sessionStorage.removeItem('farmflow_user');
-
     navigate('/login');
   };
 
-  const changeTab = (tab) => {
-    window.location.hash = tab; // Set URL hash for browser history
-    if (tab !== 'procurement') {
-      setOrderingItem(null);
+  // Add Crop to Inventory
+  const handleAddCrop = async (e) => {
+    e.preventDefault();
+    if (!newCrop.name || !newCrop.weightKg || !userProfile.email) return;
+
+    try {
+      await addDoc(collection(db, 'crops'), {
+        userEmail: userProfile.email.toLowerCase(),
+        name: newCrop.name,
+        weightKg: parseFloat(newCrop.weightKg),
+        ratePerKg: marketRates[newCrop.name] || 25,
+        createdAt: new Date().toISOString()
+      });
+      setNewCrop({ name: '', weightKg: '' });
+      alert('Crop added to inventory successfully!');
+    } catch (err) {
+      console.error(err);
     }
-    setIsSidebarOpen(false);
   };
 
+  const handleDeleteCrop = async (id) => {
+    try {
+      await deleteDoc(doc(db, 'crops', id));
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  // Submit Procurement Application to VAO
   const submitOrder = async (e) => {
     e.preventDefault();
-
-    if (
-      pattaFile &&
-      pattaFile.size > 500 * 1024
-    ) {
-      alert(
-        "File is too large! Please upload an image under 500KB."
-      );
-      return;
-    }
-
     setIsSubmitting(true);
 
     try {
       let fileDataString = '';
-
       if (pattaFile) {
         const reader = new FileReader();
-
-        fileDataString =
-          await new Promise(
-            (resolve, reject) => {
-              reader.onload = () =>
-                resolve(reader.result);
-
-              reader.onerror = (error) =>
-                reject(error);
-
-              reader.readAsDataURL(
-                pattaFile
-              );
-            }
-          );
+        fileDataString = await new Promise((res, rej) => {
+          reader.onload = () => res(reader.result);
+          reader.onerror = rej;
+          reader.readAsDataURL(pattaFile);
+        });
       }
 
-      await addDoc(
-        collection(db, 'orders'),
-        {
-          userName:
-            userProfile.name || 'Unknown',
+      const generatedToken = 'PDC-' + Math.floor(100000 + Math.random() * 900000);
 
-          userPhone:
-            userProfile.phone || 'N/A',
-
-          userEmail: userProfile.email
-            ? userProfile.email.toLowerCase()
-            : '',
-
-          item: orderingItem,
-
-          quantity:
-            orderDetails.quantity,
-
-          zone:
-            orderDetails.zone,
-
-          subPlace:
-            orderDetails.subPlace,
-
-          address:
-            orderDetails.address,
-
-          pattaChitta:
-            orderDetails.pattaChitta,
-
-          documentUrl:
-            fileDataString,
-
-          datetime:
-            'TBD by Officer',
-
-          status:
-            'Pending VAO',
-
-          inventoryDeducted:
-            false,
-
-          createdAt:
-            new Date().toISOString()
-        }
-      );
-
-      alert(
-        `Success! Application sent to VAO in ${orderDetails.zone} (${orderDetails.subPlace}).`
-      );
-
-      setOrderingItem(null);
-
-      setOrderDetails({
-        zone: '',
-        subPlace: '',
-        address: '',
-        quantity: '',
-        pattaChitta: ''
+      await addDoc(collection(db, 'orders'), {
+        token: generatedToken,
+        userName: userProfile.name || 'Farmer',
+        userPhone: userProfile.phone || 'N/A',
+        userEmail: userProfile.email ? userProfile.email.toLowerCase() : '',
+        item: orderingItem,
+        quantity: orderDetails.quantity,
+        zone: orderDetails.zone,
+        subPlace: orderDetails.subPlace,
+        address: orderDetails.address,
+        pattaChitta: orderDetails.pattaChitta,
+        documentUrl: fileDataString,
+        datetime: 'TBD by Officer',
+        status: 'Pending VAO',
+        createdAt: new Date().toISOString()
       });
 
+      alert(`Application sent successfully to VAO in ${orderDetails.zone} (${orderDetails.subPlace})! Assigned Token: ${generatedToken}`);
+      setOrderingItem(null);
+      setOrderDetails({ zone: '', subPlace: '', address: '', quantity: '', pattaChitta: '' });
       setPattaFile(null);
-    } catch (error) {
-      console.error(error);
-      alert(
-        "Failed to submit order. Please try again."
-      );
+      changeTab('track');
+    } catch (err) {
+      console.error(err);
+      alert('Failed to submit application. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleAddCrop = async (e) => {
-    e.preventDefault();
+  // EXTRA FEATURE: Download Gate Pass PDF
+  const handleDownloadPass = (order) => {
+    try {
+      const pdf = new jsPDF();
+      pdf.setFillColor(21, 128, 61);
+      pdf.rect(0, 0, 210, 26, 'F');
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('FARMFLOW AI - OFFICIAL MANDI GATE PASS', 105, 12, { align: 'center' });
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Smart Agriculture Procurement & Verification System', 105, 20, { align: 'center' });
 
-    if (
-      !newCrop.name ||
-      !newCrop.weightKg ||
-      !userProfile.email
-    ) {
+      pdf.setTextColor(15, 23, 42);
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`TOKEN: ${order.token}`, 20, 42);
+      pdf.setFontSize(10);
+      pdf.setTextColor(22, 163, 74);
+      pdf.text(`STATUS: ${order.status}`, 155, 42);
+
+      pdf.setDrawColor(226, 232, 240);
+      pdf.line(20, 46, 190, 46);
+
+      pdf.setTextColor(100, 116, 139);
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Farmer Name:', 20, 58);
+      pdf.setTextColor(15, 23, 42);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`${order.userName} (+91 ${order.userPhone})`, 75, 58);
+
+      pdf.setTextColor(100, 116, 139);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Procurement Zone:', 20, 70);
+      pdf.setTextColor(15, 23, 42);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`${order.zone || 'General'} (${order.subPlace || 'Main Mandi'})`, 75, 70);
+
+      pdf.setTextColor(100, 116, 139);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Crop & Quantity:', 20, 82);
+      pdf.setTextColor(15, 23, 42);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`${order.item} (${order.quantity} KGs/Qtl)`, 75, 82);
+
+      pdf.setTextColor(100, 116, 139);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Allocated Slot:', 20, 94);
+      pdf.setTextColor(15, 23, 42);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`${order.datetime || 'TBD by Officer'}`, 75, 94);
+
+      pdf.setDrawColor(226, 232, 240);
+      pdf.line(20, 102, 190, 102);
+
+      pdf.setFontSize(9);
+      pdf.setTextColor(148, 163, 184);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Present this QR gate pass at the weighbridge counter for priority entry.', 105, 112, { align: 'center' });
+
+      pdf.save(`GatePass_${order.token}.pdf`);
+    } catch (e) {
+      console.error(e);
+      window.print();
+    }
+  };
+
+  // EXTRA FEATURE: Request Reschedule
+  const handleConfirmReschedule = async () => {
+    if (!selectedOrderForReschedule || !rescheduleDate) {
+      alert('Please select a preferred reschedule date.');
       return;
     }
 
     try {
-      await addDoc(
-        collection(db, 'crops'),
-        {
-          userEmail:
-            userProfile.email.toLowerCase(),
-
-          name:
-            newCrop.name,
-
-          weightKg:
-            parseFloat(
-              newCrop.weightKg
-            ),
-
-          ratePerKg:
-            marketRates[
-              newCrop.name
-            ],
-
-          createdAt:
-            new Date().toISOString()
-        }
-      );
-
-      setNewCrop({
-        name: '',
-        weightKg: ''
+      await updateDoc(doc(db, 'orders', selectedOrderForReschedule.id), {
+        rescheduleRequested: true,
+        preferredRescheduleDate: rescheduleDate,
+        preferredRescheduleTime: rescheduleTime
       });
-    } catch (err) {
-      console.error(err);
+      alert('Reschedule request submitted to the Procurement Officer!');
+      setShowRescheduleModal(false);
+    } catch (e) {
+      console.error(e);
+      alert('Failed to request reschedule.');
     }
   };
 
-  const handleDeleteCrop = async (
-    idToRemove
-  ) => {
-    try {
-      await deleteDoc(
-        doc(
-          db,
-          'crops',
-          idToRemove
-        )
-      );
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  // Calculate Total Inventory Value
+  const totalInventoryWeight = myCrops.reduce((acc, c) => acc + (c.weightKg || 0), 0);
+  const totalInventoryValue = myCrops.reduce((acc, c) => acc + ((c.weightKg || 0) * (marketRates[c.name] || c.ratePerKg || 25)), 0);
 
-  const handleRescheduleInputChange = (orderId, field, value) => {
-    setRescheduleInputs((prev) => ({
-      ...prev,
-      [orderId]: { ...prev[orderId], [field]: value }
-    }));
-  };
-
-  const handleRequestReschedule = async (orderId) => {
-    const input = rescheduleInputs[orderId];
-    if (!input || !input.date || !input.time) {
-      alert("Please select your preferred date and enter a time.");
-      return;
-    }
-
-    if (window.confirm(`Request a new slot for ${input.date} at ${input.time}?`)) {
-      try {
-        await updateDoc(doc(db, 'orders', orderId), { 
-          rescheduleRequested: true,
-          preferredRescheduleDate: input.date,
-          preferredRescheduleTime: input.time
-        });
-        alert("Reschedule request sent successfully!");
-      } catch (error) {
-        console.error(error);
-        alert("Failed to send reschedule request.");
-      }
-    }
-  };
-
-  const savedCropData =
-    myCrops.find(
-      (c) => c.name === orderingItem
-    );
-
-  const maxAvailableQuantity =
-    savedCropData
-      ? savedCropData.weightKg
-      : undefined;
-
-  const pageTitle = {
-    dashboard: "Dashboard",
-    profile: l.navProfile.substring(2),
-    crops: l.navCrops.substring(2),
-    procurement: l.navProcurement.substring(2),
-    track: l.navTrack.substring(2),
-    ai: l.navAi.substring(2),
-    help: l.navHelp.substring(2)
-  };
-
+  // Original Navigation Items
   const navItems = [
-    {
-      id: 'dashboard',
-      label: l.navDashboard,
-      icon: '📊'
-    },
-    {
-      id: 'profile',
-      label: l.navProfile,
-      icon: '👤'
-    },
-    {
-      id: 'crops',
-      label: l.navCrops,
-      icon: '🌾'
-    },
-    {
-      id: 'procurement',
-      label: l.navProcurement,
-      icon: '🛒'
-    },
-    {
-      id: 'track',
-      label: l.navTrack,
-      icon: '📦'
-    },
-    {
-      id: 'ai',
-      label: l.navAi,
-      icon: '🤖'
-    }
+    { id: 'dashboard', label: l.navDashboard, icon: '📊' },
+    { id: 'profile', label: l.navProfile, icon: '👤' },
+    { id: 'crops', label: l.navCrops, icon: '🌾' },
+    { id: 'procurement', label: l.navProcurement, icon: '🛒' },
+    { id: 'track', label: l.navTrack, icon: '📦' },
+    { id: 'ai', label: l.navAi, icon: '🤖' },
+    { id: 'help', label: l.navHelp, icon: '❓' }
   ];
 
   return (
-    <div className="dashboard-shell">
-
-      {/* Mobile overlay */}
+    <div className="v-dash-shell">
+      {/* Mobile Drawer Overlay */}
       {isSidebarOpen && (
         <div
-          className="sidebar-overlay"
-          onClick={() =>
-            setIsSidebarOpen(false)
-          }
+          className="v-sidebar-overlay"
+          onClick={() => setIsSidebarOpen(false)}
         />
       )}
 
-      {/* SIDEBAR */}
-      <aside
-        className={`dashboard-sidebar ${
-          isSidebarOpen
-            ? 'sidebar-open'
-            : ''
-        }`}
-      >
-        <div className="sidebar-brand">
-          <div className="brand-icon">
-            🌱
-          </div>
-
-          <div>
-            <div className="brand-name">
-              FarmFlow
-            </div>
-
-            <div className="brand-ai">
-              AI FARM MANAGEMENT
-            </div>
+      {/* SIDEBAR (Original FarmFlow AI Menu Restored) */}
+      <aside className={`v-sidebar ${isSidebarOpen ? 'open' : ''}`}>
+        <div className="v-sidebar-brand">
+          <div className="v-brand-leaf">🌱</div>
+          <div className="v-brand-text">
+            <strong>FarmFlow <span>AI</span></strong>
+            <small>SMART AGRICULTURE</small>
           </div>
         </div>
 
-        <div className="sidebar-user">
-          <div className="sidebar-avatar">
-            {(userProfile.name ||
-              'R')
-              .charAt(0)
-              .toUpperCase()}
-          </div>
-
-          <div className="sidebar-user-info">
-            <strong>
-              {userProfile.name ||
-                'Farmer'}
-            </strong>
-
-            <span>
-              {userProfile.email ||
-                'FarmFlow User'}
-            </span>
-          </div>
-        </div>
-
-        <div className="sidebar-section-title">
-          MAIN MENU
-        </div>
-
-        <nav className="sidebar-nav">
+        <nav className="v-sidebar-nav">
           {navItems.map((item) => (
             <button
               key={item.id}
               type="button"
-              className={`sidebar-nav-item ${
-                activeTab === item.id
-                  ? 'active'
-                  : ''
-              }`}
-              onClick={() =>
-                changeTab(item.id)
-              }
+              className={`v-nav-item ${activeTab === item.id ? 'active' : ''}`}
+              onClick={() => changeTab(item.id)}
             >
-              <span className="nav-icon">
-                {item.icon}
-              </span>
-
-              <span className="nav-label">
-                {item.label.substring(2)}
-              </span>
-
-              {activeTab === item.id && (
-                <span className="active-indicator" />
-              )}
+              <span className="v-nav-icon">{item.icon}</span>
+              <span>{item.label.substring(2)}</span>
             </button>
           ))}
         </nav>
 
-        <div className="sidebar-section-title sidebar-help-title">
-          SUPPORT
-        </div>
-
-        <button
-          type="button"
-          className={`sidebar-nav-item ${
-            activeTab === 'help'
-              ? 'active'
-              : ''
-          }`}
-          onClick={() =>
-            changeTab('help')
-          }
-        >
-          <span className="nav-icon">
-            ❓
-          </span>
-
-          <span className="nav-label">
-            {l.navHelp.substring(2)}
-          </span>
-
-          {activeTab === 'help' && (
-            <span className="active-indicator" />
-          )}
-        </button>
-
-        <div className="sidebar-spacer" />
-
-        <button
-          type="button"
-          className="logout-button"
-          onClick={handleLogout}
-        >
-          <span>↪</span>
-          {l.logout}
-        </button>
-
-        <div className="sidebar-footer">
-          <span className="footer-dot" />
-          FarmFlow AI v1.0
+        <div className="v-sidebar-bottom">
+          <button
+            type="button"
+            className="v-bottom-btn"
+            onClick={() => setShowWeatherModal(true)}
+          >
+            <span>🌤️</span> {l.weather}
+          </button>
+          <button
+            type="button"
+            className="v-bottom-btn v-logout-btn"
+            onClick={handleLogout}
+          >
+            <span>🚪</span> {l.logout}
+          </button>
         </div>
       </aside>
 
-      {/* MAIN AREA */}
-      <main className="dashboard-main">
-
-        {/* TOP HEADER */}
-        <header className="dashboard-header">
-
-          <div className="header-left">
-
+      {/* MAIN VIEW */}
+      <main className="v-main-content">
+        {/* TOP NAVBAR */}
+        <header className="v-top-header">
+          <div className="v-header-left">
             <button
-              className="mobile-menu-button"
-              onClick={() =>
-                setIsSidebarOpen(
-                  !isSidebarOpen
-                )
-              }
               type="button"
-              aria-label="Open menu"
+              className="v-mobile-toggle"
+              onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             >
               ☰
             </button>
-
-            <div>
-              <div className="breadcrumb">
-                FarmFlow AI
-                <span>/</span>
-                Dashboard
-              </div>
-
-              <h1>
-                {pageTitle[activeTab]}
-              </h1>
-
-              <p>
-                {l.subtitle}
-              </p>
+            <div className="v-header-title">
+              <h2>
+                {activeTab === 'dashboard' && 'Dashboard'}
+                {activeTab === 'profile' && l.navProfile.substring(2)}
+                {activeTab === 'crops' && l.navCrops.substring(2)}
+                {activeTab === 'procurement' && l.navProcurement.substring(2)}
+                {activeTab === 'track' && l.navTrack.substring(2)}
+                {activeTab === 'ai' && l.navAi.substring(2)}
+                {activeTab === 'help' && l.navHelp.substring(2)}
+              </h2>
             </div>
           </div>
 
-          <div className="header-right">
-
-            <div className="language-switcher">
-              {['en', 'hi', 'ta'].map(
-                (language) => (
-                  <button
-                    key={language}
-                    type="button"
-                    className={
-                      lang === language
-                        ? 'language-active'
-                        : ''
-                    }
-                    onClick={() =>
-                      setLang(language)
-                    }
-                  >
-                    {language.toUpperCase()}
-                  </button>
-                )
-              )}
-            </div>
-
-            <div className="market-status">
+          <div className="v-header-right">
+            <div className="v-live-badge">
               <span className="pulse-dot" />
-              <span>
-                {l.liveMarket}
-              </span>
+              <span>{l.liveMarket}</span>
             </div>
 
-            <div className="header-avatar">
-              {(userProfile.name ||
-                'R')
-                .charAt(0)
-                .toUpperCase()}
+            <div className="v-dash-lang">
+              {['en', 'hi', 'ta'].map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  className={lang === item ? 'active' : ''}
+                  onClick={() => setLang(item)}
+                >
+                  {item.toUpperCase()}
+                </button>
+              ))}
+            </div>
+
+            <div
+              className="v-user-avatar-badge"
+              onClick={() => changeTab('profile')}
+            >
+              <div className="v-avatar-circle">
+                {userProfile.name.charAt(0).toUpperCase()}
+              </div>
+              <div className="v-avatar-info">
+                <span className="v-user-name">{userProfile.name}</span>
+                <small className="v-user-id">{l.farmManager}</small>
+              </div>
             </div>
           </div>
         </header>
 
-        {/* NOTIFICATION */}
-        {showBanner &&
-          latestNotification && (
-            <div className="notification-banner">
-              <div className="notification-icon">
-                🔔
+        {/* TAB 1: DASHBOARD (Original Overview with Sleek Video Aesthetics) */}
+        {activeTab === 'dashboard' && (
+          <div className="v-tab-dashboard">
+            <div className="v-hero-greeting-card">
+              <div>
+                <h1>Good Morning, {userProfile.name} 🌾</h1>
+                <p>{l.subtitle}</p>
               </div>
-
-              <div className="notification-text">
-                {latestNotification}
+              <div className="v-hero-actions">
+                <button
+                  type="button"
+                  className="v-primary-action-btn"
+                  onClick={() => changeTab('procurement')}
+                >
+                  + Sell to Market
+                </button>
+                <button
+                  type="button"
+                  className="v-secondary-action-btn"
+                  onClick={() => changeTab('track')}
+                >
+                  🎟️ Gate Passes
+                </button>
               </div>
-
-              <button
-                type="button"
-                onClick={() =>
-                  setShowBanner(false)
-                }
-              >
-                ×
-              </button>
             </div>
-          )}
 
-        <div className="dashboard-content">
-
-          {/* ================= HELP ================= */}
-          {activeTab === 'help' && (
-            <section className="content-section">
-
-              <div className="page-intro-card">
-                <div className="intro-icon">
-                  ❓
-                </div>
-
-                <div>
-                  <span className="eyebrow">
-                    SUPPORT CENTER
-                  </span>
-
-                  <h2>
-                    {l.helpTitle}
-                  </h2>
-
-                  <p>
-                    {l.helpIntro}
-                  </p>
-                </div>
+            {/* 4 Modern Metric Cards */}
+            <div className="v-kpi-grid">
+              <div className="v-kpi-card">
+                <div className="v-kpi-label">TOTAL CROPS INVENTORY</div>
+                <div className="v-kpi-value text-green">{totalInventoryWeight} KGs</div>
               </div>
-
-              <div className="help-grid">
-
-                {[
-                  {
-                    icon: '👤',
-                    text: l.helpProfile
-                  },
-                  {
-                    icon: '🌾',
-                    text: l.helpCrops
-                  },
-                  {
-                    icon: '🛒',
-                    text: l.helpProcurement
-                  },
-                  {
-                    icon: '📦',
-                    text: l.helpTrack
-                  },
-                  {
-                    icon: '🤖',
-                    text: l.helpAi
-                  }
-                ].map(
-                  (item, index) => (
-                    <div
-                      className="help-card"
-                      key={index}
-                    >
-                      <div className="help-card-icon">
-                        {item.icon}
-                      </div>
-
-                      <p>
-                        {item.text}
-                      </p>
-                    </div>
-                  )
-                )}
+              <div className="v-kpi-card">
+                <div className="v-kpi-label">ESTIMATED ASSET VALUE</div>
+                <div className="v-kpi-value">₹{Math.round(totalInventoryValue).toLocaleString('en-IN')}</div>
               </div>
-            </section>
-          )}
-
-          {/* ================= PROFILE ================= */}
-          {activeTab === 'profile' && (
-            <section className="content-section">
-
-              <div className="profile-hero">
-                <div className="large-avatar">
-                  {(userProfile.name ||
-                    'R')
-                    .charAt(0)
-                    .toUpperCase()}
-                </div>
-
-                <div>
-                  <span className="eyebrow">
-                    FARMER ACCOUNT
-                  </span>
-
-                  <h2>
-                    {userProfile.name ||
-                      'Rajesh Farmer'}
-                  </h2>
-
-                  <p>
-                    {userProfile.email ||
-                      'rajesh@farmflow.com'}
-                  </p>
-                </div>
-
-                <div className="verified-badge">
-                  ✓ Verified
-                </div>
+              <div className="v-kpi-card">
+                <div className="v-kpi-label">ACTIVE APPLICATIONS</div>
+                <div className="v-kpi-value">{activeOrders.length} Applications</div>
               </div>
+              <div className="v-kpi-card">
+                <div className="v-kpi-label">LOCAL WEATHER</div>
+                <div className="v-kpi-value" style={{ fontSize: '1.25rem' }}>{weatherData.icon} {weatherData.temp}</div>
+              </div>
+            </div>
 
-              <div className="section-card">
-
-                <div className="card-heading">
+            {/* Active Order & Live Queue Banner */}
+            <div className="v-dashboard-dual-grid">
+              <div className="v-active-booking-card">
+                <div className="v-card-top-row">
                   <div>
-                    <span className="eyebrow">
-                      ACCOUNT
-                    </span>
-
-                    <h3>
-                      {l.userDetails}
+                    <span className="v-card-subtitle">LATEST APPLICATION</span>
+                    <h3 className="v-card-token">
+                      {activeOrders[0] ? activeOrders[0].token : 'No Active Order'}
                     </h3>
                   </div>
-
-                  <span className="heading-icon">
-                    👤
-                  </span>
+                  {activeOrders[0] && (
+                    <span className="pill-badge pill-badge-green">
+                      {activeOrders[0].status}
+                    </span>
+                  )}
                 </div>
 
-                <div className="profile-details">
-
-                  <div className="profile-detail">
-                    <span>
-                      {l.fullName}
-                    </span>
-
-                    <strong>
-                      {userProfile.name ||
-                        'Rajesh Farmer'}
-                    </strong>
-                  </div>
-
-                  <div className="profile-detail">
-                    <span>
-                      {l.emailAddr}
-                    </span>
-
-                    <strong>
-                      {userProfile.email ||
-                        'rajesh@farmflow.com'}
-                    </strong>
-                  </div>
-
-                  <div className="profile-detail">
-                    <span>
-                      {l.phoneNumber}
-                    </span>
-
-                    <strong>
-                      {userProfile.phone ||
-                        '9876543210'}
-                    </strong>
-                  </div>
-
-                  <div className="profile-detail">
-                    <span>
-                      {l.role}
-                    </span>
-
-                    <strong>
-                      {l.farmManager}
-                    </strong>
-                  </div>
-
-                  <div className="profile-detail">
-                    <span>
-                      {l.accountStatus}
-                    </span>
-
-                    <strong className="status-success">
-                      {l.verified}
-                    </strong>
-                  </div>
-
-                </div>
-              </div>
-            </section>
-          )}
-
-          {/* ================= DASHBOARD ================= */}
-          {activeTab === 'dashboard' && (
-            <section className="content-section">
-
-              {/* Welcome card */}
-              <div className="welcome-banner">
-
-                <div>
-                  <span className="eyebrow">
-                    FARM OVERVIEW
-                  </span>
-
-                  <h2>
-                    Good day,{' '}
-                    {(
-                      userProfile.name ||
-                      'Farmer'
-                    ).split(' ')[0]}
-                    ! 👋
-                  </h2>
-
-                  <p>
-                    Here's your farm
-                    activity at a glance.
-                  </p>
-                </div>
-
-                <div className="welcome-illustration">
-                  🌾
-                </div>
-              </div>
-
-              {/* Stats */}
-              <div className="stats-grid">
-
-                <div className="stat-card">
-                  <div className="stat-icon green">
-                    🌾
-                  </div>
-
-                  <div>
-                    <span>
-                      Total Crops
-                    </span>
-
-                    <strong>
-                      {myCrops.length}
-                    </strong>
-                  </div>
-                </div>
-
-                <div className="stat-card">
-                  <div className="stat-icon blue">
-                    📦
-                  </div>
-
-                  <div>
-                    <span>
-                      Active Orders
-                    </span>
-
-                    <strong>
-                      {activeOrders.length}
-                    </strong>
-                  </div>
-                </div>
-
-                <div className="stat-card">
-                  <div className="stat-icon orange">
-                    💰
-                  </div>
-
-                  <div>
-                    <span>
-                      Market Crops
-                    </span>
-
-                    <strong>
-                      {Object.keys(
-                        marketRates
-                      ).length}
-                    </strong>
-                  </div>
-                </div>
-
-                <div className="stat-card">
-                  <div className="stat-icon purple">
-                    🤖
-                  </div>
-
-                  <div>
-                    <span>
-                      AI Insights
-                    </span>
-
-                    <strong>
-                      3
-                    </strong>
-                  </div>
-                </div>
-
-              </div>
-
-              {/* Quick Navigation Cards */}
-              <div className="section-card" style={{ paddingBottom: '30px' }}>
-                <div className="card-heading" style={{ marginBottom: '15px' }}>
-                  <div>
-                    <span className="eyebrow">QUICK ACCESS</span>
-                    <h3>Dashboard Modules</h3>
-                  </div>
-                  <div className="heading-icon">🧭</div>
-                </div>
-                
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '15px' }}>
-                  {navItems.filter(item => item.id !== 'dashboard').map(item => (
-                    <div
-                      key={item.id}
-                      onClick={() => changeTab(item.id)}
-                      style={{ 
-                        padding: '20px 15px', 
-                        borderRadius: '16px', 
-                        border: '1px solid #e1e9e4', 
-                        backgroundColor: '#f9fcf9', 
-                        cursor: 'pointer', 
-                        transition: 'all 0.2s ease', 
-                        textAlign: 'center', 
-                        boxShadow: '0 3px 12px rgba(24,58,40,0.03)' 
-                      }}
-                      onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(24,58,40,0.08)'; e.currentTarget.style.borderColor = '#d4e4da'; }}
-                      onMouseOut={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 3px 12px rgba(24,58,40,0.03)'; e.currentTarget.style.borderColor = '#e1e9e4'; }}
-                    >
-                      <div style={{ width: '42px', height: '42px', margin: '0 auto 12px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#fff', borderRadius: '12px', fontSize: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-                        {item.icon}
-                      </div>
-                      <strong style={{ fontSize: '13px', color: '#1a2b21', display: 'block' }}>{item.label.substring(2)}</strong>
+                {activeOrders[0] ? (
+                  <div className="v-booking-specs-grid">
+                    <div className="v-spec-item">
+                      <small>CROP</small>
+                      <strong>{activeOrders[0].item} ({activeOrders[0].quantity} KGs)</strong>
                     </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Weather + Pest */}
-              <div className="dashboard-two-column">
+                    <div className="v-spec-item">
+                      <small>ZONE</small>
+                      <strong>{activeOrders[0].zone} ({activeOrders[0].subPlace})</strong>
+                    </div>
+                    <div className="v-spec-item">
+                      <small>SLOT SCHEDULE</small>
+                      <strong>{activeOrders[0].datetime || 'Awaiting Officer'}</strong>
+                    </div>
+                    <div className="v-spec-item">
+                      <small>VAO STATUS</small>
+                      <strong>{activeOrders[0].status}</strong>
+                    </div>
+                  </div>
+                ) : (
+                  <p style={{ color: '#64748b', fontSize: '0.88rem' }}>
+                    You haven't submitted any crop procurement applications yet. Click "Sell to Market" to get started.
+                  </p>
+                )}
 
                 <button
                   type="button"
-                  className="weather-card"
-                  onClick={() =>
-                    setShowWeatherModal(true)
-                  }
+                  className="v-link-btn"
+                  onClick={() => changeTab('track')}
                 >
-                  <div className="card-top-line">
-
-                    <div className="card-icon-large weather">
-                      {weatherData.icon}
-                    </div>
-
-                    <span className="card-arrow">
-                      →
-                    </span>
-                  </div>
-
-                  <div className="weather-main">
-                    <div>
-                      <span className="eyebrow">
-                        WEATHER
-                      </span>
-
-                      <h3>
-                        {weatherData.temp}
-                      </h3>
-                    </div>
-                  </div>
-
-                  <p className="weather-location">
-                    📍{' '}
-                    {weatherData.locationName}
-                  </p>
-
-                  <p className="weather-description">
-                    {weatherData.condition}
-                  </p>
-
-                  <div className="card-link">
-                    View 24-hour forecast
-                    <span>→</span>
-                  </div>
+                  View full application timeline →
                 </button>
+              </div>
 
-                <div className="pest-card">
-
-                  <div className="card-top-line">
-
-                    <div className="card-icon-large pest">
-                      🐛
-                    </div>
-
-                    <span className="safe-badge">
-                      SAFE
-                    </span>
+              {/* Live Queue Banner */}
+              <div className="v-live-queue-banner">
+                <div className="v-lq-head">
+                  <span className="v-lq-pulse" />
+                  <span>MANDI LIVE QUEUE STATUS</span>
+                </div>
+                <div className="v-lq-body">
+                  <div className="v-lq-stat">
+                    <small>NOW WEIGHING</small>
+                    <h3>{activeOrders[0]?.status === 'Processing' ? activeOrders[0].token : 'PDC-A004'}</h3>
                   </div>
-
-                  <span className="eyebrow">
-                    FARM HEALTH
-                  </span>
-
-                  <h3>
-                    {l.pestAlert}
-                  </h3>
-
-                  <p>
-                    {l.pestDesc}
-                  </p>
-
-                  <div className="pest-status">
-                    <span className="status-dot" />
-                    No active threats
+                  <div className="v-lq-divider" />
+                  <div className="v-lq-stat">
+                    <small>PEOPLE AHEAD</small>
+                    <h3>0 Ahead</h3>
                   </div>
+                </div>
+                <div className="v-lq-wait">
+                  <span>⏱️ Average Waiting: ~0 mins</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Quick Live Market Rates Preview */}
+            <div className="v-table-card">
+              <div className="v-table-card-header">
+                <h4>{l.liveCropMarket}</h4>
+                <button
+                  type="button"
+                  className="v-view-all-link"
+                  onClick={() => changeTab('procurement')}
+                >
+                  View All Rates →
+                </button>
+              </div>
+              <div className="v-table-responsive">
+                <table className="v-clean-table">
+                  <thead>
+                    <tr>
+                      <th>{l.cropName}</th>
+                      <th>{l.pastRates}</th>
+                      <th>{l.liveRate}</th>
+                      <th>{l.action}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.keys(initialRates).slice(0, 4).map((crop) => (
+                      <tr key={crop}>
+                        <td><b>{getCropName(crop)}</b></td>
+                        <td style={{ width: '120px' }}>
+                          <Sparkline data={marketHistory[crop]} />
+                        </td>
+                        <td>
+                          <b>₹{marketRates[crop]?.toFixed(2)}</b> / Kg
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            className="v-btn-procure-action"
+                            onClick={() => {
+                              setOrderingItem(crop);
+                              changeTab('procurement');
+                            }}
+                          >
+                            {l.sellMarket}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 2: MY PROFILE */}
+        {activeTab === 'profile' && (
+          <div className="v-tab-profile">
+            <div className="v-profile-card">
+              <div className="v-profile-top">
+                <div className="v-p-avatar">
+                  {userProfile.name.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <h2>{userProfile.name}</h2>
+                  <span className="pill-badge pill-badge-green">{l.verified}</span>
                 </div>
               </div>
 
-              {/* Orders */}
-              <div className="section-card">
-
-                <div className="card-heading">
-
-                  <div>
-                    <span className="eyebrow">
-                      RECENT ACTIVITY
-                    </span>
-
-                    <h3>
-                      {l.upcomingProcurements}
-                    </h3>
-                  </div>
-
-                  <div className="heading-icon">
-                    📦
-                  </div>
+              <div className="v-profile-section-title">{l.userDetails}</div>
+              <div className="v-profile-grid">
+                <div className="v-pg-item">
+                  <small>{l.fullName}</small>
+                  <strong>{userProfile.name}</strong>
                 </div>
+                <div className="v-pg-item">
+                  <small>{l.emailAddr}</small>
+                  <strong>{userProfile.email}</strong>
+                </div>
+                <div className="v-pg-item">
+                  <small>{l.phoneNumber}</small>
+                  <strong>+91 {userProfile.phone}</strong>
+                </div>
+                <div className="v-pg-item">
+                  <small>{l.role}</small>
+                  <strong>{l.farmManager}</strong>
+                </div>
+                <div className="v-pg-item">
+                  <small>{l.accountStatus}</small>
+                  <strong>{l.verified}</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
-                {activeOrders.length === 0 ? (
-                  <div className="empty-state">
-                    <div>
-                      📭
-                    </div>
+        {/* TAB 3: MY CROPS (Inventory) */}
+        {activeTab === 'crops' && (
+          <div className="v-tab-booking">
+            {/* Add Crop Card */}
+            <div className="v-booking-card" style={{ maxWidth: '800px' }}>
+              <div className="v-booking-card-head">
+                <div className="head-icon">🌾</div>
+                <div>
+                  <h3>{l.addCropTitle}</h3>
+                  <p>Record your harvest and lock in live market rates</p>
+                </div>
+              </div>
 
-                    <h4>
-                      No active orders
-                    </h4>
-
-                    <p>
-                      {l.noActiveOrders}
-                    </p>
+              <form onSubmit={handleAddCrop}>
+                <div className="v-form-row">
+                  <div className="v-form-field">
+                    <label>{l.cropName}</label>
+                    <select
+                      required
+                      value={newCrop.name}
+                      onChange={(e) => setNewCrop({ ...newCrop, name: e.target.value })}
+                    >
+                      <option value="">{l.selectCrop}</option>
+                      {Object.keys(initialRates).map((crop) => (
+                        <option key={crop} value={crop}>
+                          {getCropName(crop)} (₹{marketRates[crop]?.toFixed(2)}/Kg)
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                ) : (
-                  <div className="orders-list">
-                    {activeOrders.map(
-                      (order) => (
-                        <div
-                          key={order.id}
-                          className="order-row"
-                        >
 
-                          <div className="order-main">
-
-                            <div className="order-icon">
-                              📦
-                            </div>
-
-                            <div>
-                              <strong>
-                                {getCropName(order.item)}
-                              </strong>
-
-                              <span>
-                                {order.quantity}{' '}
-                                Units •{' '}
-                                {order.datetime}
-                              </span>
-
-                              <small>
-                                📍{' '}
-                                {order.zone ||
-                                  'Zone'}{' '}
-                                /{' '}
-                                {order.subPlace ||
-                                  'General'}
-                              </small>
-                            </div>
-                          </div>
-
-                          <span
-                            className={`status-badge ${
-                              order.status
-                                ?.toLowerCase()
-                                .includes(
-                                  'vao'
-                                )
-                                ? 'status-purple'
-                                : order.status ===
-                                  'Approved'
-                                ? 'status-green'
-                                : order.status ===
-                                  'Procured'
-                                ? 'status-blue'
-                                : order.status ===
-                                  'Rejected'
-                                ? 'status-red'
-                                : 'status-orange'
-                            }`}
-                          >
-                            {order.status}
-                          </span>
-
-                        </div>
-                      )
+                  <div className="v-form-field">
+                    <label>{l.weightKg}</label>
+                    <input
+                      type="number"
+                      required
+                      placeholder="e.g. 500"
+                      value={newCrop.weightKg}
+                      onChange={(e) => setNewCrop({ ...newCrop, weightKg: e.target.value })}
+                    />
+                    {newCrop.name && newCrop.weightKg && (
+                      <small style={{ marginTop: '5px', color: '#15803d', fontWeight: 700 }}>
+                        Estimated Value: ₹{(parseFloat(newCrop.weightKg) * (marketRates[newCrop.name] || 0)).toLocaleString('en-IN')}
+                      </small>
                     )}
                   </div>
-                )}
+                </div>
+
+                <button type="submit" className="v-btn-green-step" style={{ maxWidth: '200px' }}>
+                  + {l.addCropBtn}
+                </button>
+              </form>
+            </div>
+
+            {/* Inventory List */}
+            <div className="v-table-card" style={{ maxWidth: '800px', margin: '0 auto', width: '100%' }}>
+              <div className="v-table-card-header">
+                <h4>{l.myCropInventory}</h4>
               </div>
 
-            </section>
-          )}
-
-          {/* ================= TRACK ================= */}
-          {activeTab === 'track' && (
-            <section className="content-section">
-
-              <div className="page-intro-card track-intro">
-                <div className="intro-icon">
-                  📦
-                </div>
-
-                <div>
-                  <span className="eyebrow">
-                    PROCUREMENT TRACKER
-                  </span>
-
-                  <h2>
-                    Real-Time Procurement
-                  </h2>
-
-                  <p>
-                    Monitor applications,
-                    verification, schedules
-                    and DBT payment status.
-                  </p>
-                </div>
-              </div>
-
-              {activeOrders.length === 0 ? (
-                <div className="section-card">
-                  <div className="empty-state large">
-                    <div>
-                      📭
-                    </div>
-
-                    <h4>
-                      No procurement
-                      applications
-                    </h4>
-
-                    <p>
-                      No active procurement
-                      applications found
-                      under your account.
-                    </p>
-                  </div>
-                </div>
+              {myCrops.length === 0 ? (
+                <p style={{ color: '#64748b', textAlign: 'center', padding: '24px' }}>
+                  {l.emptyInventory}
+                </p>
               ) : (
-                <div className="tracking-list">
-
-                  {activeOrders.map(
-                    (order) => (
-                      <div
-                        key={order.id}
-                        className="tracking-card"
-                      >
-
-                        <div className="tracking-header">
-
-                          <div>
-                            <span className="eyebrow">
-                              APPLICATION
-                            </span>
-
-                            <h3>
-                              {getCropName(order.item)}
-                            </h3>
-
-                            <small>
-                              ID: {order.id}
-                            </small>
-                          </div>
-
-                          <span
-                            className={`status-badge ${
-                              order.status ===
-                              'Procured'
-                                ? 'status-green'
-                                : order.status ===
-                                  'Rejected'
-                                ? 'status-red'
-                                : 'status-orange'
-                            }`}
-                          >
-                            {order.status ||
-                              'Pending Verification'}
-                          </span>
-                        </div>
-
-                        <div className="tracking-details">
-
-                          <div className="tracking-info">
-
-                            <div>
-                              <span>
-                                📍 Location
-                              </span>
-
-                              <strong>
-                                {order.zone ||
-                                  'N/A'}{' '}
-                                /{' '}
-                                {order.subPlace ||
-                                  'General'}
-                              </strong>
-                            </div>
-
-                            <div>
-                              <span>
-                                🏠 Address
-                              </span>
-
-                              <strong>
-                                {order.address ||
-                                  'N/A'}
-                              </strong>
-                            </div>
-
-                            <div>
-                              <span>
-                                📅 Assigned Slot
-                              </span>
-
-                              <strong>
-                                {order.datetime ||
-                                  'TBD by Officer'}
-                              </strong>
-
-                              {order.datetime &&
-                                order.datetime !==
-                                  'TBD by Officer' &&
-                                order.status !== 'Procured' &&
-                                order.status !== 'Rejected' && (
-                                <div style={{ marginTop: '12px', padding: '10px', background: '#f8fcf9', borderRadius: '8px', border: '1px solid #e2ece5' }}>
-                                  {order.rescheduleRequested ? (
-                                    <span style={{ display: 'inline-block', padding: '6px 10px', background: '#ffefee', color: '#c44945', borderRadius: '6px', fontSize: '10px', fontWeight: 'bold' }}>
-                                      ⏳ Requested: {order.preferredRescheduleDate} at {order.preferredRescheduleTime}
-                                    </span>
-                                  ) : (
-                                    <div>
-                                      <span style={{ display: 'block', fontSize: '9px', fontWeight: 'bold', color: '#5b7062', marginBottom: '6px' }}>REQUEST NEW SLOT</span>
-                                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
-                                        <input
-                                          type="date"
-                                          value={rescheduleInputs[order.id]?.date || ''}
-                                          onChange={(e) => handleRescheduleInputChange(order.id, 'date', e.target.value)}
-                                          style={{ padding: '6px', border: '1px solid #dce4df', borderRadius: '6px', fontSize: '10px' }}
-                                        />
-                                        <input
-                                          type="text"
-                                          placeholder="e.g. 10:30 AM"
-                                          value={rescheduleInputs[order.id]?.time || ''}
-                                          onChange={(e) => handleRescheduleInputChange(order.id, 'time', e.target.value)}
-                                          style={{ padding: '6px', border: '1px solid #dce4df', borderRadius: '6px', fontSize: '10px', width: '90px' }}
-                                        />
-                                        <button
-                                          type="button"
-                                          onClick={() => handleRequestReschedule(order.id)}
-                                          style={{ padding: '6px 12px', background: '#2e7d32', border: 'none', borderRadius: '6px', fontSize: '10px', fontWeight: 'bold', color: '#fff', cursor: 'pointer' }}
-                                        >
-                                          Send
-                                        </button>
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="dbt-card">
-
-                            <span>
-                              💳 DBT PAYMENT
-                            </span>
-
-                            <strong>
-                              {order.paymentStatus ||
-                                'Awaiting Procurement Completion'}
-                            </strong>
-
-                            {order.payoutAmount && (
-                              <b>
-                                ₹
-                                {
-                                  order.payoutAmount
-                                }{' '}
-                                Credited
-                              </b>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="timeline">
-
-                          <div className="timeline-line" />
-
-                          {[
-                            {
-                              label:
-                                'Submitted',
-                              active:
-                                true
-                            },
-                            {
-                              label:
-                                'VAO Verified',
-                              active:
-                                order.status !==
-                                'Pending VAO'
-                            },
-                            {
-                              label:
-                                'Slot Scheduled',
-                              active:
-                                order.datetime &&
-                                order.datetime !==
-                                  'TBD by Officer'
-                            },
-                            {
-                              label:
-                                'DBT Paid',
-                              active:
-                                order.status ===
-                                'Procured'
-                            }
-                          ].map(
-                            (
-                              step,
-                              index
-                            ) => (
-                              <div
-                                key={index}
-                                className={`timeline-step ${
-                                  step.active
-                                    ? 'active'
-                                    : ''
-                                }`}
-                              >
-                                <div className="timeline-dot">
-                                  {step.active
-                                    ? '✓'
-                                    : index +
-                                      1}
-                                </div>
-
-                                <span>
-                                  {step.label}
-                                </span>
-                              </div>
-                            )
-                          )}
-
-                        </div>
-                      </div>
-                    )
-                  )}
-
-                </div>
-              )}
-            </section>
-          )}
-
-          {/* ================= CROPS ================= */}
-          {activeTab === 'crops' && (
-            <section className="content-section">
-
-              <div className="section-card">
-
-                <div className="card-heading">
-                  <div>
-                    <span className="eyebrow">
-                      INVENTORY
-                    </span>
-
-                    <h3>
-                      {l.addCropTitle}
-                    </h3>
-                  </div>
-
-                  <div className="heading-icon">
-                    🌾
-                  </div>
-                </div>
-
-                <form
-                  onSubmit={handleAddCrop}
-                  className="crop-form"
-                >
-                  <select
-                    required
-                    value={newCrop.name}
-                    onChange={(e) =>
-                      setNewCrop({
-                        ...newCrop,
-                        name: e.target.value
-                      })
-                    }
-                  >
-                    <option value="">
-                      {l.selectCrop}
-                    </option>
-
-                    {Object.keys(
-                      marketRates
-                    ).map((crop) => (
-                      <option
-                        key={crop}
-                        value={crop}
-                      >
-                        {getCropName(crop)} (₹
-                        {marketRates[
-                          crop
-                        ].toFixed(2)}
-                        /kg)
-                      </option>
-                    ))}
-                  </select>
-
-                  <input
-                    type="number"
-                    min="1"
-                    required
-                    placeholder={
-                      l.weightKg
-                    }
-                    value={
-                      newCrop.weightKg
-                    }
-                    onChange={(e) =>
-                      setNewCrop({
-                        ...newCrop,
-                        weightKg:
-                          e.target.value
-                      })
-                    }
-                  />
-
-                  <button
-                    type="submit"
-                    className="primary-button"
-                  >
-                    <span>+</span>
-                    {l.addCropBtn}
-                  </button>
-                </form>
-              </div>
-
-              <div className="section-card">
-
-                <div className="card-heading">
-
-                  <div>
-                    <span className="eyebrow">
-                      YOUR FARM
-                    </span>
-
-                    <h3>
-                      {l.myCropInventory}
-                    </h3>
-                  </div>
-
-                  <div className="inventory-count">
-                    {myCrops.length}
-                  </div>
-                </div>
-
-                {myCrops.length === 0 ? (
-                  <div className="empty-state">
-                    <div>
-                      🌱
-                    </div>
-
-                    <h4>
-                      Empty inventory
-                    </h4>
-
-                    <p>
-                      {l.emptyInventory}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="crop-grid">
-
-                    {myCrops.map(
-                      (crop) => (
-                        <div
-                          key={crop.id}
-                          className="crop-card"
-                        >
-
-                          <div className="crop-card-top">
-
-                            <div className="crop-symbol">
-                              🌾
-                            </div>
-
+                <div className="v-table-responsive">
+                  <table className="v-clean-table">
+                    <thead>
+                      <tr>
+                        <th>{l.cropName}</th>
+                        <th>{l.weightKg}</th>
+                        <th>{l.lockedRate}</th>
+                        <th>TOTAL VALUE</th>
+                        <th>{l.action}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {myCrops.map((c) => (
+                        <tr key={c.id}>
+                          <td><b>{getCropName(c.name)}</b></td>
+                          <td>{c.weightKg} Kg</td>
+                          <td>₹{c.ratePerKg?.toFixed(2)}/Kg</td>
+                          <td><b>₹{(c.weightKg * (c.ratePerKg || 25)).toLocaleString('en-IN')}</b></td>
+                          <td>
                             <button
                               type="button"
-                              onClick={() =>
-                                handleDeleteCrop(
-                                  crop.id
-                                )
-                              }
-                              className="delete-button"
+                              className="v-btn-cancel-booking"
+                              style={{ padding: '4px 10px', fontSize: '0.75rem' }}
+                              onClick={() => handleDeleteCrop(c.id)}
                             >
-                              ×
+                              {l.remove}
                             </button>
-                          </div>
-
-                          <h4>
-                            {getCropName(crop.name)}
-                          </h4>
-
-                          <div className="crop-stat">
-                            <span>
-                              Weight
-                            </span>
-
-                            <strong>
-                              {crop.weightKg}{' '}
-                              kg
-                            </strong>
-                          </div>
-
-                          <div className="crop-stat">
-                            <span>
-                              {l.lockedRate}
-                            </span>
-
-                            <strong>
-                              ₹
-                              {Number(
-                                crop.ratePerKg
-                              ).toFixed(2)}
-                              /kg
-                            </strong>
-                          </div>
-
-                          <div className="crop-value">
-                            <span>
-                              Estimated Value
-                            </span>
-
-                            <strong>
-                              ₹
-                              {(
-                                crop.weightKg *
-                                crop.ratePerKg
-                              ).toLocaleString(
-                                'en-IN'
-                              )}
-                            </strong>
-                          </div>
-
-                        </div>
-                      )
-                    )}
-
-                  </div>
-                )}
-              </div>
-            </section>
-          )}
-
-          {/* ================= PROCUREMENT ================= */}
-          {activeTab === 'procurement' &&
-            !orderingItem && (
-              <section className="content-section">
-
-                <div className="page-intro-card market-intro">
-                  <div className="intro-icon">
-                    📈
-                  </div>
-
-                  <div>
-                    <span className="eyebrow">
-                      LIVE MARKET
-                    </span>
-
-                    <h2>
-                      {l.liveCropMarket}
-                    </h2>
-
-                    <p>
-                      Prices update
-                      automatically every few
-                      seconds.
-                    </p>
-                  </div>
-
-                  <div className="live-indicator">
-                    <span />
-                    LIVE
-                  </div>
-                </div>
-
-                <div className="section-card market-table-card">
-
-                  <div className="market-table-wrapper">
-                    <table className="market-table">
-
-                      <thead>
-                        <tr>
-                          <th>
-                            {l.cropName}
-                          </th>
-
-                          <th>
-                            {l.pastRates}
-                          </th>
-
-                          <th>
-                            {l.liveRate}
-                          </th>
-
-                          <th>
-                            {l.action}
-                          </th>
+                          </td>
                         </tr>
-                      </thead>
-
-                      <tbody>
-                        {Object.keys(
-                          marketRates
-                        ).map((crop) => {
-
-                          const history =
-                            marketHistory[
-                              crop
-                            ] || [];
-
-                          const p1 =
-                            history.length >
-                            1
-                              ? history[
-                                  history.length -
-                                    2
-                                ].toFixed(2)
-                              : '-';
-
-                          const p2 =
-                            history.length >
-                            2
-                              ? history[
-                                  history.length -
-                                    3
-                                ].toFixed(2)
-                              : '-';
-
-                          const isCropSaved =
-                            myCrops.some(
-                              (c) =>
-                                c.name ===
-                                crop
-                            );
-
-                          const trendUp =
-                            history.length >
-                              1 &&
-                            history[
-                              history.length -
-                                1
-                            ] >=
-                              history[
-                                history.length -
-                                  2
-                              ];
-
-                          return (
-                            <tr key={crop}>
-
-                              <td>
-                                <div className="table-crop-name">
-                                  <span>
-                                    🌾
-                                  </span>
-
-                                  <strong>
-                                    {getCropName(crop)}
-                                  </strong>
-                                </div>
-                              </td>
-
-                              <td>
-                                <div className="past-rates">
-                                  <span>
-                                    ₹{p1}
-                                  </span>
-
-                                  <span>
-                                    ₹{p2}
-                                  </span>
-                                </div>
-                              </td>
-
-                              <td>
-                                <div className="live-price">
-
-                                  <div>
-                                    <strong
-                                      className={
-                                        trendUp
-                                          ? 'price-up'
-                                          : 'price-down'
-                                      }
-                                    >
-                                      ₹
-                                      {marketRates[
-                                        crop
-                                      ].toFixed(
-                                        2
-                                      )}
-                                    </strong>
-
-                                    <small>
-                                      {trendUp
-                                        ? '↑ Rising'
-                                        : '↓ Falling'}
-                                    </small>
-                                  </div>
-
-                                  <Sparkline
-                                    data={
-                                      history
-                                    }
-                                  />
-                                </div>
-                              </td>
-
-                              <td>
-                                <button
-                                  type="button"
-                                  disabled={
-                                    !isCropSaved
-                                  }
-                                  onClick={() =>
-                                    setOrderingItem(
-                                      crop
-                                    )
-                                  }
-                                  className={`sell-button ${
-                                    isCropSaved
-                                      ? ''
-                                      : 'disabled'
-                                  }`}
-                                >
-                                  {isCropSaved
-                                    ? l.sellMarket
-                                    : 'Add Crop First'}
-                                </button>
-                              </td>
-
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-
-                    </table>
-                  </div>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              </section>
-            )}
-
-          {/* ================= ORDER FORM ================= */}
-          {activeTab === 'procurement' &&
-            orderingItem && (
-              <section className="content-section">
-
-                <div className="form-page">
-
-                  <button
-                    type="button"
-                    className="back-button"
-                    onClick={() =>
-                      setOrderingItem(
-                        null
-                      )
-                    }
-                  >
-                    ← Back to Market
-                  </button>
-
-                  <div className="order-form-card">
-
-                    <div className="order-form-header">
-
-                      <div className="form-icon">
-                        🛒
-                      </div>
-
-                      <div>
-                        <span className="eyebrow">
-                          PROCUREMENT
-                        </span>
-
-                        <h2>
-                          {l.procurementApp}
-                        </h2>
-
-                        <p>
-                          {l.applyingFor}{' '}
-                          <strong>
-                            {getCropName(orderingItem)}
-                          </strong>
-                        </p>
-                      </div>
-                    </div>
-
-                    <form
-                      onSubmit={
-                        submitOrder
-                      }
-                      className="order-form"
-                    >
-
-                      <div className="form-field">
-                        <label>
-                          {l.quantity}
-                        </label>
-
-                        <input
-                          type="number"
-                          min="1"
-                          max={
-                            maxAvailableQuantity
-                          }
-                          required
-                          placeholder={
-                            maxAvailableQuantity
-                              ? `Maximum ${maxAvailableQuantity} kg`
-                              : l.quantity
-                          }
-                          value={
-                            orderDetails.quantity
-                          }
-                          onChange={(e) =>
-                            setOrderDetails({
-                              ...orderDetails,
-                              quantity:
-                                e.target.value
-                            })
-                          }
-                        />
-                      </div>
-
-                      <div className="form-field">
-                        <label>
-                          Active Zone
-                        </label>
-
-                        <select
-                          required
-                          value={
-                            orderDetails.zone
-                          }
-                          onChange={(e) =>
-                            handleZoneChange(
-                              e.target.value
-                            )
-                          }
-                        >
-                          <option value="">
-                            {
-                              l.selectZone
-                            }
-                          </option>
-
-                          {availableZones.length ===
-                          0 ? (
-                            <option
-                              value=""
-                              disabled
-                            >
-                              No active zones
-                              found
-                            </option>
-                          ) : (
-                            availableZones.map(
-                              (zone) => (
-                                <option
-                                  key={zone}
-                                  value={zone}
-                                >
-                                  {zone}
-                                </option>
-                              )
-                            )
-                          )}
-                        </select>
-                      </div>
-
-                      <div className="form-field">
-                        <label>
-                          Village /
-                          Sub-place
-                        </label>
-
-                        <select
-                          required
-                          value={
-                            orderDetails.subPlace
-                          }
-                          onChange={(e) =>
-                            setOrderDetails({
-                              ...orderDetails,
-                              subPlace:
-                                e.target.value
-                            })
-                          }
-                        >
-                          <option value="">
-                            {
-                              l.selectSubPlace
-                            }
-                          </option>
-
-                          {availableSubPlaces.map(
-                            (sub) => (
-                              <option
-                                key={sub}
-                                value={sub}
-                              >
-                                {sub}
-                              </option>
-                            )
-                          )}
-                        </select>
-                      </div>
-
-                      <div className="form-field">
-                        <label>
-                          Farm Address
-                        </label>
-
-                        <input
-                          type="text"
-                          required
-                          placeholder={
-                            l.farmAddress
-                          }
-                          value={
-                            orderDetails.address
-                          }
-                          onChange={(e) =>
-                            setOrderDetails({
-                              ...orderDetails,
-                              address:
-                                e.target.value
-                            })
-                          }
-                        />
-                      </div>
-
-                      <div className="form-field">
-                        <label>
-                          Patta / Chitta
-                          Number
-                        </label>
-
-                        <input
-                          type="text"
-                          required
-                          placeholder={
-                            l.pattaChitta
-                          }
-                          value={
-                            orderDetails.pattaChitta
-                          }
-                          onChange={(e) =>
-                            setOrderDetails({
-                              ...orderDetails,
-                              pattaChitta:
-                                e.target.value
-                            })
-                          }
-                        />
-                      </div>
-
-                      <div className="form-field">
-                        <label>
-                          {l.uploadDoc}
-                        </label>
-
-                        <div className="file-input-wrapper">
-                          <input
-                            type="file"
-                            accept=".jpg,.jpeg,.png,.pdf"
-                            required
-                            onChange={(e) =>
-                              setPattaFile(
-                                e.target
-                                  .files?.[0] ||
-                                  null
-                              )
-                            }
-                          />
-
-                          <span>
-                            📎 Choose document
-                          </span>
-                        </div>
-
-                        {pattaFile && (
-                          <small className="selected-file">
-                            Selected:{' '}
-                            {
-                              pattaFile.name
-                            }
-                          </small>
-                        )}
-                      </div>
-
-                      <div className="form-actions">
-
-                        <button
-                          type="submit"
-                          disabled={
-                            isSubmitting
-                          }
-                          className="primary-button large"
-                        >
-                          {isSubmitting
-                            ? 'Processing...'
-                            : `✓ ${l.confirmOrder}`}
-                        </button>
-
-                        <button
-                          type="button"
-                          disabled={
-                            isSubmitting
-                          }
-                          onClick={() =>
-                            setOrderingItem(
-                              null
-                            )
-                          }
-                          className="secondary-button"
-                        >
-                          {l.cancel}
-                        </button>
-
-                      </div>
-                    </form>
-                  </div>
-                </div>
-              </section>
-            )}
-
-          {/* ================= AI ================= */}
-          {activeTab === 'ai' && (
-            <section className="content-section">
-
-              <div className="ai-hero">
-
-                <div className="ai-hero-icon">
-                  🤖
-                </div>
-
-                <div>
-                  <span className="eyebrow">
-                    FARMFLOW INTELLIGENCE
-                  </span>
-
-                  <h2>
-                    {l.aiAnalysis}
-                  </h2>
-
-                  <p>
-                    Smart recommendations
-                    designed to help improve
-                    your farm decisions.
-                  </p>
-                </div>
-              </div>
-
-              <div className="ai-report-card">
-
-                <div className="ai-report-header">
-                  <div>
-                    <span className="eyebrow">
-                      WEEKLY REPORT
-                    </span>
-
-                    <h3>
-                      {l.aiReport}
-                    </h3>
-                  </div>
-
-                  <div className="ai-status">
-                    â— AI Generated
-                  </div>
-                </div>
-
-                <div className="ai-insights">
-
-                  <div className="ai-insight green">
-                    <div>
-                      🌱
-                    </div>
-
-                    <p>
-                      {l.aiTip1}
-                    </p>
-                  </div>
-
-                  <div className="ai-insight blue">
-                    <div>
-                      📈
-                    </div>
-
-                    <p>
-                      {l.aiTip2}
-                    </p>
-                  </div>
-
-                  <div className="ai-insight orange">
-                    <div>
-                      🌦️
-                    </div>
-
-                    <p>
-                      {l.aiTip3}
-                    </p>
-                  </div>
-
-                </div>
-              </div>
-            </section>
-          )}
-
-        </div>
-      </main>
-
-      {/* ================= WEATHER MODAL ================= */}
-      {showWeatherModal && (
-        <div
-          className="modal-overlay"
-          onClick={() =>
-            setShowWeatherModal(false)
-          }
-        >
-          <div
-            className="weather-modal"
-            onClick={(e) =>
-              e.stopPropagation()
-            }
-          >
-
-            <div className="modal-header">
-
-              <div>
-                <span className="eyebrow">
-                  LIVE WEATHER
-                </span>
-
-                <h2>
-                  📍{' '}
-                  {weatherData.locationName}
-                </h2>
-
-                <div className="modal-current-weather">
-
-                  <span className="modal-weather-icon">
-                    {weatherData.icon}
-                  </span>
-
-                  <strong>
-                    {weatherData.temp}
-                  </strong>
-
-                  <span>
-                    {weatherData.condition
-                      .split(':')[1]
-                      ?.split('.')[0] ||
-                      ''}
-                  </span>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                className="modal-close"
-                onClick={() =>
-                  setShowWeatherModal(
-                    false
-                  )
-                }
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="forecast-heading">
-              <span className="eyebrow">
-                HOURLY FORECAST
-              </span>
-
-              <h3>
-                Next 24 Hours
-              </h3>
-            </div>
-
-            <div className="forecast-scroll">
-
-              {hourlyForecast.length ===
-              0 ? (
-                <div className="forecast-loading">
-                  Loading hourly forecast...
-                </div>
-              ) : (
-                hourlyForecast.map(
-                  (hour, idx) => (
-                    <div
-                      key={idx}
-                      className={`forecast-item ${
-                        idx === 0
-                          ? 'forecast-now'
-                          : ''
-                      }`}
-                    >
-                      <span className="forecast-time">
-                        {hour.time}
-                      </span>
-
-                      <span className="forecast-icon">
-                        {hour.icon}
-                      </span>
-
-                      <strong>
-                        {hour.temp}
-                      </strong>
-
-                      <small>
-                        💧{' '}
-                        {hour.rainProb ||
-                          0}
-                        %
-                      </small>
-                    </div>
-                  )
-                )
               )}
             </div>
+          </div>
+        )}
 
-            <div className="modal-footer">
-
-              <div>
-                <span className="weather-condition">
-                  {weatherData.condition}
-                </span>
+        {/* TAB 4: PROCUREMENT (Market Prices & Sell Application to VAO) */}
+        {activeTab === 'procurement' && (
+          <div className="v-tab-dashboard">
+            {/* Live Ticker Table */}
+            <div className="v-table-card">
+              <div className="v-table-card-header">
+                <h4>{l.liveCropMarket}</h4>
               </div>
-
-              <button
-                type="button"
-                className="primary-button"
-                onClick={() =>
-                  setShowWeatherModal(
-                    false
-                  )
-                }
-              >
-                Close
-              </button>
-
+              <div className="v-table-responsive">
+                <table className="v-clean-table">
+                  <thead>
+                    <tr>
+                      <th>{l.cropName}</th>
+                      <th>{l.pastRates}</th>
+                      <th>{l.liveRate}</th>
+                      <th>{l.action}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {Object.keys(initialRates).map((crop) => (
+                      <tr key={crop}>
+                        <td><b>{getCropName(crop)}</b></td>
+                        <td style={{ width: '130px' }}>
+                          <Sparkline data={marketHistory[crop]} />
+                        </td>
+                        <td>
+                          <b>₹{marketRates[crop]?.toFixed(2)}</b> / Kg
+                        </td>
+                        <td>
+                          <button
+                            type="button"
+                            className="v-btn-procure-action"
+                            onClick={() => setOrderingItem(crop)}
+                          >
+                            {l.sellMarket}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
+            {/* Application Modal / Form when "Sell to Market" is clicked */}
+            {orderingItem && (
+              <div className="v-modal-overlay" onClick={() => setOrderingItem(null)}>
+                <div className="v-modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+                  <div className="v-modal-header">
+                    <h4>{l.procurementApp}</h4>
+                    <button
+                      type="button"
+                      className="v-close-modal"
+                      onClick={() => setOrderingItem(null)}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <p className="v-modal-sub">
+                    {l.applyingFor} <b>{getCropName(orderingItem)}</b> (@ ₹{marketRates[orderingItem]?.toFixed(2)}/Kg)
+                  </p>
+
+                  <form onSubmit={submitOrder}>
+                    <div className="v-form-row">
+                      <div className="v-form-field">
+                        <label>{l.quantity}</label>
+                        <input
+                          type="number"
+                          required
+                          placeholder="e.g. 50"
+                          value={orderDetails.quantity}
+                          onChange={(e) => setOrderDetails({ ...orderDetails, quantity: e.target.value })}
+                        />
+                      </div>
+                      <div className="v-form-field">
+                        <label>{l.selectZone}</label>
+                        <select
+                          required
+                          value={orderDetails.zone}
+                          onChange={(e) => handleZoneChange(e.target.value)}
+                        >
+                          <option value="">{l.selectZone}</option>
+                          {availableZones.map((z) => (
+                            <option key={z} value={z}>{z}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="v-form-field">
+                      <label>{l.selectSubPlace}</label>
+                      <select
+                        required
+                        value={orderDetails.subPlace}
+                        onChange={(e) => setOrderDetails({ ...orderDetails, subPlace: e.target.value })}
+                      >
+                        <option value="">{l.selectSubPlace}</option>
+                        {availableSubPlaces.map((sp) => (
+                          <option key={sp} value={sp}>{sp}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="v-form-field">
+                      <label>{l.farmAddress}</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Village, Survey No, Landmark"
+                        value={orderDetails.address}
+                        onChange={(e) => setOrderDetails({ ...orderDetails, address: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="v-form-field">
+                      <label>{l.pattaChitta}</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="e.g. TN-PATTA-84920"
+                        value={orderDetails.pattaChitta}
+                        onChange={(e) => setOrderDetails({ ...orderDetails, pattaChitta: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="v-form-field">
+                      <label>{l.uploadDoc}</label>
+                      <input
+                        type="file"
+                        accept=".jpg,.jpeg,.png,.pdf"
+                        required
+                        onChange={(e) => setPattaFile(e.target.files?.[0] || null)}
+                      />
+                    </div>
+
+                    {orderDetails.quantity && (
+                      <div className="v-success-banner" style={{ margin: '12px 0' }}>
+                        <span>💰 Estimated Payout: ₹{((parseFloat(orderDetails.quantity) || 0) * (marketRates[orderingItem] || 25)).toLocaleString('en-IN')}</span>
+                      </div>
+                    )}
+
+                    <div className="v-modal-actions">
+                      <button
+                        type="button"
+                        className="v-btn-modal-cancel"
+                        onClick={() => setOrderingItem(null)}
+                      >
+                        {l.cancel}
+                      </button>
+                      <button
+                        type="submit"
+                        className="v-btn-modal-confirm"
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? 'Submitting...' : `✓ ${l.confirmOrder}`}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 5: TRACK STATUS (Orders, Gate Passes & Reschedule) */}
+        {activeTab === 'track' && (
+          <div className="v-tab-token">
+            <div className="v-hero-greeting-card">
+              <div>
+                <h1>{l.upcomingProcurements}</h1>
+                <p>Track land record verification by VAO, time slot allocation, and download official Gate Passes.</p>
+              </div>
+            </div>
+
+            {activeOrders.length === 0 ? (
+              <div className="v-empty-card">
+                <div className="empty-icon">📦</div>
+                <h3>{l.noActiveOrders}</h3>
+                <p>Apply for crop procurement to track your verification and gate passes.</p>
+                <button
+                  type="button"
+                  className="v-primary-action-btn"
+                  onClick={() => changeTab('procurement')}
+                >
+                  + Apply for Procurement
+                </button>
+              </div>
+            ) : (
+              activeOrders.map((order) => (
+                <div key={order.id} className="v-gate-pass-card" style={{ marginBottom: '24px' }}>
+                  <div className="v-qr-section">
+                    <div className="v-qr-box">
+                      <svg viewBox="0 0 120 120" width="120" height="120">
+                        <rect width="120" height="120" fill="white" />
+                        <rect x="10" y="10" width="30" height="30" fill="#0f172a" />
+                        <rect x="15" y="15" width="20" height="20" fill="white" />
+                        <rect x="20" y="20" width="10" height="10" fill="#0f172a" />
+                        <rect x="80" y="10" width="30" height="30" fill="#0f172a" />
+                        <rect x="85" y="15" width="20" height="20" fill="white" />
+                        <rect x="90" y="20" width="10" height="10" fill="#0f172a" />
+                        <rect x="10" y="80" width="30" height="30" fill="#0f172a" />
+                        <rect x="15" y="85" width="20" height="20" fill="white" />
+                        <rect x="20" y="90" width="10" height="10" fill="#0f172a" />
+                        <rect x="50" y="20" width="20" height="10" fill="#0f172a" />
+                        <rect x="50" y="50" width="20" height="20" fill="#0f172a" />
+                        <rect x="80" y="50" width="30" height="10" fill="#0f172a" />
+                      </svg>
+                    </div>
+                    {/* EXTRA FEATURE: Download Gate Pass PDF */}
+                    <button
+                      type="button"
+                      className="v-download-pass-btn"
+                      onClick={() => handleDownloadPass(order)}
+                    >
+                      📥 Download Gate Pass (PDF)
+                    </button>
+                  </div>
+
+                  <div className="v-token-head">
+                    <small>TOKEN IDENTIFIER</small>
+                    <h2>{order.token}</h2>
+                    <span
+                      className={`pill-badge ${
+                        order.status === 'Procured' || order.status === 'Completed'
+                          ? 'pill-badge-green'
+                          : order.status === 'VAO Verified'
+                          ? 'pill-badge-blue'
+                          : 'pill-badge-yellow'
+                      }`}
+                    >
+                      {order.status}
+                    </span>
+                  </div>
+
+                  <div className="v-token-details-grid">
+                    <div className="v-td-item">
+                      <small>CROP ITEM</small>
+                      <strong>{order.item} ({order.quantity} KGs/Qtl)</strong>
+                    </div>
+                    <div className="v-td-item">
+                      <small>ZONE & VILLAGE</small>
+                      <strong>{order.zone} ({order.subPlace})</strong>
+                    </div>
+                    <div className="v-td-item">
+                      <small>SCHEDULED SLOT</small>
+                      <strong>{order.datetime || 'TBD by Officer'}</strong>
+                    </div>
+                    <div className="v-td-item">
+                      <small>PATTA / CHITTA DOC</small>
+                      <strong>{order.pattaChitta || 'Submitted'}</strong>
+                    </div>
+                  </div>
+
+                  <div className="v-token-actions">
+                    <button
+                      type="button"
+                      className="v-btn-reschedule"
+                      onClick={() => {
+                        setSelectedOrderForReschedule(order);
+                        setShowRescheduleModal(true);
+                      }}
+                    >
+                      📅 Request Reschedule
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+
+            {/* Reschedule Modal */}
+            {showRescheduleModal && selectedOrderForReschedule && (
+              <div className="v-modal-overlay">
+                <div className="v-modal-card">
+                  <div className="v-modal-header">
+                    <h4>Request Slot Reschedule</h4>
+                    <button
+                      type="button"
+                      className="v-close-modal"
+                      onClick={() => setShowRescheduleModal(false)}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  <p className="v-modal-sub">
+                    Token: <b>{selectedOrderForReschedule.token}</b>
+                  </p>
+
+                  <div className="v-form-field">
+                    <label>Preferred Date</label>
+                    <input
+                      type="date"
+                      required
+                      value={rescheduleDate}
+                      onChange={(e) => setRescheduleDate(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="v-form-field">
+                    <label>Preferred Time Slot</label>
+                    <select
+                      value={rescheduleTime}
+                      onChange={(e) => setRescheduleTime(e.target.value)}
+                    >
+                      <option value="09:00 AM - 11:00 AM">09:00 AM - 11:00 AM</option>
+                      <option value="11:00 AM - 01:00 PM">11:00 AM - 01:00 PM</option>
+                      <option value="02:00 PM - 04:00 PM">02:00 PM - 04:00 PM</option>
+                    </select>
+                  </div>
+
+                  <div className="v-modal-actions">
+                    <button
+                      type="button"
+                      className="v-btn-modal-cancel"
+                      onClick={() => setShowRescheduleModal(false)}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      className="v-btn-modal-confirm"
+                      onClick={handleConfirmReschedule}
+                    >
+                      Send Reschedule Request
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TAB 6: AI INSIGHTS */}
+        {activeTab === 'ai' && (
+          <div className="v-tab-dashboard">
+            <div className="v-hero-greeting-card">
+              <div>
+                <h1>🤖 {l.aiAnalysis}</h1>
+                <p>{l.aiReport}</p>
+              </div>
+            </div>
+
+            <div className="v-kpi-grid" style={{ gridTemplateColumns: '1fr' }}>
+              <div className="v-kpi-card" style={{ borderLeft: '4px solid #16a34a' }}>
+                <div className="v-kpi-label">🌱 NITROGEN MANAGEMENT</div>
+                <p style={{ fontSize: '0.95rem', margin: '6px 0', color: '#334155' }}>{l.aiTip1}</p>
+              </div>
+
+              <div className="v-kpi-card" style={{ borderLeft: '4px solid #0284c7' }}>
+                <div className="v-kpi-label">📈 MARKET STRATEGY</div>
+                <p style={{ fontSize: '0.95rem', margin: '6px 0', color: '#334155' }}>{l.aiTip2}</p>
+              </div>
+
+              <div className="v-kpi-card" style={{ borderLeft: '4px solid #f59e0b' }}>
+                <div className="v-kpi-label">🌦️ PEST & WEATHER RISK</div>
+                <p style={{ fontSize: '0.95rem', margin: '6px 0', color: '#334155' }}>{l.aiTip3}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 7: HELP & SUPPORT */}
+        {activeTab === 'help' && (
+          <div className="v-tab-help">
+            <div className="v-help-card">
+              <div className="v-help-head">
+                <div className="help-icon">❓</div>
+                <h3>{l.helpTitle}</h3>
+                <p>{l.helpIntro}</p>
+              </div>
+
+              <div className="v-help-grid">
+                <div className="v-help-box">
+                  <span className="box-icon">📞</span>
+                  <strong>Call Mandi Helpdesk</strong>
+                  <p>1800-123-4567</p>
+                  <small>(Toll Free Support)</small>
+                </div>
+
+                <div className="v-help-box">
+                  <span className="box-icon">✉️</span>
+                  <strong>Email Assistance</strong>
+                  <p>support@farmflow.ai</p>
+                  <small>Reply within 24 hours</small>
+                </div>
+
+                <div className="v-help-box">
+                  <span className="box-icon">📄</span>
+                  <strong>Official Guidelines</strong>
+                  <p>Read APMC Rules</p>
+                  <small>Find quick answers</small>
+                </div>
+              </div>
+
+              <div style={{ marginTop: '24px', textAlign: 'left', background: '#f8fafc', padding: '20px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                <h4 style={{ margin: '0 0 10px' }}>Dashboard Overview:</h4>
+                <ul style={{ paddingLeft: '20px', color: '#475569', fontSize: '0.88rem', lineHeight: '1.8' }}>
+                  <li><b>{l.helpCrops}</b></li>
+                  <li><b>{l.helpProcurement}</b></li>
+                  <li><b>{l.helpTrack}</b></li>
+                  <li><b>{l.helpAi}</b></li>
+                  <li><b>{l.helpProfile}</b></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* WEATHER MODAL */}
+      {showWeatherModal && (
+        <div className="v-modal-overlay" onClick={() => setShowWeatherModal(false)}>
+          <div className="v-modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '600px' }}>
+            <div className="v-modal-header">
+              <h4>📍 {weatherData.locationName} - {l.weather}</h4>
+              <button
+                type="button"
+                className="v-close-modal"
+                onClick={() => setShowWeatherModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', margin: '14px 0' }}>
+              <span style={{ fontSize: '2.5rem' }}>{weatherData.icon}</span>
+              <div>
+                <h2 style={{ margin: 0 }}>{weatherData.temp}</h2>
+                <p style={{ margin: 0, color: '#64748b' }}>{weatherData.condition}</p>
+              </div>
+            </div>
+
+            <h5 style={{ margin: '16px 0 10px' }}>Next 12 Hours Forecast:</h5>
+            <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '10px' }}>
+              {hourlyForecast.map((h, i) => (
+                <div
+                  key={i}
+                  style={{
+                    background: '#f8fafc',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '10px',
+                    padding: '10px 14px',
+                    textAlign: 'center',
+                    minWidth: '70px'
+                  }}
+                >
+                  <small style={{ color: '#64748b' }}>{h.time}</small>
+                  <div style={{ fontSize: '1.3rem', margin: '4px 0' }}>{h.icon}</div>
+                  <strong>{h.temp}</strong>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
