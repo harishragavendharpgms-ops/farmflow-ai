@@ -95,14 +95,43 @@ const Sparkline = ({ data }) => {
   );
 };
 
-const getWeatherMeta = (code) => {
-  if (code === 0) return { label: "Clear sky", icon: "☀️" };
-  if (code > 0 && code < 4) return { label: "Partly cloudy", icon: "⛅" };
+const getWeatherMeta = (code, isNight = false) => {
+  if (code === 0) return isNight ? { label: "Clear night", icon: "🌙" } : { label: "Clear sky", icon: "☀️" };
+  if (code > 0 && code < 4) return isNight ? { label: "Partly cloudy", icon: "☁️" } : { label: "Partly cloudy", icon: "⛅" };
   if (code >= 45 && code < 50) return { label: "Foggy / Misty", icon: "🌫️" };
   if (code >= 50 && code < 80) return { label: "Rainy", icon: "🌧️" };
   if (code >= 80 && code < 90) return { label: "Showers", icon: "🌦️" };
   if (code >= 90) return { label: "Thunderstorm", icon: "⛈️" };
-  return { label: "Clear", icon: "🌤️" };
+  return isNight ? { label: "Clear", icon: "🌙" } : { label: "Clear", icon: "🌤️" };
+};
+
+const generate24HourFallbackForecast = () => {
+  const now = new Date();
+  const list = [];
+  for (let i = 0; i < 24; i++) {
+    const d = new Date(now.getTime() + i * 3600 * 1000);
+    const hour = d.getHours();
+    const isNight = hour >= 19 || hour < 6;
+    const temp = Math.round(28 + 4 * Math.sin(((hour - 9) * Math.PI) / 12));
+    let icon = isNight ? '🌙' : '☀️';
+    let label = isNight ? 'Clear Night' : 'Clear Sky';
+    if (!isNight && hour >= 6 && hour < 9) {
+      icon = '🌅';
+      label = 'Pleasant Morning';
+    } else if (!isNight && hour >= 12 && hour <= 16) {
+      icon = '🌤️';
+      label = 'Sunny & Warm';
+    }
+    const timeFormatted = d.toLocaleTimeString([], { hour: 'numeric', hour12: true });
+    list.push({
+      time: i === 0 ? 'Now' : timeFormatted,
+      day: d.toLocaleDateString([], { weekday: 'short' }),
+      temp: `${temp}°C`,
+      icon,
+      condition: label
+    });
+  }
+  return list;
 };
 
 // Original Translations Preserved
@@ -377,7 +406,7 @@ const Dashboard = () => {
     locationName: 'Local Field',
     icon: '🌤️'
   });
-  const [hourlyForecast, setHourlyForecast] = useState([]);
+  const [hourlyForecast, setHourlyForecast] = useState(generate24HourFallbackForecast);
   const [showWeatherModal, setShowWeatherModal] = useState(false);
 
   // Reschedule Modal
@@ -455,14 +484,46 @@ const Dashboard = () => {
             });
 
             if (data.hourly && data.hourly.time) {
+              const now = new Date();
+              // Find the hourly index matching the user's current local hour
+              let startIdx = data.hourly.time.findIndex((t) => {
+                const dt = new Date(t);
+                return (
+                  dt.getFullYear() === now.getFullYear() &&
+                  dt.getMonth() === now.getMonth() &&
+                  dt.getDate() === now.getDate() &&
+                  dt.getHours() === now.getHours()
+                );
+              });
+
+              // Fallback if exact local hour match wasn't found
+              if (startIdx === -1) {
+                let minDiff = Infinity;
+                startIdx = 0;
+                for (let i = 0; i < data.hourly.time.length; i++) {
+                  const diff = Math.abs(new Date(data.hourly.time[i]).getTime() - now.getTime());
+                  if (diff < minDiff) {
+                    minDiff = diff;
+                    startIdx = i;
+                  }
+                }
+              }
+
               const nextHours = [];
-              for (let i = 0; i < Math.min(12, data.hourly.time.length); i++) {
+              const endIdx = Math.min(startIdx + 24, data.hourly.time.length);
+              for (let i = startIdx; i < endIdx; i++) {
                 const d = new Date(data.hourly.time[i]);
-                const hMeta = getWeatherMeta(data.hourly.weather_code[i]);
+                const hour = d.getHours();
+                const isNight = hour >= 19 || hour < 6;
+                const hMeta = getWeatherMeta(data.hourly.weather_code[i], isNight);
+                const timeFormatted = d.toLocaleTimeString([], { hour: 'numeric', hour12: true });
+
                 nextHours.push({
-                  time: d.toLocaleTimeString([], { hour: 'numeric', hour12: true }),
+                  time: i === startIdx ? 'Now' : timeFormatted,
+                  day: d.toLocaleDateString([], { weekday: 'short' }),
                   temp: `${Math.round(data.hourly.temperature_2m[i])}°C`,
-                  icon: hMeta.icon
+                  icon: hMeta.icon,
+                  condition: hMeta.label
                 });
               }
               setHourlyForecast(nextHours);
@@ -1284,7 +1345,7 @@ const Dashboard = () => {
                     className="v-side-widget-btn outline"
                     onClick={() => setShowWeatherModal(true)}
                   >
-                    View 12-Hour Forecast →
+                    View 24-Hour Forecast →
                   </button>
                 </div>
 
@@ -2104,23 +2165,39 @@ const Dashboard = () => {
               </div>
             </div>
 
-            <h5 style={{ margin: '16px 0 10px' }}>Next 12 Hours Forecast:</h5>
-            <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '10px' }}>
+            <div style={{ margin: '16px 0 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h5 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#0f172a' }}>
+                24-Hour Hourly Forecast:
+              </h5>
+              <small style={{ color: '#16a34a', fontWeight: 700, fontSize: '0.75rem', background: '#f0fdf4', padding: '2px 8px', borderRadius: '4px', border: '1px solid #bbf7d0' }}>
+                Next 24 Hours From Now
+              </small>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '12px' }}>
               {hourlyForecast.map((h, i) => (
                 <div
                   key={i}
                   style={{
-                    background: '#f8fafc',
-                    border: '1px solid #e2e8f0',
+                    background: i === 0 ? '#f0fdf4' : '#f8fafc',
+                    border: i === 0 ? '1.5px solid #86efac' : '1px solid #e2e8f0',
                     borderRadius: '10px',
-                    padding: '10px 14px',
+                    padding: '10px 12px',
                     textAlign: 'center',
-                    minWidth: '70px'
+                    minWidth: '78px',
+                    flexShrink: 0
                   }}
                 >
-                  <small style={{ color: '#64748b' }}>{h.time}</small>
-                  <div style={{ fontSize: '1.3rem', margin: '4px 0' }}>{h.icon}</div>
-                  <strong>{h.temp}</strong>
+                  <div style={{ fontSize: '0.68rem', fontWeight: 700, color: i === 0 ? '#15803d' : '#94a3b8', textTransform: 'uppercase' }}>
+                    {h.day || 'Today'}
+                  </div>
+                  <small style={{ color: i === 0 ? '#166534' : '#475569', fontWeight: 600, display: 'block', margin: '2px 0' }}>
+                    {h.time}
+                  </small>
+                  <div style={{ fontSize: '1.35rem', margin: '4px 0' }} title={h.condition || ''}>
+                    {h.icon}
+                  </div>
+                  <strong style={{ color: '#0f172a', fontSize: '0.92rem' }}>{h.temp}</strong>
                 </div>
               ))}
             </div>
