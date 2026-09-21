@@ -271,6 +271,14 @@
   justify-content: center;
   font-weight: 700;
   font-size: 0.95rem;
+  overflow: hidden;
+}
+
+.v-avatar-nav-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
 }
 
 .v-avatar-info {
@@ -1527,6 +1535,10 @@
   width: 100%;
 }
 
+.v-profile-edit-card {
+  border-color: #cbd5e1;
+}
+
 .v-profile-top {
   display: flex;
   align-items: center;
@@ -1536,33 +1548,122 @@
   margin-bottom: 24px;
 }
 
+.v-p-avatar-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
 .v-p-avatar {
-  width: 64px;
-  height: 64px;
+  width: 76px;
+  height: 76px;
   background: #16a34a;
   color: #ffffff;
-  font-size: 1.6rem;
+  font-size: 1.8rem;
   font-weight: 800;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+  border: 2px solid #86efac;
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.15);
+  flex-shrink: 0;
 }
 
-.v-profile-top h2 {
-  margin: 0 0 6px;
+.v-profile-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.v-avatar-edit-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.v-avatar-upload-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #86efac;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.v-avatar-upload-trigger:hover {
+  background: #dcfce7;
+  border-color: #4ade80;
+}
+
+.v-avatar-remove-btn {
+  background: transparent;
+  border: none;
+  color: #dc2626;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+
+.v-avatar-remove-btn:hover {
+  text-decoration: underline;
+}
+
+.v-profile-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.v-profile-title-block h2 {
+  margin: 0;
   font-size: 1.4rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.v-profile-tags {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pill-badge-blue {
+  background: #e0f2fe;
+  color: #0284c7;
+  border: 1px solid #bae6fd;
 }
 
 .v-edit-profile-btn {
   margin-left: auto;
-  padding: 8px 16px;
+  padding: 8px 18px;
   border-radius: 8px;
   border: 1.5px solid #cbd5e1;
   background: #ffffff;
-  font-weight: 600;
+  color: #0f172a;
+  font-weight: 700;
   font-size: 0.85rem;
   cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.v-edit-profile-btn:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
 }
 
 .v-profile-section-title {
@@ -1591,6 +1692,78 @@
 .v-pg-item strong {
   font-size: 0.95rem;
   color: #0f172a;
+}
+
+.v-profile-edit-form {
+  padding-top: 10px;
+}
+
+.v-profile-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px 20px;
+}
+
+.v-profile-edit-actions {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.v-btn-profile-cancel {
+  padding: 10px 20px;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.v-btn-profile-cancel:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+
+.v-btn-profile-save {
+  padding: 10px 24px;
+  background: #16a34a;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.v-btn-profile-save:hover:not(:disabled) {
+  background: #15803d;
+}
+
+.v-btn-profile-save:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .v-profile-form-grid {
+    grid-template-columns: 1fr;
+  }
+  .v-profile-top {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .v-edit-profile-btn {
+    margin-left: 0;
+    width: 100%;
+    text-align: center;
+  }
 }
 
 /* EMPTY CARD */

@@ -6,7 +6,8 @@ import {
   getDocs,
   doc,
   setDoc,
-  deleteDoc
+  deleteDoc,
+  updateDoc
 } from 'firebase/firestore';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
 import './AdminDashboard.css';
@@ -19,6 +20,10 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Editing state for users (farmers, officers, vaos)
+  const [editingUser, setEditingUser] = useState(null);
+  const [isUpdatingUser, setIsUpdatingUser] = useState(false);
 
   // Hover states for visual analytics
   const [hoveredBar, setHoveredBar] = useState(null);
@@ -116,6 +121,41 @@ const AdminDashboard = () => {
         console.error(error);
         alert('Failed to delete user.');
       }
+    }
+  };
+
+  const handleOpenEditUser = (user) => {
+    setEditingUser({
+      id: user.id,
+      name: user.name || '',
+      email: user.email || '',
+      phone: user.phone || '',
+      role: user.role || 'farmer',
+      zone: user.zone || '',
+      subPlace: user.subPlace || ''
+    });
+  };
+
+  const handleSaveUserEdit = async (e) => {
+    e.preventDefault();
+    if (!editingUser) return;
+    setIsUpdatingUser(true);
+    try {
+      await updateDoc(doc(db, 'users', editingUser.id), {
+        name: editingUser.name.trim(),
+        phone: editingUser.phone.trim(),
+        role: editingUser.role,
+        zone: editingUser.zone.trim(),
+        subPlace: editingUser.subPlace.trim()
+      });
+      alert('User details updated successfully!');
+      setEditingUser(null);
+      fetchData();
+    } catch (err) {
+      console.error('Error updating user:', err);
+      alert('Failed to update user: ' + err.message);
+    } finally {
+      setIsUpdatingUser(false);
     }
   };
 
@@ -563,14 +603,24 @@ const AdminDashboard = () => {
                             <span className="pill-badge pill-badge-green">Active Officer</span>
                           </td>
                           <td>
-                            <button
-                              type="button"
-                              className="v-btn-op-action revoke"
-                              onClick={() => handleDeleteUser(v.id, v.name)}
-                              title="Delete VAO Account"
-                            >
-                              Delete
-                            </button>
+                            <div className="v-action-buttons-group">
+                              <button
+                                type="button"
+                                className="v-btn-op-action edit"
+                                onClick={() => handleOpenEditUser(v)}
+                                title="Edit VAO Account"
+                              >
+                                ✏️ Edit
+                              </button>
+                              <button
+                                type="button"
+                                className="v-btn-op-action revoke"
+                                onClick={() => handleDeleteUser(v.id, v.name)}
+                                title="Delete VAO Account"
+                              >
+                                Delete
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))
@@ -680,14 +730,24 @@ const AdminDashboard = () => {
                             <span className="pill-badge pill-badge-green">Active Officer</span>
                           </td>
                           <td>
-                            <button
-                              type="button"
-                              className="v-btn-op-action revoke"
-                              onClick={() => handleDeleteUser(op.id, op.name)}
-                              title="Delete Officer Account"
-                            >
-                              Delete
-                            </button>
+                            <div className="v-action-buttons-group">
+                              <button
+                                type="button"
+                                className="v-btn-op-action edit"
+                                onClick={() => handleOpenEditUser(op)}
+                                title="Edit Officer Account"
+                              >
+                                ✏️ Edit
+                              </button>
+                              <button
+                                type="button"
+                                className="v-btn-op-action revoke"
+                                onClick={() => handleDeleteUser(op.id, op.name)}
+                                title="Delete Officer Account"
+                              >
+                                Delete
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))
@@ -773,14 +833,24 @@ const AdminDashboard = () => {
                             </span>
                           </td>
                           <td>
-                            <button
-                              type="button"
-                              className="v-btn-op-action revoke"
-                              onClick={() => handleDeleteUser(farmer.id, farmer.name)}
-                              title="Delete Farmer Account"
-                            >
-                              Delete
-                            </button>
+                            <div className="v-action-buttons-group">
+                              <button
+                                type="button"
+                                className="v-btn-op-action edit"
+                                onClick={() => handleOpenEditUser(farmer)}
+                                title="Edit Farmer Account"
+                              >
+                                ✏️ Edit
+                              </button>
+                              <button
+                                type="button"
+                                className="v-btn-op-action revoke"
+                                onClick={() => handleDeleteUser(farmer.id, farmer.name)}
+                                title="Delete Farmer Account"
+                              >
+                                Delete
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       ))
@@ -1015,6 +1085,126 @@ const AdminDashboard = () => {
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? 'Creating Account...' : 'Provision User Account ✓'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* EDIT USER MODAL */}
+        {editingUser && (
+          <div
+            className="v-modal-backdrop"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setEditingUser(null);
+            }}
+          >
+            <div className="v-edit-modal-card">
+              <div className="v-edit-modal-header">
+                <div>
+                  <small className="v-edit-kicker">USER MANAGEMENT CONSOLE</small>
+                  <h3>Edit User Account Details</h3>
+                </div>
+                <button
+                  type="button"
+                  className="v-modal-close-btn"
+                  onClick={() => setEditingUser(null)}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveUserEdit} className="v-edit-modal-form">
+                <div className="v-form-grid-2">
+                  <div className="v-form-field">
+                    <label>Full Name</label>
+                    <input
+                      type="text"
+                      required
+                      value={editingUser.name}
+                      onChange={(e) =>
+                        setEditingUser({ ...editingUser, name: e.target.value })
+                      }
+                    />
+                  </div>
+
+                  <div className="v-form-field">
+                    <label>Email Address (Account ID)</label>
+                    <input
+                      type="email"
+                      disabled
+                      value={editingUser.email}
+                      title="Account email is managed by Firebase Auth"
+                      style={{ background: '#f1f5f9', cursor: 'not-allowed', color: '#64748b' }}
+                    />
+                  </div>
+
+                  <div className="v-form-field">
+                    <label>Contact Phone Number</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 9876543210"
+                      value={editingUser.phone}
+                      onChange={(e) =>
+                        setEditingUser({ ...editingUser, phone: e.target.value })
+                      }
+                    />
+                  </div>
+
+                  <div className="v-form-field">
+                    <label>System Role</label>
+                    <select
+                      value={editingUser.role}
+                      onChange={(e) =>
+                        setEditingUser({ ...editingUser, role: e.target.value })
+                      }
+                    >
+                      <option value="farmer">🌾 Farmer</option>
+                      <option value="vao">🏛️ Local Revenue Administrator (VAO)</option>
+                      <option value="officer">🛡️ Procurement Officer</option>
+                    </select>
+                  </div>
+
+                  <div className="v-form-field">
+                    <label>Jurisdiction District / Zone</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Trichy"
+                      value={editingUser.zone}
+                      onChange={(e) =>
+                        setEditingUser({ ...editingUser, zone: e.target.value })
+                      }
+                    />
+                  </div>
+
+                  <div className="v-form-field">
+                    <label>Sub-Place / Village / Mandi Centre</label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Lalgudi Central / APMC Yard #4"
+                      value={editingUser.subPlace}
+                      onChange={(e) =>
+                        setEditingUser({ ...editingUser, subPlace: e.target.value })
+                      }
+                    />
+                  </div>
+                </div>
+
+                <div className="v-edit-modal-footer">
+                  <button
+                    type="button"
+                    className="v-btn-modal-cancel"
+                    onClick={() => setEditingUser(null)}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="v-btn-modal-save"
+                    disabled={isUpdatingUser}
+                  >
+                    {isUpdatingUser ? 'Saving Changes...' : 'Save Changes ✓'}
                   </button>
                 </div>
               </form>

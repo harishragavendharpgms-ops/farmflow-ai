@@ -126,6 +126,13 @@ const t = {
     farmManager: "Farmer",
     accountStatus: "Account Status:",
     verified: "Verified 🟢",
+    editProfile: "Edit Profile",
+    saveChanges: "Save Changes",
+    changePhoto: "Change Photo",
+    removePhoto: "Remove Photo",
+    jurisdictionZone: "Jurisdiction Zone:",
+    villageSubPlace: "Village / Mandi Sub-Place:",
+    farmLocationAddress: "Farm Location / Address:",
     weather: "Local Weather",
     pestAlert: "Pest Alert",
     pestDesc: "No active threats detected in your area.",
@@ -187,6 +194,13 @@ const t = {
     farmManager: "விவசாயி",
     accountStatus: "கணக்கு நிலை:",
     verified: "சரிபார்க்கப்பட்டது 🟢",
+    editProfile: "சுயவிவரத்தைத் திருத்து",
+    saveChanges: "மாற்றங்களைச் சேமிக்கவும்",
+    changePhoto: "புகைப்படத்தை மாற்றவும்",
+    removePhoto: "புகைப்படத்தை நீக்கு",
+    jurisdictionZone: "அதிகார வரம்பு மண்டலம்:",
+    villageSubPlace: "கிராமம் / துணை இடம்:",
+    farmLocationAddress: "பண்ணை முகவரி:",
     weather: "உள்ளூர் வானிலை",
     pestAlert: "பூச்சி எச்சரிக்கை",
     pestDesc: "உங்கள் பகுதியில் செயலில் உள்ள அச்சுறுத்தல்கள் இல்லை.",
@@ -248,6 +262,13 @@ const t = {
     farmManager: "किसान",
     accountStatus: "खाता स्थिति:",
     verified: "सत्यापित 🟢",
+    editProfile: "प्रोफ़ाइल संपादित करें",
+    saveChanges: "परिवर्तन सहेजें",
+    changePhoto: "फ़ोटो बदलें",
+    removePhoto: "फ़ोटो हटाएं",
+    jurisdictionZone: "अधिकार क्षेत्र ज़ोन:",
+    villageSubPlace: "गांव / उप-स्थान:",
+    farmLocationAddress: "खेत का पता:",
     weather: "स्थानीय मौसम",
     pestAlert: "कीट चेतावनी",
     pestDesc: "आपके क्षेत्र में कोई सक्रिय खतरा नहीं मिला।",
@@ -311,13 +332,28 @@ const Dashboard = () => {
     generateInitialHistory(initialRates)
   );
 
-  // User Profile
+  // User Profile & Edit States
   const [userProfile, setUserProfile] = useState({
     name: 'Rajesh Farmer',
     email: 'rajesh@farmflow.com',
     phone: '9876543210',
-    role: 'farmer'
+    role: 'farmer',
+    zone: '',
+    subPlace: '',
+    address: '',
+    photoUrl: ''
   });
+  const [userDocId, setUserDocId] = useState(null);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [profileFormData, setProfileFormData] = useState({
+    name: '',
+    phone: '',
+    zone: '',
+    subPlace: '',
+    address: '',
+    photoUrl: ''
+  });
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   // Orders & Crops
   const [activeOrders, setActiveOrders] = useState([]);
@@ -467,7 +503,7 @@ const Dashboard = () => {
     setAvailableSubPlaces([...new Set(subPlaces)]);
   };
 
-  // Listen to Firestore Orders & Crops
+  // Listen to Firestore Orders, Crops & User Profile
   useEffect(() => {
     if (!userProfile.email) return;
     const emailLower = userProfile.email.toLowerCase();
@@ -497,11 +533,172 @@ const Dashboard = () => {
       setMyCrops(cropsData);
     });
 
+    const qUser = query(
+      collection(db, 'users'),
+      where('email', '==', emailLower)
+    );
+
+    const unsubUser = onSnapshot(qUser, (snap) => {
+      if (!snap.empty) {
+        const uDoc = snap.docs[0];
+        const uData = uDoc.data();
+        setUserDocId(uDoc.id);
+        setUserProfile((prev) => {
+          const merged = {
+            ...prev,
+            ...uData,
+            id: uDoc.id,
+            name: uData.name || prev.name,
+            phone: uData.phone || prev.phone,
+            photoUrl: uData.photoUrl || prev.photoUrl || '',
+            zone: uData.zone || prev.zone || '',
+            subPlace: uData.subPlace || prev.subPlace || '',
+            address: uData.address || prev.address || ''
+          };
+
+          try {
+            const saved = localStorage.getItem('farmflow_user');
+            if (saved) {
+              const parsed = JSON.parse(saved);
+              localStorage.setItem('farmflow_user', JSON.stringify({ ...parsed, ...merged }));
+            }
+          } catch (e) {}
+
+          return merged;
+        });
+      }
+    });
+
     return () => {
       unsubOrders();
       unsubCrops();
+      unsubUser();
     };
   }, [userProfile.email]);
+
+  // Profile Edit Handlers
+  const handleStartEditProfile = () => {
+    setProfileFormData({
+      name: userProfile.name || '',
+      phone: userProfile.phone || '',
+      zone: userProfile.zone || '',
+      subPlace: userProfile.subPlace || '',
+      address: userProfile.address || '',
+      photoUrl: userProfile.photoUrl || ''
+    });
+    setIsEditingProfile(true);
+  };
+
+  const handlePhotoUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      alert('Please select an image smaller than 5MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        const maxDim = 300;
+
+        if (width > height) {
+          if (width > maxDim) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          }
+        } else {
+          if (height > maxDim) {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const compressed = canvas.toDataURL('image/jpeg', 0.85);
+        setProfileFormData((prev) => ({
+          ...prev,
+          photoUrl: compressed
+        }));
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemovePhoto = () => {
+    setProfileFormData((prev) => ({
+      ...prev,
+      photoUrl: ''
+    }));
+  };
+
+  const handleSaveProfile = async (e) => {
+    e.preventDefault();
+    if (!profileFormData.name.trim()) {
+      alert('Please enter your full name.');
+      return;
+    }
+
+    setIsSavingProfile(true);
+    try {
+      const updatedFields = {
+        name: profileFormData.name.trim(),
+        phone: profileFormData.phone.trim(),
+        zone: profileFormData.zone.trim(),
+        subPlace: profileFormData.subPlace.trim(),
+        address: profileFormData.address.trim(),
+        photoUrl: profileFormData.photoUrl || ''
+      };
+
+      if (userDocId) {
+        await updateDoc(doc(db, 'users', userDocId), updatedFields);
+      } else {
+        const q = query(collection(db, 'users'), where('email', '==', userProfile.email.toLowerCase()));
+        const snap = await getDocs(q);
+        if (!snap.empty) {
+          await updateDoc(doc(db, 'users', snap.docs[0].id), updatedFields);
+          setUserDocId(snap.docs[0].id);
+        } else {
+          const newDoc = await addDoc(collection(db, 'users'), {
+            ...updatedFields,
+            email: userProfile.email.toLowerCase(),
+            role: 'farmer',
+            createdAt: new Date().toISOString()
+          });
+          setUserDocId(newDoc.id);
+        }
+      }
+
+      setUserProfile((prev) => ({
+        ...prev,
+        ...updatedFields
+      }));
+
+      try {
+        const saved = localStorage.getItem('farmflow_user');
+        const currentSaved = saved ? JSON.parse(saved) : {};
+        localStorage.setItem('farmflow_user', JSON.stringify({ ...currentSaved, ...updatedFields }));
+      } catch (err) {}
+
+      setIsEditingProfile(false);
+      alert('Profile updated successfully! ✨');
+    } catch (err) {
+      console.error('Error saving profile:', err);
+      alert('Failed to save profile changes: ' + err.message);
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
 
   // Live Market Fluctuation
   useEffect(() => {
@@ -818,7 +1015,15 @@ const Dashboard = () => {
               onClick={() => changeTab('profile')}
             >
               <div className="v-avatar-circle">
-                {userProfile.name.charAt(0).toUpperCase()}
+                {userProfile.photoUrl ? (
+                  <img
+                    src={userProfile.photoUrl}
+                    alt={userProfile.name}
+                    className="v-avatar-nav-img"
+                  />
+                ) : (
+                  userProfile.name?.charAt(0)?.toUpperCase() || 'F'
+                )}
               </div>
               <div className="v-avatar-info">
                 <span className="v-user-name">{userProfile.name}</span>
@@ -1167,41 +1372,202 @@ const Dashboard = () => {
         {/* TAB 2: MY PROFILE */}
         {activeTab === 'profile' && (
           <div className="v-tab-profile">
-            <div className="v-profile-card">
-              <div className="v-profile-top">
-                <div className="v-p-avatar">
-                  {userProfile.name.charAt(0).toUpperCase()}
+            {!isEditingProfile ? (
+              <div className="v-profile-card">
+                <div className="v-profile-top">
+                  <div className="v-p-avatar-wrap">
+                    <div className="v-p-avatar">
+                      {userProfile.photoUrl ? (
+                        <img
+                          src={userProfile.photoUrl}
+                          alt={userProfile.name}
+                          className="v-profile-img"
+                        />
+                      ) : (
+                        userProfile.name?.charAt(0)?.toUpperCase() || 'F'
+                      )}
+                    </div>
+                  </div>
+                  <div className="v-profile-title-block">
+                    <h2>{userProfile.name}</h2>
+                    <div className="v-profile-tags">
+                      <span className="pill-badge pill-badge-green">{l.verified}</span>
+                      <span className="pill-badge pill-badge-blue">🌾 {l.farmManager}</span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className="v-edit-profile-btn"
+                    onClick={handleStartEditProfile}
+                  >
+                    ✏️ {l.editProfile || 'Edit Profile'}
+                  </button>
                 </div>
-                <div>
-                  <h2>{userProfile.name}</h2>
-                  <span className="pill-badge pill-badge-green">{l.verified}</span>
-                </div>
-              </div>
 
-              <div className="v-profile-section-title">{l.userDetails}</div>
-              <div className="v-profile-grid">
-                <div className="v-pg-item">
-                  <small>{l.fullName}</small>
-                  <strong>{userProfile.name}</strong>
-                </div>
-                <div className="v-pg-item">
-                  <small>{l.emailAddr}</small>
-                  <strong>{userProfile.email}</strong>
-                </div>
-                <div className="v-pg-item">
-                  <small>{l.phoneNumber}</small>
-                  <strong>+91 {userProfile.phone}</strong>
-                </div>
-                <div className="v-pg-item">
-                  <small>{l.role}</small>
-                  <strong>{l.farmManager}</strong>
-                </div>
-                <div className="v-pg-item">
-                  <small>{l.accountStatus}</small>
-                  <strong>{l.verified}</strong>
+                <div className="v-profile-section-title">{l.userDetails}</div>
+                <div className="v-profile-grid">
+                  <div className="v-pg-item">
+                    <small>{l.fullName}</small>
+                    <strong>{userProfile.name || 'Not provided'}</strong>
+                  </div>
+                  <div className="v-pg-item">
+                    <small>{l.emailAddr}</small>
+                    <strong>{userProfile.email}</strong>
+                  </div>
+                  <div className="v-pg-item">
+                    <small>{l.phoneNumber}</small>
+                    <strong>{userProfile.phone ? `+91 ${userProfile.phone}` : 'Not provided'}</strong>
+                  </div>
+                  <div className="v-pg-item">
+                    <small>{l.role}</small>
+                    <strong>{l.farmManager}</strong>
+                  </div>
+                  <div className="v-pg-item">
+                    <small>{l.jurisdictionZone || 'Jurisdiction Zone'}</small>
+                    <strong>{userProfile.zone || 'Central Mandi District'}</strong>
+                  </div>
+                  <div className="v-pg-item">
+                    <small>{l.villageSubPlace || 'Village / Mandi Sub-Place'}</small>
+                    <strong>{userProfile.subPlace || 'Main APMC Mandi'}</strong>
+                  </div>
+                  <div className="v-pg-item" style={{ gridColumn: 'span 2' }}>
+                    <small>{l.farmLocationAddress || 'Farm Location / Address'}</small>
+                    <strong>{userProfile.address || 'Survey No. 42/1A, Agricultural Belt'}</strong>
+                  </div>
+                  <div className="v-pg-item">
+                    <small>{l.accountStatus}</small>
+                    <strong>{l.verified}</strong>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="v-profile-card v-profile-edit-card">
+                <div className="v-profile-top">
+                  <div className="v-p-avatar-wrap">
+                    <div className="v-p-avatar">
+                      {profileFormData.photoUrl ? (
+                        <img
+                          src={profileFormData.photoUrl}
+                          alt="Preview"
+                          className="v-profile-img"
+                        />
+                      ) : (
+                        profileFormData.name?.charAt(0)?.toUpperCase() || 'F'
+                      )}
+                    </div>
+                    <div className="v-avatar-edit-controls">
+                      <label className="v-avatar-upload-trigger">
+                        📷 {l.changePhoto || 'Change Photo'}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handlePhotoUpload}
+                          style={{ display: 'none' }}
+                        />
+                      </label>
+                      {profileFormData.photoUrl && (
+                        <button
+                          type="button"
+                          className="v-avatar-remove-btn"
+                          onClick={handleRemovePhoto}
+                        >
+                          🗑️ {l.removePhoto || 'Remove Photo'}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="v-profile-title-block">
+                    <h2>{l.editProfile || 'Edit Profile'}</h2>
+                    <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>
+                      Update your personal details, phone number, location, and avatar.
+                    </p>
+                  </div>
+                </div>
+
+                <form onSubmit={handleSaveProfile} className="v-profile-edit-form">
+                  <div className="v-profile-form-grid">
+                    <div className="v-form-field">
+                      <label>{l.fullName} *</label>
+                      <input
+                        type="text"
+                        required
+                        value={profileFormData.name}
+                        onChange={(e) => setProfileFormData({ ...profileFormData, name: e.target.value })}
+                        placeholder="e.g. Rajesh Kumar"
+                      />
+                    </div>
+
+                    <div className="v-form-field">
+                      <label>{l.emailAddr} (Read-only)</label>
+                      <input
+                        type="email"
+                        disabled
+                        value={userProfile.email}
+                        style={{ background: '#f1f5f9', cursor: 'not-allowed', color: '#64748b' }}
+                      />
+                    </div>
+
+                    <div className="v-form-field">
+                      <label>{l.phoneNumber} *</label>
+                      <input
+                        type="tel"
+                        required
+                        placeholder="10-digit phone number"
+                        value={profileFormData.phone}
+                        onChange={(e) => setProfileFormData({ ...profileFormData, phone: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="v-form-field">
+                      <label>{l.jurisdictionZone || 'Jurisdiction District / Zone'}</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Trichy"
+                        value={profileFormData.zone}
+                        onChange={(e) => setProfileFormData({ ...profileFormData, zone: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="v-form-field">
+                      <label>{l.villageSubPlace || 'Village / Mandi Sub-Place'}</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Lalgudi Central / APMC Yard #2"
+                        value={profileFormData.subPlace}
+                        onChange={(e) => setProfileFormData({ ...profileFormData, subPlace: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="v-form-field" style={{ gridColumn: 'span 2' }}>
+                      <label>{l.farmLocationAddress || 'Farm Location / Survey Address'}</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. SF No. 42/B, Green Field Belt"
+                        value={profileFormData.address}
+                        onChange={(e) => setProfileFormData({ ...profileFormData, address: e.target.value })}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="v-profile-edit-actions">
+                    <button
+                      type="button"
+                      className="v-btn-profile-cancel"
+                      onClick={() => setIsEditingProfile(false)}
+                    >
+                      {l.cancel || 'Cancel'}
+                    </button>
+                    <button
+                      type="submit"
+                      className="v-btn-profile-save"
+                      disabled={isSavingProfile}
+                    >
+                      {isSavingProfile ? 'Saving Changes...' : (l.saveChanges || 'Save Changes ✓')}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
           </div>
         )}
 
