@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { db, auth } from "../firebase";
 import "./Register.css";
 
@@ -47,6 +47,8 @@ const translations = {
       "Your information is securely stored with Firebase.",
 
     passwordMismatch: "Passwords do not match.",
+    phoneAlreadyRegistered: "This phone number is already registered. Please login or use a different phone number.",
+    invalidPhone: "Please enter a valid 10-digit phone number.",
 
     success:
       "Registration successful! Please login.",
@@ -105,6 +107,10 @@ const translations = {
 
     passwordMismatch:
       "கடவுச்சொற்கள் பொருந்தவில்லை.",
+    phoneAlreadyRegistered:
+      "இந்த தொலைபேசி எண் ஏற்கனவே பதிவு செய்யப்பட்டுள்ளது. உள்நுழையவும் அல்லது வேறு எண்ணைப் பயன்படுத்தவும்.",
+    invalidPhone:
+      "சரியான 10 இலக்க தொலைபேசி எண்ணை உள்ளிடவும்.",
 
     success:
       "பதிவு வெற்றிகரமாக முடிந்தது! தயவுசெய்து உள்நுழையவும்.",
@@ -165,6 +171,10 @@ const translations = {
 
     passwordMismatch:
       "पासवर्ड मेल नहीं खाते।",
+    phoneAlreadyRegistered:
+      "यह फ़ोन नंबर पहले से पंजीकृत है। कृपया लॉगिन करें या दूसरा नंबर उपयोग करें।",
+    invalidPhone:
+      "कृपया एक मान्य 10-अंकीय फ़ोन नंबर दर्ज करें।",
 
     success:
       "पंजीकरण सफल हुआ! कृपया लॉगिन करें।",
@@ -222,13 +232,43 @@ const Register = () => {
       return;
     }
 
+    const rawPhone = formData.phone.trim();
+    const cleanPhone = rawPhone.replace(/\D/g, '').slice(-10);
+
+    if (cleanPhone.length < 10) {
+      alert(t.invalidPhone);
+      return;
+    }
+
     setLoading(true);
 
     try {
+      // Check if phone number is already registered across Firestore users
+      const phoneSearchVariants = [
+        cleanPhone,
+        `+91${cleanPhone}`,
+        `+91 ${cleanPhone}`,
+        `0${cleanPhone}`,
+        rawPhone
+      ];
+      const uniqueVariants = [...new Set(phoneSearchVariants.filter(Boolean))];
+
+      const phoneQuery = query(
+        collection(db, "users"),
+        where("phone", "in", uniqueVariants)
+      );
+      const phoneSnapshot = await getDocs(phoneQuery);
+
+      if (!phoneSnapshot.empty) {
+        setLoading(false);
+        alert(t.phoneAlreadyRegistered);
+        return;
+      }
+
       const userCredential =
         await createUserWithEmailAndPassword(
           auth,
-          formData.email,
+          formData.email.trim().toLowerCase(),
           formData.password
         );
 
@@ -236,9 +276,9 @@ const Register = () => {
 
       await setDoc(doc(db, "users", user.uid), {
         uid: user.uid,
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
+        name: formData.name.trim(),
+        email: formData.email.trim().toLowerCase(),
+        phone: cleanPhone,
         role: "farmer",
         createdAt: new Date().toISOString(),
       });

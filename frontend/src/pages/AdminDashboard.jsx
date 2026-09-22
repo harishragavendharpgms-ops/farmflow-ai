@@ -32,6 +32,7 @@ const AdminDashboard = () => {
   const [newUser, setNewUser] = useState({
     name: '',
     email: '',
+    phone: '',
     password: '',
     role: 'vao',
     zone: '',
@@ -70,6 +71,25 @@ const AdminDashboard = () => {
 
   const handleCreateUser = async (e) => {
     e.preventDefault();
+
+    let cleanPhone = '';
+    if (newUser.phone && newUser.phone.trim()) {
+      cleanPhone = newUser.phone.trim().replace(/\D/g, '').slice(-10);
+      if (cleanPhone.length < 10) {
+        alert('Please enter a valid 10-digit phone number.');
+        return;
+      }
+      const duplicate = users.find(
+        (u) =>
+          u.phone &&
+          u.phone.replace(/\D/g, '').slice(-10) === cleanPhone
+      );
+      if (duplicate) {
+        alert(`The phone number "${newUser.phone}" is already assigned to "${duplicate.name}" (${duplicate.role.toUpperCase()}). Every user must have a unique phone number.`);
+        return;
+      }
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -82,8 +102,9 @@ const AdminDashboard = () => {
       const user = userCredential.user;
       const userProfile = {
         uid: user.uid,
-        name: newUser.name,
+        name: newUser.name.trim(),
         email: newUser.email.trim().toLowerCase(),
+        phone: cleanPhone || '',
         role: newUser.role,
         zone: newUser.zone || '',
         subPlace: newUser.subPlace || 'General',
@@ -95,6 +116,7 @@ const AdminDashboard = () => {
       setNewUser({
         name: '',
         email: '',
+        phone: '',
         password: '',
         role: 'vao',
         zone: '',
@@ -139,11 +161,30 @@ const AdminDashboard = () => {
   const handleSaveUserEdit = async (e) => {
     e.preventDefault();
     if (!editingUser) return;
+
+    if (editingUser.phone && editingUser.phone.trim()) {
+      const cleanPhone = editingUser.phone.trim().replace(/\D/g, '').slice(-10);
+      if (cleanPhone.length < 10) {
+        alert('Please enter a valid 10-digit phone number.');
+        return;
+      }
+      const duplicate = users.find(
+        (u) =>
+          u.id !== editingUser.id &&
+          u.phone &&
+          u.phone.replace(/\D/g, '').slice(-10) === cleanPhone
+      );
+      if (duplicate) {
+        alert(`This phone number (${editingUser.phone}) is already assigned to "${duplicate.name}" (${duplicate.role.toUpperCase()}). Every user must have a unique phone number.`);
+        return;
+      }
+    }
+
     setIsUpdatingUser(true);
     try {
       await updateDoc(doc(db, 'users', editingUser.id), {
         name: editingUser.name.trim(),
-        phone: editingUser.phone.trim(),
+        phone: editingUser.phone ? editingUser.phone.trim().replace(/\D/g, '').slice(-10) : '',
         role: editingUser.role,
         zone: editingUser.zone.trim(),
         subPlace: editingUser.subPlace.trim()
@@ -1022,6 +1063,16 @@ const AdminDashboard = () => {
                       placeholder="e.g. ramesh@farmflow.gov.in"
                       value={newUser.email}
                       onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                    />
+                  </div>
+
+                  <div className="v-form-field">
+                    <label>Contact Phone Number</label>
+                    <input
+                      type="tel"
+                      placeholder="10-digit mobile number"
+                      value={newUser.phone}
+                      onChange={(e) => setNewUser({ ...newUser, phone: e.target.value })}
                     />
                   </div>
 

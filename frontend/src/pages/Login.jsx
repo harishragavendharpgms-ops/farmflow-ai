@@ -195,9 +195,9 @@ const Login = () => {
 
   // Farmer login mode: 'otp' or 'email'
   const [farmerAuthMode, setFarmerAuthMode] = useState('email');
-  const [mobileNumber, setMobileNumber] = useState('9876543210');
+  const [mobileNumber, setMobileNumber] = useState('');
   const [otpSent, setOtpSent] = useState(false);
-  const [otpDigits, setOtpDigits] = useState(['1', '2', '3', '4', '5', '6']);
+  const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
   const [resendTimer, setResendTimer] = useState(30);
 
   // Email/Password login state
@@ -239,8 +239,8 @@ const Login = () => {
       if (!email) setEmail('admin@farmflow.com');
       if (!password) setPassword('admin123');
     } else {
-      if (!email) setEmail('rajesh@farmflow.com');
-      if (!password) setPassword('farmer123');
+      setEmail('');
+      setPassword('');
     }
   };
 
@@ -265,21 +265,54 @@ const Login = () => {
   };
 
   // Send OTP handler
-  const handleSendOtp = () => {
-    if (!mobileNumber || mobileNumber.length < 10) {
-      alert('Please enter a valid 10-digit mobile number.');
+  const handleSendOtp = async () => {
+    const raw = mobileNumber.trim();
+    const cleanNum = raw.replace(/\D/g, '').slice(-10);
+
+    if (cleanNum.length < 10) {
+      alert(
+        language === 'ta'
+          ? 'சரியான 10 இலக்க கைபேசி எண்ணை உள்ளிடவும்.'
+          : language === 'hi'
+            ? 'कृपया एक मान्य 10-अंकीय मोबाइल नंबर दर्ज करें।'
+            : 'Please enter a valid 10-digit mobile number.'
+      );
       return;
     }
+
     setIsSubmitting(true);
-    setTimeout(() => {
+    try {
+      // Check if user exists with this phone number
+      const qPhone = query(
+        collection(db, 'users'),
+        where('phone', 'in', [cleanNum, `+91${cleanNum}`, `+91 ${cleanNum}`, raw])
+      );
+      const phoneSnap = await getDocs(qPhone);
+
+      if (phoneSnap.empty) {
+        setIsSubmitting(false);
+        alert(
+          language === 'ta'
+            ? 'இந்த கைபேசி எண்ணுடன் பதிவு செய்யப்பட்ட கணக்கு எதுவும் இல்லை. தயவுசெய்து முதலில் கணக்கை பதிவு செய்யவும்.'
+            : language === 'hi'
+              ? 'इस मोबाइल नंबर से कोई पंजीकृत खाता नहीं मिला। कृपया पहले पंजीकरण करें।'
+              : 'No account registered with this phone number. Please register your farmer account first.'
+        );
+        return;
+      }
+
       setIsSubmitting(false);
       setOtpSent(true);
       setResendTimer(30);
-    }, 700);
+    } catch (err) {
+      console.error('Error looking up phone number:', err);
+      setIsSubmitting(false);
+      alert('Failed to verify phone number. Please try again.');
+    }
   };
 
   // Farmer OTP verification & login
-  const handleVerifyOtp = () => {
+  const handleVerifyOtp = async () => {
     const enteredCode = otpDigits.join('');
     if (enteredCode.length < 6) {
       alert(t.invalidOtp);
@@ -287,13 +320,36 @@ const Login = () => {
     }
 
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
+    try {
+      const raw = mobileNumber.trim();
+      const cleanNum = raw.replace(/\D/g, '').slice(-10);
+
+      const qPhone = query(
+        collection(db, 'users'),
+        where('phone', 'in', [cleanNum, `+91${cleanNum}`, `+91 ${cleanNum}`, raw])
+      );
+      const phoneSnap = await getDocs(qPhone);
+
+      if (phoneSnap.empty) {
+        setIsSubmitting(false);
+        alert(
+          language === 'ta'
+            ? 'இந்த கைபேசி எண்ணுடன் பயனர் கணக்கு எதுவும் காணப்படவில்லை.'
+            : language === 'hi'
+              ? 'इस मोबाइल नंबर से कोई खाता नहीं मिला।'
+              : 'No registered user found with this mobile number.'
+        );
+        return;
+      }
+
+      const docSnap = phoneSnap.docs[0];
+      const firestoreData = docSnap.data();
+
       const farmerData = {
-        name: 'Rajesh Farmer',
-        phone: mobileNumber,
-        email: 'rajesh@farmflow.com',
-        role: 'farmer'
+        id: docSnap.id,
+        uid: docSnap.id,
+        ...firestoreData,
+        role: firestoreData.role || 'farmer'
       };
 
       if (rememberMe) {
@@ -302,11 +358,16 @@ const Login = () => {
         sessionStorage.setItem('farmflow_user', JSON.stringify(farmerData));
       }
 
+      setIsSubmitting(false);
       navigate('/dashboard');
-    }, 800);
+    } catch (e) {
+      console.error('Error logging in via OTP:', e);
+      setIsSubmitting(false);
+      alert('Verification error. Please try again.');
+    }
   };
 
-  // Standard Email/Password Login (Original Firebase Workflow Preserved)
+  // Standard Email/Password Login (Authentic Firebase Authentication)
   const handleEmailPasswordLogin = async (e) => {
     e.preventDefault();
 
@@ -346,7 +407,7 @@ const Login = () => {
 
     try {
       // Firebase Authentication
-      await signInWithEmailAndPassword(
+      const userCredential = await signInWithEmailAndPassword(
         auth,
         email.trim().toLowerCase(),
         password
@@ -360,6 +421,8 @@ const Login = () => {
       const querySnapshot = await getDocs(q);
 
       let userData = {
+        id: userCredential.user.uid,
+        uid: userCredential.user.uid,
         name: email.split('@')[0],
         email: email.trim().toLowerCase(),
         role: selectedRole
@@ -368,6 +431,8 @@ const Login = () => {
       if (!querySnapshot.empty) {
         const firestoreData = querySnapshot.docs[0].data();
         userData = {
+          id: querySnapshot.docs[0].id,
+          uid: querySnapshot.docs[0].id,
           ...firestoreData,
           email: firestoreData.email || email.trim().toLowerCase()
         };
@@ -379,7 +444,7 @@ const Login = () => {
         sessionStorage.setItem('farmflow_user', JSON.stringify(userData));
       }
 
-      // Role redirection (Matching original web)
+      // Role redirection
       if (userData.role === 'admin') {
         navigate('/admin');
       } else if (userData.role === 'officer') {
@@ -391,29 +456,27 @@ const Login = () => {
       }
     } catch (error) {
       console.error('Error logging in:', error);
-      // Fallback for demo users
-      if (selectedRole === 'vao') {
-        const vaoUser = {
-          name: 'VAO Officer',
-          email: email.trim().toLowerCase(),
-          role: 'vao',
-          zone: 'Zone A',
-          subPlace: 'Village 1'
-        };
-        localStorage.setItem('farmflow_user', JSON.stringify(vaoUser));
-        navigate('/vao');
-        return;
-      } else if (selectedRole === 'farmer') {
-        const demoUser = {
-          name: 'Rajesh Farmer',
-          email: email.trim().toLowerCase(),
-          role: 'farmer'
-        };
-        localStorage.setItem('farmflow_user', JSON.stringify(demoUser));
-        navigate('/dashboard');
-        return;
+      let errMsg = t.loginFailed;
+      if (
+        error.code === 'auth/invalid-credential' ||
+        error.code === 'auth/user-not-found' ||
+        error.code === 'auth/wrong-password'
+      ) {
+        errMsg =
+          language === 'ta'
+            ? 'தவறான மின்னஞ்சல் அல்லது கடவுச்சொல். தயவுசெய்து உங்கள் சரியான விவரங்களை உள்ளிடவும்.'
+            : language === 'hi'
+              ? 'गलत ईमेल या पासवर्ड। कृपया अपना सही विवरण दर्ज करें।'
+              : 'Invalid email or password. Please verify your credentials and try again.';
+      } else if (error.code === 'auth/too-many-requests') {
+        errMsg =
+          language === 'ta'
+            ? 'பல முறை தவறாக முயன்றதால் தற்காலிகமாக தடுக்கப்பட்டுள்ளது. சிறிது நேரம் கழித்து மீண்டும் முயற்சிக்கவும்.'
+            : language === 'hi'
+              ? 'अत्यधिक असफल प्रयासों के कारण खाता अस्थायी रूप से अवरुद्ध है। कृपया बाद में प्रयास करें।'
+              : 'Too many unsuccessful attempts. Access temporarily disabled. Please try again later.';
       }
-      alert(t.loginFailed);
+      alert(errMsg);
     } finally {
       setIsSubmitting(false);
     }

@@ -362,15 +362,39 @@ const Dashboard = () => {
   );
 
   // User Profile & Edit States
-  const [userProfile, setUserProfile] = useState({
-    name: 'Rajesh Farmer',
-    email: 'rajesh@farmflow.com',
-    phone: '9876543210',
-    role: 'farmer',
-    zone: '',
-    subPlace: '',
-    address: '',
-    photoUrl: ''
+  const [userProfile, setUserProfile] = useState(() => {
+    try {
+      const saved =
+        localStorage.getItem('farmflow_user') ||
+        sessionStorage.getItem('farmflow_user');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.email) {
+          return {
+            name: parsed.name || 'Farmer',
+            email: parsed.email,
+            phone: parsed.phone || '',
+            role: parsed.role || 'farmer',
+            zone: parsed.zone || '',
+            subPlace: parsed.subPlace || '',
+            address: parsed.address || '',
+            photoUrl: parsed.photoUrl || ''
+          };
+        }
+      }
+    } catch (e) {
+      console.error("Error reading saved user:", e);
+    }
+    return {
+      name: '',
+      email: '',
+      phone: '',
+      role: 'farmer',
+      zone: '',
+      subPlace: '',
+      address: '',
+      photoUrl: ''
+    };
   });
   const [userDocId, setUserDocId] = useState(null);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -444,24 +468,32 @@ const Dashboard = () => {
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
-  // Load Saved User
+  // Load Saved User & Enforce Authentication
   useEffect(() => {
     const savedUser =
       localStorage.getItem('farmflow_user') ||
       sessionStorage.getItem('farmflow_user');
 
-    if (savedUser) {
-      try {
-        const parsed = JSON.parse(savedUser);
-        if (parsed && parsed.email) {
-          setUserProfile(parsed);
-          return;
-        }
-      } catch (e) {
-        console.error("Error parsing saved user:", e);
-      }
+    if (!savedUser) {
+      navigate('/login');
+      return;
     }
-  }, []);
+
+    try {
+      const parsed = JSON.parse(savedUser);
+      if (parsed && parsed.email) {
+        setUserProfile((prev) => ({ ...prev, ...parsed }));
+        if (parsed.id || parsed.uid) {
+          setUserDocId(parsed.id || parsed.uid);
+        }
+      } else {
+        navigate('/login');
+      }
+    } catch (e) {
+      console.error("Error parsing saved user:", e);
+      navigate('/login');
+    }
+  }, [navigate]);
 
   // Geolocation & Live Weather
   useEffect(() => {
@@ -710,11 +742,36 @@ const Dashboard = () => {
       return;
     }
 
+    const rawPhone = profileFormData.phone.trim();
+    const cleanPhone = rawPhone.replace(/\D/g, '').slice(-10);
+
+    if (cleanPhone && cleanPhone.length < 10) {
+      alert('Please enter a valid 10-digit phone number.');
+      return;
+    }
+
     setIsSavingProfile(true);
     try {
+      if (cleanPhone) {
+        const phoneVariants = [cleanPhone, `+91${cleanPhone}`, `+91 ${cleanPhone}`, rawPhone];
+        const uniqueVariants = [...new Set(phoneVariants.filter(Boolean))];
+        const qPhone = query(collection(db, 'users'), where('phone', 'in', uniqueVariants));
+        const phoneSnap = await getDocs(qPhone);
+
+        const isDuplicate = phoneSnap.docs.some(
+          (d) => d.id !== userDocId && d.data().email?.toLowerCase() !== userProfile.email.toLowerCase()
+        );
+
+        if (isDuplicate) {
+          setIsSavingProfile(false);
+          alert('This phone number is already registered to another account. Please use a unique phone number.');
+          return;
+        }
+      }
+
       const updatedFields = {
         name: profileFormData.name.trim(),
-        phone: profileFormData.phone.trim(),
+        phone: cleanPhone || rawPhone,
         zone: profileFormData.zone.trim(),
         subPlace: profileFormData.subPlace.trim(),
         address: profileFormData.address.trim(),
@@ -1554,7 +1611,7 @@ const Dashboard = () => {
                         required
                         value={profileFormData.name}
                         onChange={(e) => setProfileFormData({ ...profileFormData, name: e.target.value })}
-                        placeholder="e.g. Rajesh Kumar"
+                        placeholder="Enter your full name"
                       />
                     </div>
 
