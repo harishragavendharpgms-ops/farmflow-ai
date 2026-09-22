@@ -343,6 +343,148 @@
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
 
+/* OTP VERIFICATION FLOW */
+.register-otp-flow {
+  display: flex;
+  flex-direction: column;
+  animation: registerOtpFadeIn 0.3s ease-out;
+}
+
+@keyframes registerOtpFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.register-otp-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #166534;
+  margin-bottom: 20px;
+}
+
+.register-otp-banner .check-icon {
+  background: #16a34a;
+  color: #ffffff;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+.register-otp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.register-otp-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.register-change-phone {
+  background: transparent;
+  border: none;
+  color: #16a34a;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.15s ease;
+}
+
+.register-change-phone:hover {
+  color: #15803d;
+  text-decoration: underline;
+}
+
+.register-otp-boxes {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.register-otp-box {
+  width: 100%;
+  height: 54px;
+  border-radius: 12px;
+  border: 1.5px solid #cbd5e1;
+  background: #ffffff;
+  text-align: center;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #0f172a;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.register-otp-box:focus {
+  border-color: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15);
+  outline: none;
+}
+
+.register-otp-box.filled {
+  border-color: #86efac;
+  background: #f0fdf4;
+}
+
+.register-resend-timer {
+  text-align: center;
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-bottom: 20px;
+}
+
+.register-resend-timer b {
+  color: #15803d;
+  font-weight: 700;
+}
+
+.register-resend-btn {
+  background: transparent;
+  border: none;
+  color: #16a34a;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 4px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.register-resend-btn:hover:not(:disabled) {
+  color: #15803d;
+  text-decoration: underline;
+}
+
+.register-resend-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 /* RESPONSIVE DESIGN */
 @media (max-width: 540px) {
   .register-card {
@@ -352,5 +494,14 @@
 
   .register-header h2 {
     font-size: 1.55rem;
+  }
+
+  .register-otp-boxes {
+    gap: 6px;
+  }
+
+  .register-otp-box {
+    height: 46px;
+    font-size: 1.15rem;
   }
 }

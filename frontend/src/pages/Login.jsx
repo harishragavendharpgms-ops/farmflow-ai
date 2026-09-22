@@ -11,6 +11,7 @@ import {
   signInWithEmailAndPassword,
   sendPasswordResetEmail
 } from 'firebase/auth';
+import { generateOTP, sendVerificationOTP } from '../services/textbee';
 import farmMandiBg from '../assets/farm_mandi_bg.jpg';
 import './Login.css';
 
@@ -197,6 +198,7 @@ const Login = () => {
   const [farmerAuthMode, setFarmerAuthMode] = useState('email');
   const [mobileNumber, setMobileNumber] = useState('');
   const [otpSent, setOtpSent] = useState(false);
+  const [sentOtp, setSentOtp] = useState('');
   const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
   const [resendTimer, setResendTimer] = useState(30);
 
@@ -264,7 +266,21 @@ const Login = () => {
     }
   };
 
-  // Send OTP handler
+  const handleOtpPaste = (e) => {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6);
+    if (!pasted) return;
+    const newDigits = [...otpDigits];
+    for (let i = 0; i < 6; i++) {
+      newDigits[i] = pasted[i] || '';
+    }
+    setOtpDigits(newDigits);
+    const targetIdx = Math.min(pasted.length, 5);
+    const el = document.getElementById(`otp-input-${targetIdx}`);
+    if (el) el.focus();
+  };
+
+  // Send OTP handler via TextBee
   const handleSendOtp = async () => {
     const raw = mobileNumber.trim();
     const cleanNum = raw.replace(/\D/g, '').slice(-10);
@@ -283,9 +299,18 @@ const Login = () => {
     setIsSubmitting(true);
     try {
       // Check if user exists with this phone number
+      const phoneSearchVariants = [
+        cleanNum,
+        `+91${cleanNum}`,
+        `+91 ${cleanNum}`,
+        `0${cleanNum}`,
+        raw
+      ];
+      const uniqueVariants = [...new Set(phoneSearchVariants.filter(Boolean))];
+
       const qPhone = query(
         collection(db, 'users'),
-        where('phone', 'in', [cleanNum, `+91${cleanNum}`, `+91 ${cleanNum}`, raw])
+        where('phone', 'in', uniqueVariants)
       );
       const phoneSnap = await getDocs(qPhone);
 
@@ -301,21 +326,46 @@ const Login = () => {
         return;
       }
 
+      // Generate authentic 6-digit OTP and send via TextBee
+      const code = generateOTP();
+      console.log('[Login] Dispatching SMS OTP to', cleanNum, ':', code);
+
+      await sendVerificationOTP({ phone: cleanNum, otp: code, purpose: 'login' });
+
+      setSentOtp(code);
+      setOtpDigits(['', '', '', '', '', '']);
       setIsSubmitting(false);
       setOtpSent(true);
       setResendTimer(30);
     } catch (err) {
-      console.error('Error looking up phone number:', err);
+      console.error('Error looking up phone number or dispatching OTP:', err);
       setIsSubmitting(false);
-      alert('Failed to verify phone number. Please try again.');
+      alert(
+        language === 'ta'
+          ? 'OTP அனுப்புவதில் தோல்வி. தயவுசெய்து மீண்டும் முயற்சிக்கவும்.'
+          : language === 'hi'
+            ? 'OTP भेजने में विफल। कृपया पुनः प्रयास करें।'
+            : 'Failed to send OTP via SMS. Please check your network and phone number.'
+      );
     }
   };
 
   // Farmer OTP verification & login
   const handleVerifyOtp = async () => {
-    const enteredCode = otpDigits.join('');
+    const enteredCode = otpDigits.join('').trim();
     if (enteredCode.length < 6) {
       alert(t.invalidOtp);
+      return;
+    }
+
+    if (enteredCode !== sentOtp) {
+      alert(
+        language === 'ta'
+          ? 'தவறான OTP. உங்கள் கைபேசியில் பெறப்பட்ட சரியான சரிபார்ப்புக் குறியீட்டை உள்ளிடவும்.'
+          : language === 'hi'
+            ? 'गलत OTP। कृपया अपने मोबाइल पर प्राप्त सही सत्यापन कोड दर्ज करें।'
+            : 'Invalid OTP. Please enter the correct verification code received on your phone.'
+      );
       return;
     }
 
@@ -324,9 +374,18 @@ const Login = () => {
       const raw = mobileNumber.trim();
       const cleanNum = raw.replace(/\D/g, '').slice(-10);
 
+      const phoneSearchVariants = [
+        cleanNum,
+        `+91${cleanNum}`,
+        `+91 ${cleanNum}`,
+        `0${cleanNum}`,
+        raw
+      ];
+      const uniqueVariants = [...new Set(phoneSearchVariants.filter(Boolean))];
+
       const qPhone = query(
         collection(db, 'users'),
-        where('phone', 'in', [cleanNum, `+91${cleanNum}`, `+91 ${cleanNum}`, raw])
+        where('phone', 'in', uniqueVariants)
       );
       const phoneSnap = await getDocs(qPhone);
 
@@ -715,18 +774,34 @@ const Login = () => {
                           key={idx}
                           id={`otp-input-${idx}`}
                           type="text"
+                          inputMode="numeric"
                           maxLength="1"
                           className={`v-otp-box ${digit ? 'filled' : ''}`}
                           value={digit}
                           onChange={(e) => handleOtpChange(idx, e.target.value)}
                           onKeyDown={(e) => handleOtpKeyDown(idx, e)}
+                          onPaste={handleOtpPaste}
                           autoFocus={idx === 0}
                         />
                       ))}
                     </div>
 
                     <div className="v-resend-timer">
-                      {t.resendOtpIn} <b>{resendTimer} {t.seconds}</b>
+                      {resendTimer > 0 ? (
+                        <>
+                          {t.resendOtpIn} <b>{resendTimer} {t.seconds}</b>
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          className="v-change-number"
+                          onClick={handleSendOtp}
+                          disabled={isSubmitting}
+                          style={{ fontWeight: 700 }}
+                        >
+                          🔄 {language === 'ta' ? 'மீண்டும் OTP அனுப்பு' : language === 'hi' ? 'पुनः OTP भेजें' : 'Resend OTP'}
+                        </button>
+                      )}
                     </div>
 
                     <button
