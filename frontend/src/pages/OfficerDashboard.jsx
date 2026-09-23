@@ -168,6 +168,32 @@ const OfficerDashboard = () => {
     }
   };
 
+  // Approve Farmer's Slot Reschedule Request
+  const handleApproveReschedule = async (order) => {
+    const newSlot = `${order.preferredRescheduleDate || 'Upcoming'} at ${order.preferredRescheduleTime || '09:00 AM'}`;
+    setIsSavingSlot(order.id);
+    try {
+      await updateDoc(doc(db, 'orders', order.id), {
+        datetime: newSlot,
+        status: 'Slot Allocated',
+        rescheduleRequested: false
+      });
+
+      await triggerSms(
+        order.userPhone,
+        `FarmFlow AI: Your reschedule request has been APPROVED! New confirmed slot: ${newSlot} at ${order.zone || 'APMC Centre'}.`
+      );
+
+      alert(`Reschedule approved for Token ${order.token || order.id.slice(0, 8)}: ${newSlot}`);
+    } catch (err) {
+      console.error('Error approving reschedule:', err);
+      alert('Failed to approve reschedule: ' + err.message);
+    } finally {
+      setIsSavingSlot(null);
+    }
+  };
+
+
   // Audio Chime helper for Mandi Counter Call (Video 02:18)
   const playCallChime = () => {
     try {
@@ -298,6 +324,7 @@ const OfficerDashboard = () => {
       // Tab filter
       let matchTab = true;
       if (activeQueueTab === 'arrived') matchTab = order.status === 'Arrived';
+      else if (activeQueueTab === 'reschedule') matchTab = order.rescheduleRequested === true || order.status === 'Reschedule Requested';
       else if (activeQueueTab === 'waiting') matchTab = order.status === 'BOOKED' || order.status === 'Slot Allocated';
       else if (activeQueueTab === 'called') matchTab = order.status === 'Processing';
       else if (activeQueueTab === 'completed') matchTab = order.status === 'Completed' || order.status === 'Procured';
@@ -322,6 +349,7 @@ const OfficerDashboard = () => {
     const processing = orders.filter((o) => o.status === 'Processing').length;
     const completed = orders.filter((o) => o.status === 'Completed' || o.status === 'Procured').length;
     const noShow = orders.filter((o) => o.status === 'CANCELLED').length;
+    const rescheduleRequests = orders.filter((o) => o.rescheduleRequested === true || o.status === 'Reschedule Requested').length;
     const totalQty = orders.reduce((acc, o) => acc + (parseFloat(o.quantity) || 0), 0);
 
     return {
@@ -331,6 +359,7 @@ const OfficerDashboard = () => {
       processing,
       completed,
       noShow,
+      rescheduleRequests,
       totalQty: `${totalQty} Qtl`,
       avgWait: '0 min'
     };
@@ -575,11 +604,58 @@ const OfficerDashboard = () => {
               </div>
             </div>
 
+            {/* TOP RESCHEDULE ALERT BANNER */}
+            {metrics.rescheduleRequests > 0 && (
+              <div
+                style={{
+                  background: '#fffbeb',
+                  border: '1.5px solid #fde68a',
+                  borderRadius: '12px',
+                  padding: '12px 18px',
+                  marginBottom: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '12px',
+                  boxShadow: '0 1px 4px rgba(217, 119, 6, 0.08)'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <span style={{ fontSize: '1.4rem' }}>🔄</span>
+                  <div>
+                    <strong style={{ color: '#92400e', fontSize: '0.92rem' }}>
+                      {metrics.rescheduleRequests} Slot Reschedule {metrics.rescheduleRequests === 1 ? 'Request' : 'Requests'} Pending!
+                    </strong>
+                    <p style={{ margin: 0, fontSize: '0.8rem', color: '#b45309' }}>
+                      Farmers have submitted preferred new dates and reasons for their mandi slot.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveQueueTab('reschedule')}
+                  style={{
+                    background: '#d97706',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '8px 16px',
+                    fontSize: '0.82rem',
+                    fontWeight: 700,
+                    cursor: 'pointer'
+                  }}
+                >
+                  View Requests ({metrics.rescheduleRequests})
+                </button>
+              </div>
+            )}
+
             {/* Filter Pill Tabs */}
             <div className="v-op-filter-tabs">
               <div className="v-filter-pills">
                 {[
                   { id: 'all', label: 'All Tokens', count: orders.length },
+                  { id: 'reschedule', label: '🔄 Reschedule Requests', count: metrics.rescheduleRequests },
                   { id: 'arrived', label: 'Arrived', count: metrics.arrived },
                   { id: 'waiting', label: 'Waiting', count: metrics.waiting },
                   { id: 'called', label: 'Called', count: metrics.processing },
@@ -652,7 +728,63 @@ const OfficerDashboard = () => {
                         <td>{order.item || 'Paddy (Grade A)'}</td>
                         <td>{order.quantity} Qtl</td>
                         <td>
-                          {order.datetime && order.datetime !== 'TBD by Officer' ? (
+                          {order.rescheduleRequested || order.status === 'Reschedule Requested' ? (
+                            <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '8px', padding: '8px 10px', maxWidth: '280px' }}>
+                              <span className="pill-badge pill-badge-yellow" style={{ fontSize: '0.68rem', marginBottom: '4px', display: 'inline-block' }}>
+                                🔄 Reschedule Requested
+                              </span>
+                              <div style={{ fontSize: '0.82rem', color: '#92400e', fontWeight: 700 }}>
+                                📅 {order.preferredRescheduleDate || 'Date'} ({order.preferredRescheduleTime || 'Time'})
+                              </div>
+                              {order.rescheduleReason && (
+                                <div style={{ fontSize: '0.74rem', color: '#78350f', marginTop: '3px', fontStyle: 'italic', lineHeight: 1.3 }}>
+                                  💬 "{order.rescheduleReason}"
+                                </div>
+                              )}
+                              <div style={{ marginTop: '8px', display: 'flex', gap: '6px' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleApproveReschedule(order)}
+                                  disabled={isSavingSlot === order.id}
+                                  style={{
+                                    background: '#16a34a',
+                                    color: '#fff',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    padding: '5px 12px',
+                                    fontSize: '0.76rem',
+                                    fontWeight: 700,
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  {isSavingSlot === order.id ? 'Approving...' : '✓ Approve Slot'}
+                                </button>
+                              </div>
+                              <details style={{ marginTop: '6px', fontSize: '0.72rem', color: '#64748b' }}>
+                                <summary style={{ cursor: 'pointer' }}>Or set custom slot</summary>
+                                <div className="slot-picker-inline" style={{ marginTop: '4px' }}>
+                                  <input
+                                    type="date"
+                                    onChange={(e) => handleInputChange(order.id, 'date', e.target.value)}
+                                  />
+                                  <input
+                                    type="text"
+                                    placeholder="09:00 AM"
+                                    style={{ width: '80px' }}
+                                    onChange={(e) => handleInputChange(order.id, 'time', e.target.value)}
+                                  />
+                                  <button
+                                    type="button"
+                                    className="v-btn-save-slot"
+                                    onClick={() => handleSaveTimeSlot(order.id)}
+                                    disabled={isSavingSlot === order.id}
+                                  >
+                                    Save
+                                  </button>
+                                </div>
+                              </details>
+                            </div>
+                          ) : order.datetime && order.datetime !== 'TBD by Officer' ? (
                             <span>{order.datetime}</span>
                           ) : (
                             <div className="slot-picker-inline">

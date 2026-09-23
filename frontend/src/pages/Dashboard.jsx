@@ -466,6 +466,8 @@ const Dashboard = () => {
   const [selectedOrderForReschedule, setSelectedOrderForReschedule] = useState(null);
   const [rescheduleDate, setRescheduleDate] = useState('');
   const [rescheduleTime, setRescheduleTime] = useState('09:00 AM - 11:00 AM');
+  const [rescheduleReason, setRescheduleReason] = useState('Transport / Vehicle breakdown or unavailable');
+  const [customRescheduleReason, setCustomRescheduleReason] = useState('');
 
   // Order Details Form
   const [orderDetails, setOrderDetails] = useState({
@@ -1044,19 +1046,163 @@ const Dashboard = () => {
       return;
     }
 
+    const finalReason = rescheduleReason === 'Other'
+      ? (customRescheduleReason.trim() || 'Farmer requested slot change')
+      : rescheduleReason;
+
     try {
       await updateDoc(doc(db, 'orders', selectedOrderForReschedule.id), {
+        status: 'Reschedule Requested',
         rescheduleRequested: true,
         preferredRescheduleDate: rescheduleDate,
-        preferredRescheduleTime: rescheduleTime
+        preferredRescheduleTime: rescheduleTime,
+        rescheduleReason: finalReason,
+        rescheduledAt: new Date().toISOString()
       });
       alert('Reschedule request submitted to the Procurement Officer!');
       setShowRescheduleModal(false);
     } catch (e) {
       console.error(e);
-      alert('Failed to request reschedule.');
+      alert('Failed to request reschedule: ' + e.message);
     }
   };
+
+  // Render Step Progress Tracker matching reference design
+  const renderOrderTracker = (order) => {
+    const isCancelled = order.status === 'Cancelled by VAO';
+    const isRescheduled = order.rescheduleRequested || order.status === 'Reschedule Requested';
+    const isCompleted = order.status === 'Procured' || order.status === 'Completed';
+    const isSlotAllocated = !isCancelled && (order.status === 'Slot Allocated' || (order.datetime && order.datetime !== 'TBD by Officer'));
+    const isVaoVerified = !isCancelled && (order.status === 'VAO Verified' || isSlotAllocated || isCompleted || isRescheduled);
+
+    // Active step index (0=Applied, 1=VAO Verified, 2=Slot Allocated, 3=Procured & Paid)
+    let activeStep = 0;
+    let statusTitle = "Applied";
+
+    if (isCancelled) {
+      activeStep = 1;
+      statusTitle = "Application Cancelled";
+    } else if (isCompleted) {
+      activeStep = 3;
+      statusTitle = "Procured & Paid";
+    } else if (isRescheduled) {
+      activeStep = 2;
+      statusTitle = "Reschedule Under Review";
+    } else if (isSlotAllocated) {
+      activeStep = 2;
+      statusTitle = "Slot Allocated";
+    } else if (isVaoVerified) {
+      activeStep = 1;
+      statusTitle = "VAO Verified";
+    } else {
+      activeStep = 0;
+      statusTitle = "Applied";
+    }
+
+    const steps = [
+      { label: "Applied", sub: "Token Booked" },
+      {
+        label: isCancelled ? "Verification Rejected" : "VAO Verified",
+        sub: isCancelled ? "Land record issue" : "Patta Confirmed"
+      },
+      {
+        label: isRescheduled ? "Reschedule Pending" : "Slot Allocated",
+        sub: isRescheduled ? "Awaiting Officer" : (order.datetime && order.datetime !== 'TBD by Officer' ? order.datetime : "At Mandi")
+      },
+      { label: "Procured & Paid", sub: "DBT Payment" }
+    ];
+
+    // Progress bar fill width percentage
+    const progressWidth = activeStep === 0 ? '12%' : activeStep === 1 ? '38%' : activeStep === 2 ? '70%' : '100%';
+
+    return (
+      <div className="flow-tracker-card">
+        <div className={`flow-tracker-title ${isCancelled ? 'cancelled' : ''}`}>
+          {statusTitle}
+        </div>
+
+        <div className="flow-tracker-track-wrap">
+          {/* Background track line */}
+          <div className="flow-tracker-bg-line" />
+          {/* Progress fill line */}
+          <div
+            className={`flow-tracker-fill-line ${isCancelled ? 'cancelled' : ''}`}
+            style={{ width: progressWidth }}
+          />
+
+          {/* Step nodes */}
+          <div className="flow-tracker-steps">
+            {steps.map((step, idx) => {
+              const isNodeDone = idx <= activeStep && !isCancelled;
+              const isCurrent = idx === activeStep;
+              const isNodeCancelled = isCancelled && idx === 1;
+
+              return (
+                <div
+                  key={idx}
+                  className={`flow-tracker-step ${isNodeDone ? 'completed' : ''} ${isCurrent ? 'active' : ''} ${isNodeCancelled ? 'cancelled' : ''}`}
+                >
+                  <div className={`flow-tracker-node ${isNodeDone ? 'completed' : ''} ${isCurrent ? 'active' : ''} ${isNodeCancelled ? 'cancelled' : ''}`}>
+                    {isNodeCancelled ? (
+                      <span className="node-icon">✕</span>
+                    ) : isNodeDone || (idx === 0 && !isCancelled) ? (
+                      <span className="node-icon">✓</span>
+                    ) : isCurrent && isRescheduled ? (
+                      <span className="node-icon">🔄</span>
+                    ) : (
+                      <span className="node-dot" />
+                    )}
+                  </div>
+                  <div className="flow-tracker-label-group">
+                    <span className={`flow-tracker-step-label ${isCurrent ? 'bold-label' : ''}`}>
+                      {step.label}
+                    </span>
+                    {step.sub && (
+                      <small className="flow-tracker-step-sub">{step.sub}</small>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Cancellation Alert Banner */}
+        {isCancelled && (
+          <div className="flow-tracker-cancel-alert">
+            <span className="cancel-alert-icon">⚠️</span>
+            <div>
+              <strong>Reason for Cancellation:</strong>
+              <p>{order.cancellationReason || 'Land document verification rejected by Village Administrative Officer.'}</p>
+              {order.cancelledBy && (
+                <small>Rejected by {order.cancelledBy.name} ({order.cancelledBy.designation || 'VAO'}) on {order.cancelledBy.date}</small>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Reschedule Alert Banner */}
+        {isRescheduled && (
+          <div className="flow-tracker-reschedule-alert">
+            <span className="reschedule-alert-icon">🔄</span>
+            <div>
+              <strong>Reschedule Requested:</strong>
+              <p>
+                Preferred: <b>{order.preferredRescheduleDate || 'Pending'}</b> ({order.preferredRescheduleTime || 'Slot'})
+              </p>
+              {order.rescheduleReason && (
+                <p>
+                  <strong>Reason:</strong> {order.rescheduleReason}
+                </p>
+              )}
+              <small>Under review by Mandi Procurement Officer. You will receive an SMS once approved.</small>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
 
   // Calculate Total Inventory Value
   const totalInventoryWeight = myCrops.reduce((acc, c) => acc + (c.weightKg || 0), 0);
@@ -2022,7 +2168,10 @@ const Dashboard = () => {
               </div>
             ) : (
               activeOrders.map((order) => (
-                <div key={order.id} className="v-gate-pass-card" style={{ marginBottom: '24px' }}>
+                <div key={order.id} className="v-gate-pass-card" style={{ marginBottom: '28px' }}>
+                  {/* Visual Progress Stepper Tracker matching reference design */}
+                  {renderOrderTracker(order)}
+
                   <div className="v-qr-section">
                     <div className="v-qr-box">
                       <svg viewBox="0 0 120 120" width="120" height="120">
@@ -2058,6 +2207,10 @@ const Dashboard = () => {
                       className={`pill-badge ${
                         order.status === 'Procured' || order.status === 'Completed'
                           ? 'pill-badge-green'
+                          : order.status === 'Cancelled by VAO'
+                          ? 'pill-badge-red'
+                          : order.status === 'Reschedule Requested' || order.rescheduleRequested
+                          ? 'pill-badge-yellow'
                           : order.status === 'VAO Verified'
                           ? 'pill-badge-blue'
                           : 'pill-badge-yellow'
@@ -2084,19 +2237,121 @@ const Dashboard = () => {
                       <small>PATTA / CHITTA DOC</small>
                       <strong>{order.pattaChitta || 'Submitted'}</strong>
                     </div>
+
+                    {/* REASON FOR RESCHEDULING */}
+                    {(order.rescheduleReason || order.rescheduleRequested) && (
+                      <div
+                        className="v-td-item v-td-reschedule-banner"
+                        style={{
+                          gridColumn: 'span 2',
+                          background: '#fffbeb',
+                          border: '1px solid #fef3c7',
+                          borderRadius: '10px',
+                          padding: '12px 14px',
+                          textAlign: 'left'
+                        }}
+                      >
+                        <small style={{ color: '#b45309', fontWeight: 800, fontSize: '0.72rem' }}>
+                          🔄 REASON FOR RESCHEDULING & REQUESTED SLOT
+                        </small>
+                        <strong style={{ color: '#92400e', display: 'block', fontSize: '0.92rem', marginTop: '2px' }}>
+                          Requested: {order.preferredRescheduleDate || 'Pending'} ({order.preferredRescheduleTime || 'Time slot'})
+                        </strong>
+                        <span style={{ fontSize: '0.84rem', color: '#78350f', display: 'block', marginTop: '3px' }}>
+                          <strong>Reason:</strong> {order.rescheduleReason || 'Farmer requested slot change'}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* REASON FOR CANCELLATION */}
+                    {(order.status === 'Cancelled by VAO' || order.cancellationReason) && (
+                      <div
+                        className="v-td-item v-td-cancel-banner"
+                        style={{
+                          gridColumn: 'span 2',
+                          background: '#fef2f2',
+                          border: '1px solid #fee2e2',
+                          borderRadius: '10px',
+                          padding: '12px 14px',
+                          textAlign: 'left'
+                        }}
+                      >
+                        <small style={{ color: '#dc2626', fontWeight: 800, fontSize: '0.72rem' }}>
+                          ❌ REASON FOR CANCELLATION
+                        </small>
+                        <strong style={{ color: '#991b1b', display: 'block', fontSize: '0.92rem', marginTop: '2px' }}>
+                          {order.cancellationReason || 'Land document verification rejected by Village Administrative Officer.'}
+                        </strong>
+                        {order.cancelledBy && (
+                          <small style={{ fontSize: '0.74rem', color: '#7f1d1d', display: 'block', marginTop: '3px' }}>
+                            By {order.cancelledBy.name} ({order.cancelledBy.designation || 'VAO'}) on {order.cancelledBy.date}
+                          </small>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div className="v-token-actions">
-                    <button
-                      type="button"
-                      className="v-btn-reschedule"
-                      onClick={() => {
-                        setSelectedOrderForReschedule(order);
-                        setShowRescheduleModal(true);
-                      }}
-                    >
-                      📅 Request Reschedule
-                    </button>
+                    {order.status === 'Cancelled by VAO' ? (
+                      <div
+                        style={{
+                          color: '#dc2626',
+                          fontWeight: 700,
+                          fontSize: '0.85rem',
+                          background: '#fef2f2',
+                          padding: '10px 16px',
+                          borderRadius: '8px',
+                          border: '1px solid #fecaca',
+                          width: '100%',
+                          textAlign: 'center'
+                        }}
+                      >
+                        Application Cancelled by VAO. Re-apply with corrected land records.
+                      </div>
+                    ) : order.status === 'Procured' || order.status === 'Completed' ? (
+                      <div
+                        style={{
+                          color: '#16a34a',
+                          fontWeight: 700,
+                          fontSize: '0.85rem',
+                          background: '#f0fdf4',
+                          padding: '10px 16px',
+                          borderRadius: '8px',
+                          border: '1px solid #bbf7d0',
+                          width: '100%',
+                          textAlign: 'center'
+                        }}
+                      >
+                        ✓ Procurement Finished & DBT Payment Disbursed
+                      </div>
+                    ) : order.rescheduleRequested || order.status === 'Reschedule Requested' ? (
+                      <button
+                        type="button"
+                        className="v-btn-reschedule"
+                        style={{
+                          background: '#fef3c7',
+                          borderColor: '#fde68a',
+                          color: '#92400e',
+                          cursor: 'default'
+                        }}
+                        disabled
+                      >
+                        ⏳ Reschedule Pending Officer Approval
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="v-btn-reschedule"
+                        onClick={() => {
+                          setSelectedOrderForReschedule(order);
+                          setRescheduleReason('Transport / Vehicle breakdown or unavailable');
+                          setCustomRescheduleReason('');
+                          setShowRescheduleModal(true);
+                        }}
+                      >
+                        📅 Request Reschedule
+                      </button>
+                    )}
                   </div>
                 </div>
               ))
@@ -2141,6 +2396,44 @@ const Dashboard = () => {
                       <option value="02:00 PM - 04:00 PM">02:00 PM - 04:00 PM</option>
                     </select>
                   </div>
+
+                  <div className="v-form-field">
+                    <label>Reason for Rescheduling</label>
+                    <select
+                      value={rescheduleReason}
+                      onChange={(e) => setRescheduleReason(e.target.value)}
+                      style={{ width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.88rem' }}
+                    >
+                      <option value="Transport / Vehicle breakdown or unavailable">Transport / Vehicle breakdown or unavailable</option>
+                      <option value="Unfavorable weather / Heavy rain forecast">Unfavorable weather / Heavy rain forecast</option>
+                      <option value="Harvest delay / Produce moisture not dried">Harvest delay / Produce moisture not dried</option>
+                      <option value="Labour shortage for bagging or loading">Labour shortage for bagging or loading</option>
+                      <option value="Personal / Family emergency">Personal / Family emergency</option>
+                      <option value="Other">Other (Specify Custom Reason)</option>
+                    </select>
+                  </div>
+
+                  {rescheduleReason === 'Other' && (
+                    <div className="v-form-field">
+                      <label>Specify Custom Reason</label>
+                      <textarea
+                        rows={2}
+                        placeholder="Please describe why you need to reschedule..."
+                        value={customRescheduleReason}
+                        onChange={(e) => setCustomRescheduleReason(e.target.value)}
+                        style={{
+                          width: '100%',
+                          padding: '8px 12px',
+                          borderRadius: '8px',
+                          border: '1px solid #cbd5e1',
+                          fontSize: '0.88rem',
+                          fontFamily: 'inherit',
+                          resize: 'vertical',
+                          boxSizing: 'border-box'
+                        }}
+                      />
+                    </div>
+                  )}
 
                   <div className="v-modal-actions">
                     <button

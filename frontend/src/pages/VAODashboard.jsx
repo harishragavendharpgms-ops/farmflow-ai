@@ -23,6 +23,13 @@ const VAODashboard = () => {
   const [activeFilter, setActiveFilter] = useState('pending');
   const [isSigning, setIsSigning] = useState(null);
 
+  // Cancellation State
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [selectedOrderForCancel, setSelectedOrderForCancel] = useState(null);
+  const [cancelReasonPreset, setCancelReasonPreset] = useState('Land document mismatch or illegible');
+  const [customCancelReason, setCustomCancelReason] = useState('');
+  const [isCancelling, setIsCancelling] = useState(false);
+
   useEffect(() => {
     const savedUser =
       localStorage.getItem('farmflow_user') ||
@@ -225,6 +232,54 @@ const VAODashboard = () => {
     () => orders.filter((o) => o.status === 'VAO Verified' || o.status === 'Procured'),
     [orders]
   );
+  const cancelledOrders = useMemo(
+    () => orders.filter((o) => o.status === 'Cancelled by VAO' || o.status === 'CANCELLED'),
+    [orders]
+  );
+
+  const handleOpenCancelModal = (order) => {
+    setSelectedOrderForCancel(order);
+    setCancelReasonPreset('Land document mismatch or illegible');
+    setCustomCancelReason('');
+    setShowCancelModal(true);
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!selectedOrderForCancel) return;
+    const finalReason = cancelReasonPreset === 'Other'
+      ? customCancelReason.trim() || 'Land verification rejected by Village Administrative Officer.'
+      : cancelReasonPreset;
+
+    setIsCancelling(true);
+    try {
+      await updateDoc(doc(db, 'orders', selectedOrderForCancel.id), {
+        status: 'Cancelled by VAO',
+        cancellationReason: finalReason,
+        cancelledAt: new Date().toISOString(),
+        cancelledBy: {
+          name: userProfile.name || 'Local Revenue Officer',
+          designation: userProfile.subPlace ? `VAO / ${userProfile.subPlace}` : 'Village Administrative Officer',
+          date: new Date().toLocaleDateString(),
+          time: new Date().toLocaleTimeString()
+        }
+      });
+
+      // Notify farmer via TextBee SMS
+      await triggerSms(
+        selectedOrderForCancel.userPhone,
+        `FarmFlow AI: Your land document for ${selectedOrderForCancel.item || 'Crop'} (${selectedOrderForCancel.quantity || 0}kg) was REJECTED by VAO. Reason: ${finalReason}.`
+      );
+
+      alert(`Application ${selectedOrderForCancel.id.slice(0, 8)} has been cancelled.`);
+      setShowCancelModal(false);
+      setSelectedOrderForCancel(null);
+    } catch (err) {
+      console.error('Error cancelling order:', err);
+      alert('Cancellation failed: ' + err.message);
+    } finally {
+      setIsCancelling(false);
+    }
+  };
 
   const filteredOrders = useMemo(() => {
     let list = orders;
@@ -232,6 +287,8 @@ const VAODashboard = () => {
       list = pendingOrders;
     } else if (activeFilter === 'verified') {
       list = verifiedOrders;
+    } else if (activeFilter === 'cancelled') {
+      list = cancelledOrders;
     }
 
     if (!searchTerm.trim()) return list;
@@ -245,7 +302,7 @@ const VAODashboard = () => {
         o.pattaChitta?.toLowerCase().includes(term) ||
         o.subPlace?.toLowerCase().includes(term)
     );
-  }, [orders, activeFilter, pendingOrders, verifiedOrders, searchTerm]);
+  }, [orders, activeFilter, pendingOrders, verifiedOrders, cancelledOrders, searchTerm]);
 
   const openDocumentPreview = (url, title) => {
     setModalDocument(url);
@@ -467,6 +524,13 @@ const VAODashboard = () => {
                   </button>
                   <button
                     type="button"
+                    className={`vao-filter-pill ${activeFilter === 'cancelled' ? 'active' : ''}`}
+                    onClick={() => setActiveFilter('cancelled')}
+                  >
+                    Cancelled ({cancelledOrders.length})
+                  </button>
+                  <button
+                    type="button"
                     className={`vao-filter-pill ${activeFilter === 'all' ? 'active' : ''}`}
                     onClick={() => setActiveFilter('all')}
                   >
@@ -486,13 +550,14 @@ const VAODashboard = () => {
                     <th>LAND DOCUMENT (PATTA)</th>
                     <th>VILLAGE LOCATION</th>
                     <th>VERIFICATION STATUS</th>
+                    <th>CANCELLATION REASON</th>
                     <th>ACTIONS</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredOrders.length === 0 ? (
                     <tr>
-                      <td colSpan="6" className="vao-empty-cell">
+                      <td colSpan="7" className="vao-empty-cell">
                         <div className="vao-empty-box">
                           <span className="vao-empty-icon">
                             {searchTerm ? '🔍' : activeFilter === 'pending' ? '🎉' : '📂'}
@@ -590,7 +655,12 @@ const VAODashboard = () => {
 
                           {/* STATUS */}
                           <td>
-                            {isVerified ? (
+                            {order.status === 'Cancelled by VAO' ? (
+                              <div className="vao-status-cancelled-box">
+                                <span className="pill-badge pill-badge-red">✕ Cancelled by VAO</span>
+                                <small className="vao-action-hint" style={{ color: '#ef4444' }}>Verification Rejected</small>
+                              </div>
+                            ) : isVerified ? (
                               <div className="vao-status-verified-box">
                                 <span className="pill-badge pill-badge-green">✓ VAO Verified</span>
                                 {order.vaoSignatureDetails && (
@@ -607,42 +677,108 @@ const VAODashboard = () => {
                             )}
                           </td>
 
+                          {/* CANCELLATION REASON COLUMN */}
+                          <td>
+                            {order.status === 'Cancelled by VAO' || order.cancellationReason ? (
+                              <div className="vao-cancel-reason-box" style={{ maxWidth: '220px' }}>
+                                <span className="pill-badge pill-badge-red" style={{ fontSize: '0.68rem', marginBottom: '4px', display: 'inline-block' }}>
+                                  ❌ Rejected
+                                </span>
+                                <div style={{ fontSize: '0.78rem', color: '#991b1b', lineHeight: 1.35, fontWeight: 600 }}>
+                                  {order.cancellationReason || 'Rejected by Officer'}
+                                </div>
+                                {order.cancelledBy && (
+                                  <small style={{ fontSize: '0.68rem', color: '#64748b', display: 'block', marginTop: '3px' }}>
+                                    By {order.cancelledBy.name} ({order.cancelledBy.date})
+                                  </small>
+                                )}
+                              </div>
+                            ) : (
+                              <span style={{ color: '#94a3b8', fontSize: '0.82rem' }}>—</span>
+                            )}
+                          </td>
+
                           {/* ACTION BUTTON */}
                           <td>
-                            {order.status === 'Pending VAO' ? (
-                              <button
-                                type="button"
-                                className="vao-btn-verify-action"
-                                onClick={() => handleVerify(order)}
-                                disabled={isSigning === order.id}
-                              >
-                                {isSigning === order.id ? (
-                                  <>
-                                    <span className="vao-btn-spinner" />
-                                    <span>Verifying & Signing...</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <span>✍</span>
-                                    <span>E-Sign & Verify</span>
-                                  </>
-                                )}
-                              </button>
-                            ) : (
-                              <button
-                                type="button"
-                                className="vao-btn-view-cert"
-                                onClick={() =>
-                                  order.documentUrl &&
-                                  openDocumentPreview(
-                                    order.documentUrl,
-                                    `Official Verification Certificate - ${order.userName || 'Farmer'}`
-                                  )
-                                }
-                              >
-                                <span>📄</span> View Certificate
-                              </button>
-                            )}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                              {order.status === 'Pending VAO' ? (
+                                <>
+                                  <button
+                                    type="button"
+                                    className="vao-btn-verify-action"
+                                    onClick={() => handleVerify(order)}
+                                    disabled={isSigning === order.id}
+                                  >
+                                    {isSigning === order.id ? (
+                                      <>
+                                        <span className="vao-btn-spinner" />
+                                        <span>Verifying & Signing...</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <span>✍</span>
+                                        <span>E-Sign & Verify</span>
+                                      </>
+                                    )}
+                                  </button>
+
+                                  <button
+                                    type="button"
+                                    className="vao-btn-cancel-action"
+                                    style={{
+                                      background: '#fef2f2',
+                                      color: '#dc2626',
+                                      border: '1px solid #fecaca',
+                                      borderRadius: '8px',
+                                      padding: '6px 12px',
+                                      fontSize: '0.78rem',
+                                      fontWeight: 700,
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      gap: '5px'
+                                    }}
+                                    onClick={() => handleOpenCancelModal(order)}
+                                  >
+                                    <span>❌</span>
+                                    <span>Cancel Application</span>
+                                  </button>
+                                </>
+                              ) : order.status === 'Cancelled by VAO' ? (
+                                <button
+                                  type="button"
+                                  className="vao-btn-cancel-disabled"
+                                  disabled
+                                  style={{
+                                    background: '#f8fafc',
+                                    color: '#94a3b8',
+                                    border: '1px solid #e2e8f0',
+                                    borderRadius: '8px',
+                                    padding: '6px 12px',
+                                    fontSize: '0.78rem',
+                                    fontWeight: 700,
+                                    cursor: 'not-allowed'
+                                  }}
+                                >
+                                  Cancelled
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className="vao-btn-view-cert"
+                                  onClick={() =>
+                                    order.documentUrl &&
+                                    openDocumentPreview(
+                                      order.documentUrl,
+                                      `Official Verification Certificate - ${order.userName || 'Farmer'}`
+                                    )
+                                  }
+                                >
+                                  <span>📄</span> View Certificate
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       );
@@ -669,6 +805,125 @@ const VAODashboard = () => {
           </footer>
         </div>
       </main>
+
+      {/* CANCELLATION REASON MODAL */}
+      {showCancelModal && selectedOrderForCancel && (
+        <div
+          className="vao-modal-backdrop"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isCancelling) setShowCancelModal(false);
+          }}
+        >
+          <div className="vao-preview-modal" style={{ maxWidth: '500px' }}>
+            <div className="vao-modal-head" style={{ borderBottom: '1px solid #fee2e2' }}>
+              <div>
+                <small className="vao-modal-kicker" style={{ color: '#ef4444' }}>OFFICIAL REVENUE ACTION</small>
+                <h3 style={{ color: '#991b1b', margin: '4px 0 0 0' }}>Cancel Application Verification</h3>
+              </div>
+              <button
+                type="button"
+                className="vao-modal-close"
+                onClick={() => !isCancelling && setShowCancelModal(false)}
+                disabled={isCancelling}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="vao-modal-body" style={{ padding: '20px' }}>
+              <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '12px', marginBottom: '16px' }}>
+                <p style={{ margin: 0, fontSize: '0.86rem', color: '#991b1b', fontWeight: 600 }}>
+                  ⚠️ You are cancelling the application for <strong>{selectedOrderForCancel.userName || 'Farmer'}</strong> (Token #{selectedOrderForCancel.id?.slice(0, 8)}).
+                </p>
+                <small style={{ color: '#b91c1c', display: 'block', marginTop: '4px' }}>
+                  An SMS notification stating this cancellation reason will be sent to the farmer's registered phone ({selectedOrderForCancel.userPhone || 'N/A'}).
+                </small>
+              </div>
+
+              <div style={{ marginBottom: '14px' }}>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                  SELECT CANCELLATION REASON:
+                </label>
+                <select
+                  value={cancelReasonPreset}
+                  onChange={(e) => setCancelReasonPreset(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '9px 12px',
+                    borderRadius: '8px',
+                    border: '1px solid #cbd5e1',
+                    fontSize: '0.88rem',
+                    background: '#fff',
+                    color: '#1e293b'
+                  }}
+                  disabled={isCancelling}
+                >
+                  <option value="Land document mismatch or illegible">Land document mismatch or illegible</option>
+                  <option value="Patta / Chitta number does not match revenue records">Patta / Chitta number does not match revenue records</option>
+                  <option value="Land survey number is outside designated revenue circle">Land survey number is outside designated revenue circle</option>
+                  <option value="Duplicate crop procurement entry detected">Duplicate crop procurement entry detected</option>
+                  <option value="Ownership dispute or invalid tenancy certificate">Ownership dispute or invalid tenancy certificate</option>
+                  <option value="Other">Other (Specify Custom Reason)</option>
+                </select>
+              </div>
+
+              {cancelReasonPreset === 'Other' && (
+                <div style={{ marginBottom: '14px' }}>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: 700, color: '#334155', marginBottom: '6px' }}>
+                    SPECIFY REASON FOR FARMER:
+                  </label>
+                  <textarea
+                    rows={3}
+                    placeholder="Enter detailed reason for rejection..."
+                    value={customCancelReason}
+                    onChange={(e) => setCustomCancelReason(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '8px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid #cbd5e1',
+                      fontSize: '0.86rem',
+                      fontFamily: 'inherit',
+                      resize: 'vertical',
+                      boxSizing: 'border-box'
+                    }}
+                    disabled={isCancelling}
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="vao-modal-foot" style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                type="button"
+                className="vao-btn-outline"
+                onClick={() => setShowCancelModal(false)}
+                disabled={isCancelling}
+              >
+                Go Back
+              </button>
+              <button
+                type="button"
+                style={{
+                  background: '#dc2626',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '9px 18px',
+                  fontWeight: 700,
+                  fontSize: '0.85rem',
+                  cursor: isCancelling ? 'not-allowed' : 'pointer',
+                  opacity: isCancelling ? 0.7 : 1
+                }}
+                onClick={handleConfirmCancel}
+                disabled={isCancelling}
+              >
+                {isCancelling ? 'Rejecting...' : 'Confirm Rejection'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* DOCUMENT PREVIEW MODAL */}
       {modalDocument && (

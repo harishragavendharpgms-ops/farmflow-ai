@@ -1942,3 +1942,233 @@
     z-index: 25;
   }
 }
+
+/* ========================================================
+   HORIZONTAL ORDER TRACKER (Matching Reference Design)
+   ======================================================== */
+.flow-tracker-card {
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 24px 20px 20px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+}
+
+.flow-tracker-title {
+  font-size: 1.45rem;
+  font-weight: 800;
+  color: #0f172a;
+  text-align: center;
+  margin-bottom: 6px;
+  letter-spacing: -0.01em;
+}
+
+.flow-tracker-title.cancelled {
+  color: #dc2626;
+}
+
+.flow-tracker-track-wrap {
+  position: relative;
+  margin: 22px 12px 14px;
+}
+
+.flow-tracker-bg-line {
+  position: absolute;
+  top: 16px;
+  left: 36px;
+  right: 36px;
+  height: 6px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  z-index: 1;
+}
+
+.flow-tracker-fill-line {
+  position: absolute;
+  top: 16px;
+  left: 36px;
+  max-width: calc(100% - 72px);
+  height: 6px;
+  background: #2a848c;
+  border-radius: 999px;
+  z-index: 2;
+  transition: width 0.4s ease-in-out;
+}
+
+.flow-tracker-fill-line.cancelled {
+  background: #ef4444;
+}
+
+.flow-tracker-steps {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  z-index: 3;
+}
+
+.flow-tracker-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  text-align: center;
+}
+
+.flow-tracker-node {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 5px #ffffff;
+  transition: all 0.25s ease;
+  color: #ffffff;
+}
+
+.flow-tracker-node.completed,
+.flow-tracker-node.active {
+  background: #2a848c;
+  box-shadow: 0 0 0 5px #e6f4f5;
+}
+
+.flow-tracker-node.cancelled {
+  background: #ef4444 !important;
+  box-shadow: 0 0 0 5px #fee2e2 !important;
+}
+
+.flow-tracker-node .node-icon {
+  font-size: 0.95rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.flow-tracker-node .node-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #cbd5e1;
+}
+
+.flow-tracker-label-group {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 4px;
+}
+
+.flow-tracker-step-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #64748b;
+  line-height: 1.25;
+}
+
+.flow-tracker-step-label.bold-label {
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.flow-tracker-step-sub {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  margin-top: 3px;
+  line-height: 1.2;
+}
+
+.flow-tracker-cancel-alert {
+  display: flex;
+  gap: 12px;
+  background: #fef2f2;
+  border: 1.5px solid #fecaca;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-top: 18px;
+  text-align: left;
+}
+
+.flow-tracker-cancel-alert .cancel-alert-icon {
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+
+.flow-tracker-cancel-alert strong {
+  display: block;
+  font-size: 0.85rem;
+  color: #991b1b;
+  margin-bottom: 2px;
+}
+
+.flow-tracker-cancel-alert p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #b91c1c;
+  line-height: 1.4;
+  font-weight: 600;
+}
+
+.flow-tracker-cancel-alert small {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.74rem;
+  color: #7f1d1d;
+}
+
+.flow-tracker-reschedule-alert {
+  display: flex;
+  gap: 12px;
+  background: #fffbeb;
+  border: 1.5px solid #fef3c7;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-top: 18px;
+  text-align: left;
+}
+
+.flow-tracker-reschedule-alert .reschedule-alert-icon {
+  font-size: 1.3rem;
+  flex-shrink: 0;
+}
+
+.flow-tracker-reschedule-alert strong {
+  display: block;
+  font-size: 0.85rem;
+  color: #92400e;
+  margin-bottom: 2px;
+}
+
+.flow-tracker-reschedule-alert p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #78350f;
+  line-height: 1.4;
+}
+
+.flow-tracker-reschedule-alert small {
+  display: block;
+  margin-top: 4px;
+  font-size: 0.74rem;
+  color: #b45309;
+}
+
+@media (max-width: 600px) {
+  .flow-tracker-step-label {
+    font-size: 0.75rem;
+  }
+  .flow-tracker-step-sub {
+    display: none;
+  }
+  .flow-tracker-node {
+    width: 28px;
+    height: 28px;
+  }
+  .flow-tracker-bg-line,
+  .flow-tracker-fill-line {
+    top: 13px;
+  }
+}
+
