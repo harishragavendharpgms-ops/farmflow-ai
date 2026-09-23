@@ -5,16 +5,43 @@
 .v-op-shell {
   display: flex;
   min-height: 100vh;
-  background: #f8fafc;
+  position: relative;
+  background: transparent;
   color: #0f172a;
   font-family: var(--sans);
+  overflow-x: hidden;
+}
+
+/* Background image layer for Officer Dashboard */
+.v-op-shell::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url('../assets/officer_dash_bg.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Atmospheric vignette overlay */
+.v-op-shell::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at center, rgba(15, 23, 42, 0.35) 0%, rgba(15, 23, 42, 0.70) 100%);
+  z-index: 1;
+  pointer-events: none;
 }
 
 /* SIDEBAR */
 .v-op-sidebar {
   width: 250px;
-  background: #ffffff;
-  border-right: 1px solid #e2e8f0;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-right: 1px solid rgba(255, 255, 255, 0.7);
   display: flex;
   flex-direction: column;
   position: sticky;
@@ -178,13 +205,18 @@
   min-width: 0;
   height: 100vh;
   overflow-y: auto;
+  position: relative;
+  z-index: 2;
+  background: transparent;
 }
 
 /* TOPBAR */
 .v-op-topbar {
   height: 64px;
-  background: #ffffff;
-  border-bottom: 1px solid #e2e8f0;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.7);
   display: flex;
   align-items: center;
   justify-content: space-between;
