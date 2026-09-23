@@ -3,8 +3,10 @@ import { useNavigate, Link } from 'react-router-dom';
 import { db, auth } from '../firebase';
 import {
   collection,
+  doc,
   getDocs,
   query,
+  setDoc,
   where
 } from 'firebase/firestore';
 import {
@@ -195,7 +197,7 @@ const Login = () => {
   const [selectedRole, setSelectedRole] = useState('farmer');
 
   // Farmer login mode: 'otp' or 'email'
-  const [farmerAuthMode, setFarmerAuthMode] = useState('email');
+  const [farmerAuthMode, setFarmerAuthMode] = useState('otp');
   const [mobileNumber, setMobileNumber] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [sentOtp, setSentOtp] = useState('');
@@ -298,35 +300,7 @@ const Login = () => {
 
     setIsSubmitting(true);
     try {
-      // Check if user exists with this phone number
-      const phoneSearchVariants = [
-        cleanNum,
-        `+91${cleanNum}`,
-        `+91 ${cleanNum}`,
-        `0${cleanNum}`,
-        raw
-      ];
-      const uniqueVariants = [...new Set(phoneSearchVariants.filter(Boolean))];
-
-      const qPhone = query(
-        collection(db, 'users'),
-        where('phone', 'in', uniqueVariants)
-      );
-      const phoneSnap = await getDocs(qPhone);
-
-      if (phoneSnap.empty) {
-        setIsSubmitting(false);
-        alert(
-          language === 'ta'
-            ? 'இந்த கைபேசி எண்ணுடன் பதிவு செய்யப்பட்ட கணக்கு எதுவும் இல்லை. தயவுசெய்து முதலில் கணக்கை பதிவு செய்யவும்.'
-            : language === 'hi'
-              ? 'इस मोबाइल नंबर से कोई पंजीकृत खाता नहीं मिला। कृपया पहले पंजीकरण करें।'
-              : 'No account registered with this phone number. Please register your farmer account first.'
-        );
-        return;
-      }
-
-      // Generate authentic 6-digit OTP and send via TextBee
+      // Generate authentic 6-digit OTP and send via TextBee SMS Gateway
       const code = generateOTP();
       console.log('[Login] Dispatching SMS OTP to', cleanNum, ':', code);
 
@@ -338,13 +312,13 @@ const Login = () => {
       setOtpSent(true);
       setResendTimer(30);
     } catch (err) {
-      console.error('Error looking up phone number or dispatching OTP:', err);
+      console.error('Error dispatching OTP:', err);
       setIsSubmitting(false);
       alert(
         language === 'ta'
-          ? 'OTP அனுப்புவதில் தோல்வி. தயவுசெய்து மீண்டும் முயற்சிக்கவும்.'
+          ? 'OTP அனுப்புவதில் தோல்வி. தயவுசெய்து உங்கள் இணையம் மற்றும் கைபேசி எண்ணை சரிபார்க்கவும்.'
           : language === 'hi'
-            ? 'OTP भेजने में विफल। कृपया पुनः प्रयास करें।'
+            ? 'OTP भेजने में विफल। कृपया अपना इंटरनेट और मोबाइल नंबर जांचें।'
             : 'Failed to send OTP via SMS. Please check your network and phone number.'
       );
     }
@@ -389,27 +363,41 @@ const Login = () => {
       );
       const phoneSnap = await getDocs(qPhone);
 
-      if (phoneSnap.empty) {
-        setIsSubmitting(false);
-        alert(
-          language === 'ta'
-            ? 'இந்த கைபேசி எண்ணுடன் பயனர் கணக்கு எதுவும் காணப்படவில்லை.'
-            : language === 'hi'
-              ? 'इस मोबाइल नंबर से कोई खाता नहीं मिला।'
-              : 'No registered user found with this mobile number.'
-        );
-        return;
+      let farmerData;
+      if (!phoneSnap.empty) {
+        const docSnap = phoneSnap.docs[0];
+        const firestoreData = docSnap.data();
+
+        farmerData = {
+          id: docSnap.id,
+          uid: docSnap.id,
+          ...firestoreData,
+          role: firestoreData.role || 'farmer'
+        };
+      } else {
+        // Auto-provision farmer profile for verified mobile number
+        const newUid = 'farmer_' + cleanNum + '_' + Date.now().toString(36);
+        const newFarmerProfile = {
+          uid: newUid,
+          name: `Farmer ${cleanNum.slice(-4)}`,
+          phone: cleanNum,
+          email: `farmer${cleanNum}@farmflow.ai`,
+          role: 'farmer',
+          phoneVerified: true,
+          createdAt: new Date().toISOString()
+        };
+
+        try {
+          await setDoc(doc(db, 'users', newUid), newFarmerProfile);
+        } catch (dbErr) {
+          console.warn('[Login] Note on user profile creation:', dbErr);
+        }
+
+        farmerData = {
+          id: newUid,
+          ...newFarmerProfile
+        };
       }
-
-      const docSnap = phoneSnap.docs[0];
-      const firestoreData = docSnap.data();
-
-      const farmerData = {
-        id: docSnap.id,
-        uid: docSnap.id,
-        ...firestoreData,
-        role: firestoreData.role || 'farmer'
-      };
 
       if (rememberMe) {
         localStorage.setItem('farmflow_user', JSON.stringify(farmerData));

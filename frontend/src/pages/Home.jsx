@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import farmMandiBg from '../assets/farm_mandi_bg.jpg';
 import './Home.css';
 
 const translations = {
@@ -210,6 +211,11 @@ const Home = () => {
 
   return (
     <div className="home-page">
+      <div
+        className="home-bg-layer"
+        style={{ backgroundImage: `url(${farmMandiBg})` }}
+      />
+      <div className="home-bg-overlay" />
 
       {/* =====================================================
           NAVIGATION
