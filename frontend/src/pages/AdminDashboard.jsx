@@ -213,9 +213,11 @@ const AdminDashboard = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('farmflow_user');
-    sessionStorage.removeItem('farmflow_user');
-    navigate('/login');
+    if (window.confirm("Are you sure you want to log out of the Admin Dashboard?")) {
+      localStorage.removeItem('farmflow_user');
+      sessionStorage.removeItem('farmflow_user');
+      navigate('/login');
+    }
   };
 
   // Real user categorizations from Firestore

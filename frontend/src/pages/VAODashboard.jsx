@@ -210,9 +210,11 @@ const VAODashboard = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('farmflow_user');
-    sessionStorage.removeItem('farmflow_user');
-    navigate('/login');
+    if (window.confirm("Are you sure you want to log out of the VAO Officer Dashboard?")) {
+      localStorage.removeItem('farmflow_user');
+      sessionStorage.removeItem('farmflow_user');
+      navigate('/login');
+    }
   };
 
   const pendingOrders = useMemo(

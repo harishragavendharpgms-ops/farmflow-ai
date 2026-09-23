@@ -15,7 +15,7 @@ const translations = {
       'FarmFlow AI brings market intelligence, weather signals, procurement workflows and land-document verification into one simple workspace for farmers and field officers.',
 
     getStarted: 'Get started',
-    alreadyAccount: 'I already have an account',
+    alreadyAccount: 'I already have an account · Sign in',
 
     secureAccess: 'Secure role-based access',
     liveData: 'Live market & weather data',
@@ -77,7 +77,7 @@ const translations = {
       'FarmFlow AI மூலம் சந்தை தகவல்கள், வானிலை தகவல்கள், கொள்முதல் செயல்முறைகள் மற்றும் நில ஆவண சரிபார்ப்பை ஒரே எளிய தளத்தில் நிர்வகிக்கலாம்.',
 
     getStarted: 'தொடங்குங்கள்',
-    alreadyAccount: 'ஏற்கனவே கணக்கு உள்ளது',
+    alreadyAccount: 'ஏற்கனவே கணக்கு உள்ளது · உள்நுழைக',
 
     secureAccess: 'பாதுகாப்பான பங்கு அடிப்படையிலான அணுகல்',
     liveData: 'நேரடி சந்தை மற்றும் வானிலை தகவல்கள்',
@@ -139,7 +139,7 @@ const translations = {
       'FarmFlow AI किसानों और क्षेत्रीय अधिकारियों के लिए बाजार जानकारी, मौसम संकेत, खरीद प्रक्रियाओं और भूमि दस्तावेज़ सत्यापन को एक सरल प्लेटफ़ॉर्म में लाता है।',
 
     getStarted: 'शुरू करें',
-    alreadyAccount: 'मेरे पास पहले से खाता है',
+    alreadyAccount: 'मेरे पास पहले से खाता है · साइन इन',
 
     secureAccess: 'सुरक्षित भूमिका-आधारित पहुंच',
     liveData: 'लाइव बाजार और मौसम डेटा',
@@ -311,7 +311,7 @@ const Home = () => {
                 className="home-secondary"
                 onClick={() => navigate('/login')}
               >
-                {t.alreadyAccount}
+                <span>🔑</span> {t.alreadyAccount}
               </button>
 
             </div>

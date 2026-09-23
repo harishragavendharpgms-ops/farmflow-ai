@@ -145,6 +145,10 @@ const t = {
     navAi: "🤖 AI Insights",
     navHelp: "❓ Help",
     logout: "Log Out",
+    confirmLogoutTitle: "Confirm Log Out",
+    confirmLogoutDesc: "Are you sure you want to log out of your FarmFlow AI account and return to the login page?",
+    confirmLogoutBtn: "Yes, Log Out",
+    cancelLogoutBtn: "Stay on Dashboard",
     subtitle: "Manage your smart farm operations seamlessly.",
     liveMarket: "Live Market Active",
     userDetails: "User Details",
@@ -213,6 +217,10 @@ const t = {
     navAi: "🤖 AI ஆலோசனைகள்",
     navHelp: "❓ உதவி",
     logout: "வெளியேறு",
+    confirmLogoutTitle: "வெளியேறுதலை உறுதிப்படுத்தவும்",
+    confirmLogoutDesc: "உங்கள் FarmFlow AI கணக்கிலிருந்து வெளியேறி உள்நுழைவுப் பக்கத்திற்குச் செல்ல விரும்புகிறீர்களா?",
+    confirmLogoutBtn: "ஆம், வெளியேறு",
+    cancelLogoutBtn: "டேஷ்போர்டில் தொடரவும்",
     subtitle: "உங்கள் ஸ்மார்ட் பண்ணை செயல்பாடுகளை எளிதாக நிர்வகிக்கவும்.",
     liveMarket: "நேரடி சந்தை செயல்பாட்டில்",
     userDetails: "பயனர் விவரங்கள்",
@@ -281,6 +289,10 @@ const t = {
     navAi: "🤖 AI अंतर्दृष्टि",
     navHelp: "❓ सहायता",
     logout: "लॉग आउट",
+    confirmLogoutTitle: "लॉग आउट की पुष्टि करें",
+    confirmLogoutDesc: "क्या आप वाकई अपने FarmFlow AI खाते से लॉग आउट करके लॉगिन पृष्ठ पर जाना चाहते हैं?",
+    confirmLogoutBtn: "हाँ, लॉग आउट करें",
+    cancelLogoutBtn: "डैशबोर्ड पर बने रहें",
     subtitle: "अपने स्मार्ट फार्म संचालन को आसानी से प्रबंधित करें।",
     liveMarket: "लाइव मार्केट सक्रिय",
     userDetails: "उपयोगकर्ता विवरण",
@@ -351,6 +363,22 @@ const Dashboard = () => {
   );
   const [lang, setLang] = useState('en');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
+  // Intercept browser back navigation to login from Dashboard and confirm
+  useEffect(() => {
+    window.history.pushState({ page: 'dashboard' }, '', window.location.href);
+
+    const handlePopState = () => {
+      window.history.pushState({ page: 'dashboard' }, '', window.location.href);
+      setShowLogoutModal(true);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
 
   const l = t[lang] || t.en;
   const getCropName = (cropKey) => cropTranslations[cropKey]?.[lang] || cropKey;
@@ -839,16 +867,29 @@ const Dashboard = () => {
   }, []);
 
   const changeTab = (tab) => {
-    window.location.hash = tab;
+    try {
+      window.history.replaceState({ page: 'dashboard' }, '', `#${tab}`);
+    } catch {
+      window.location.hash = tab;
+    }
     setActiveTab(tab);
     if (tab !== 'procurement') setOrderingItem(null);
     setIsSidebarOpen(false);
   };
 
-  const handleLogout = () => {
+  const handleLogoutClick = () => {
+    setShowLogoutModal(true);
+  };
+
+  const handleCancelLogout = () => {
+    setShowLogoutModal(false);
+  };
+
+  const handleConfirmLogout = () => {
+    setShowLogoutModal(false);
     localStorage.removeItem('farmflow_user');
     sessionStorage.removeItem('farmflow_user');
-    navigate('/login');
+    navigate('/login', { replace: true });
   };
 
   // Add Crop to Inventory
@@ -1077,7 +1118,7 @@ const Dashboard = () => {
           <button
             type="button"
             className="v-bottom-btn v-logout-btn"
-            onClick={handleLogout}
+            onClick={handleLogoutClick}
           >
             <span>🚪</span> {l.logout}
           </button>
@@ -2257,6 +2298,84 @@ const Dashboard = () => {
                   <strong style={{ color: '#0f172a', fontSize: '0.92rem' }}>{h.temp}</strong>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* LOGOUT CONFIRMATION MODAL */}
+      {showLogoutModal && (
+        <div className="v-modal-overlay" onClick={handleCancelLogout}>
+          <div
+            className="v-modal-card"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: '440px', textAlign: 'center', padding: '32px 28px', borderRadius: '24px' }}
+          >
+            <div
+              style={{
+                width: '60px',
+                height: '60px',
+                borderRadius: '50%',
+                background: '#fef2f2',
+                color: '#dc2626',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '1.8rem',
+                margin: '0 auto 16px',
+                border: '1.5px solid #fecaca'
+              }}
+            >
+              🚪
+            </div>
+
+            <h3 style={{ fontSize: '1.35rem', fontWeight: 800, color: '#0f172a', margin: '0 0 10px' }}>
+              {l.confirmLogoutTitle || 'Confirm Log Out'}
+            </h3>
+
+            <p style={{ color: '#64748b', fontSize: '0.92rem', lineHeight: '1.55', margin: '0 0 24px' }}>
+              {l.confirmLogoutDesc || 'Are you sure you want to log out of your FarmFlow AI account and return to the login page?'}
+            </p>
+
+            <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+              <button
+                type="button"
+                onClick={handleCancelLogout}
+                style={{
+                  flex: 1,
+                  padding: '12px 18px',
+                  borderRadius: '10px',
+                  border: '1.5px solid #cbd5e1',
+                  background: '#ffffff',
+                  color: '#334155',
+                  fontWeight: 700,
+                  fontSize: '0.9rem',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                {l.cancelLogoutBtn || 'Stay on Dashboard'}
+              </button>
+
+              <button
+                type="button"
+                onClick={handleConfirmLogout}
+                style={{
+                  flex: 1,
+                  padding: '12px 18px',
+                  borderRadius: '10px',
+                  border: 'none',
+                  background: '#dc2626',
+                  color: '#ffffff',
+                  fontWeight: 700,
+                  fontSize: '0.9rem',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 12px rgba(220, 38, 38, 0.25)',
+                  transition: 'all 0.15s ease'
+                }}
+              >
+                {l.confirmLogoutBtn || 'Yes, Log Out'}
+              </button>
             </div>
           </div>
         </div>

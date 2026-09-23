@@ -276,9 +276,11 @@ const OfficerDashboard = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('farmflow_user');
-    sessionStorage.removeItem('farmflow_user');
-    navigate('/login');
+    if (window.confirm("Are you sure you want to log out of the Agricultural Officer Dashboard?")) {
+      localStorage.removeItem('farmflow_user');
+      sessionStorage.removeItem('farmflow_user');
+      navigate('/login');
+    }
   };
 
   // Filtered orders
