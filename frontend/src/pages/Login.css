@@ -166,6 +166,45 @@
   color: #0f172a;
 }
 
+/* Authentication Method Switcher: Phone OTP vs Email & Password */
+.v-method-tabs {
+  display: flex;
+  width: 100%;
+  background: #f1f5f9;
+  border-radius: var(--radius-pill);
+  padding: 4px;
+  margin-bottom: 20px;
+  gap: 4px;
+}
+
+.v-method-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 9px 14px;
+  border-radius: var(--radius-pill);
+  border: none;
+  background: transparent;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.v-method-btn.active {
+  background: #ffffff;
+  color: #15803d;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.v-method-btn:hover:not(.active) {
+  color: #0f172a;
+}
+
 /* SIGN IN AS Selector */
 .v-role-section {
   width: 100%;

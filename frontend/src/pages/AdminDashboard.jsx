@@ -15,7 +15,8 @@ import {
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  deleteUser
+  deleteUser,
+  getAuth
 } from 'firebase/auth';
 import { initializeApp, deleteApp } from 'firebase/app';
 import './AdminDashboard.css';
@@ -147,7 +148,6 @@ const AdminDashboard = () => {
               await deleteUser(cred.user);
               purged = true;
               console.log(`[Admin] Purged orphaned ${emailLower} from Firebase Auth.`);
-              await deleteApp(secondaryApp);
               break;
             } catch (_) {
               // try next candidate
@@ -228,32 +228,35 @@ const AdminDashboard = () => {
 
       // If user has an email, delete their account from Firebase Authentication
       if (userData?.email) {
-        const emailToDel = userData.email.trim().toLowerCase();
-        const candidatePasswords = [
-          userData.password,
-          'vao123',
-          'officer123',
-          'admin123',
-          'farmer123',
-          userData.phone,
-          '123456',
-          'password'
-        ].filter(Boolean);
+        try {
+          const emailToDel = userData.email.trim().toLowerCase();
+          const candidatePasswords = [
+            userData.password,
+            'vao123',
+            'officer123',
+            'admin123',
+            'farmer123',
+            userData.phone,
+            '123456',
+            'password'
+          ].filter(Boolean);
 
-        for (const pass of candidatePasswords) {
-          const secondaryApp = initializeApp(firebaseConfig, `del-${Date.now()}-${Math.random()}`);
-          const secondaryAuth = getAuth(secondaryApp);
-          try {
-            const cred = await signInWithEmailAndPassword(secondaryAuth, emailToDel, pass);
-            await deleteUser(cred.user);
-            console.log(`[Admin] Deleted ${emailToDel} from Firebase Auth.`);
-            await deleteApp(secondaryApp);
-            break;
-          } catch (_) {
-            // wrong password, try next candidate
-          } finally {
-            try { await deleteApp(secondaryApp); } catch (_) {}
+          for (const pass of candidatePasswords) {
+            const secondaryApp = initializeApp(firebaseConfig, `del-${Date.now()}-${Math.random()}`);
+            const secondaryAuth = getAuth(secondaryApp);
+            try {
+              const cred = await signInWithEmailAndPassword(secondaryAuth, emailToDel, pass);
+              await deleteUser(cred.user);
+              console.log(`[Admin] Deleted ${emailToDel} from Firebase Auth.`);
+              break;
+            } catch (_) {
+              // wrong password, try next candidate
+            } finally {
+              try { await deleteApp(secondaryApp); } catch (_) {}
+            }
           }
+        } catch (authCleanupErr) {
+          console.warn('[Admin] Auth cleanup note:', authCleanupErr);
         }
       }
 

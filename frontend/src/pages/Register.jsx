@@ -481,7 +481,6 @@ const Register = () => {
               await deleteUser(cred.user);
               purged = true;
               console.log(`[Register] Purged orphaned ${formData.email} from Firebase Auth.`);
-              await deleteApp(secondaryApp);
               break;
             } catch (_) {
               // try next

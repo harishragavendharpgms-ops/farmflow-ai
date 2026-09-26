@@ -53,6 +53,8 @@ const translations = {
     verifying: 'Verifying...',
     orLoginWithEmail: 'Sign in with Email & Password',
     orLoginWithOtp: 'Sign in with Mobile OTP',
+    phoneTab: 'Phone Number (OTP)',
+    emailTab: 'Email & Password',
     email: 'Email Address *',
     password: 'Password *',
     emailPlaceholder: 'you@example.com',
@@ -105,6 +107,8 @@ const translations = {
     verifying: 'சரிபார்க்கிறது...',
     orLoginWithEmail: 'மின்னஞ்சல் மற்றும் கடவுச்சொல்லுடன் உள்நுழைக',
     orLoginWithOtp: 'கைபேசி OTP மூலம் உள்நுழைக',
+    phoneTab: 'கைபேசி எண் (OTP)',
+    emailTab: 'மின்னஞ்சல் & கடவுச்சொல்',
     email: 'மின்னஞ்சல் முகவரி *',
     password: 'கடவுச்சொல் *',
     emailPlaceholder: 'you@example.com',
@@ -157,6 +161,8 @@ const translations = {
     verifying: 'सत्यापित कर रहा है...',
     orLoginWithEmail: 'ईमेल और पासवर्ड से साइन इन करें',
     orLoginWithOtp: 'मोबाइल OTP से साइन इन करें',
+    phoneTab: 'मोबाइल नंबर (OTP)',
+    emailTab: 'ईमेल और पासवर्ड',
     email: 'ईमेल पता *',
     password: 'पासवर्ड *',
     emailPlaceholder: 'you@example.com',
@@ -195,11 +201,11 @@ const Login = () => {
     localStorage.setItem('farmflow_language', language);
   }, [language]);
 
+  // Login Method: 'phone' (OTP) or 'email' (Email & Password)
+  const [loginMethod, setLoginMethod] = useState('phone');
   // Selected Role: 'farmer', 'vao', 'admin'
   const [selectedRole, setSelectedRole] = useState('farmer');
 
-  // Farmer login mode: 'otp' or 'email'
-  const [farmerAuthMode, setFarmerAuthMode] = useState('otp');
   const [mobileNumber, setMobileNumber] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [sentOtp, setSentOtp] = useState('');
@@ -232,16 +238,18 @@ const Login = () => {
     };
   }, [otpSent, resendTimer]);
 
-  // Handle role switch defaults
+  // Handle role switch defaults for email login
   const handleRoleSelect = (roleId) => {
     setSelectedRole(roleId);
     setOtpSent(false);
     setAdminStep2(false);
 
     if (roleId === 'vao') {
+      setLoginMethod('email');
       if (!email) setEmail('vao@farmflow.com');
       if (!password) setPassword('vao123');
     } else if (roleId === 'admin') {
+      setLoginMethod('email');
       if (!email) setEmail('admin@farmflow.com');
       if (!password) setPassword('admin123');
     } else {
@@ -284,6 +292,67 @@ const Login = () => {
     if (el) el.focus();
   };
 
+  // Look up user document across Firestore by 10-digit mobile number
+  const findUserByPhone = async (cleanNum) => {
+    if (!cleanNum || cleanNum.length < 10) return null;
+
+    const numClean = Number(cleanNum);
+    const searchVariants = [
+      cleanNum,
+      `+91${cleanNum}`,
+      `+91 ${cleanNum}`,
+      `91${cleanNum}`,
+      `0${cleanNum}`,
+      `+91-${cleanNum}`
+    ];
+    if (!isNaN(numClean)) {
+      searchVariants.push(numClean);
+    }
+    const uniqueVariants = [...new Set(searchVariants.filter(Boolean))];
+
+    // 1. Direct indexed query on 'phone'
+    try {
+      const qPhone = query(
+        collection(db, 'users'),
+        where('phone', 'in', uniqueVariants.slice(0, 10))
+      );
+      const phoneSnap = await getDocs(qPhone);
+      if (!phoneSnap.empty) {
+        const docSnap = phoneSnap.docs[0];
+        return { id: docSnap.id, uid: docSnap.id, ...docSnap.data() };
+      }
+    } catch (queryErr) {
+      console.warn('[Login] Direct phone query note:', queryErr);
+    }
+
+    // 2. Fallback scan all users collection to match format variations or alternate field names
+    try {
+      const allUsersSnap = await getDocs(collection(db, 'users'));
+      for (const docSnap of allUsersSnap.docs) {
+        const data = docSnap.data();
+        const candidateFields = [
+          data.phone,
+          data.mobile,
+          data.phoneNumber,
+          data.userPhone,
+          data.contact
+        ];
+        const hasMatch = candidateFields.some((val) => {
+          if (val === undefined || val === null) return false;
+          const strVal = String(val).replace(/\D/g, '').slice(-10);
+          return strVal && strVal === cleanNum;
+        });
+        if (hasMatch) {
+          return { id: docSnap.id, uid: docSnap.id, ...data };
+        }
+      }
+    } catch (scanErr) {
+      console.error('[Login] User scan error:', scanErr);
+    }
+
+    return null;
+  };
+
   // Send OTP handler via TextBee
   const handleSendOtp = async () => {
     const raw = mobileNumber.trim();
@@ -302,9 +371,23 @@ const Login = () => {
 
     setIsSubmitting(true);
     try {
+      // Check if this mobile number belongs to an existing registered user
+      const existingUser = await findUserByPhone(cleanNum);
+      if (!existingUser) {
+        setIsSubmitting(false);
+        alert(
+          language === 'ta'
+            ? `+91 ${cleanNum} என்ற கைபேசி எண்ணில் கணக்கு எதுவும் பதிவு செய்யப்படவில்லை. தயவுசெய்து உங்கள் எண்ணை சரிபார்க்கவும் அல்லது புதிய கணக்கை பதிவு செய்யவும்.`
+            : language === 'hi'
+              ? `+91 ${cleanNum} मोबाइल नंबर से कोई खाता पंजीकृत नहीं है। कृपया अपना नंबर जांचें या नया खाता बनाएं।`
+              : `No account registered with phone number +91 ${cleanNum}. Please check your phone number or sign up for a new account.`
+        );
+        return;
+      }
+
       // Generate authentic 6-digit OTP and send via TextBee SMS Gateway
       const code = generateOTP();
-      console.log('[Login] Dispatching SMS OTP to', cleanNum, ':', code);
+      console.log('[Login] Dispatching SMS OTP to', cleanNum, 'for user', existingUser.name, ':', code);
 
       await sendVerificationOTP({ phone: cleanNum, otp: code, purpose: 'login' });
 
@@ -326,7 +409,7 @@ const Login = () => {
     }
   };
 
-  // Farmer OTP verification & login
+  // Universal OTP verification & login (Farmer, VAO, Officer, Admin)
   const handleVerifyOtp = async () => {
     const enteredCode = otpDigits.join('').trim();
     if (enteredCode.length < 6) {
@@ -347,68 +430,39 @@ const Login = () => {
 
     setIsSubmitting(true);
     try {
-      const raw = mobileNumber.trim();
-      const cleanNum = raw.replace(/\D/g, '').slice(-10);
+      const cleanNum = mobileNumber.replace(/\D/g, '').slice(-10);
+      const userData = await findUserByPhone(cleanNum);
 
-      const phoneSearchVariants = [
-        cleanNum,
-        `+91${cleanNum}`,
-        `+91 ${cleanNum}`,
-        `0${cleanNum}`,
-        raw
-      ];
-      const uniqueVariants = [...new Set(phoneSearchVariants.filter(Boolean))];
-
-      const qPhone = query(
-        collection(db, 'users'),
-        where('phone', 'in', uniqueVariants)
-      );
-      const phoneSnap = await getDocs(qPhone);
-
-      let farmerData;
-      if (!phoneSnap.empty) {
-        const docSnap = phoneSnap.docs[0];
-        const firestoreData = docSnap.data();
-
-        farmerData = {
-          id: docSnap.id,
-          uid: docSnap.id,
-          ...firestoreData,
-          role: firestoreData.role || 'farmer'
-        };
-      } else {
-        // Auto-provision farmer profile for verified mobile number
-        const newUid = 'farmer_' + cleanNum + '_' + Date.now().toString(36);
-        const newFarmerProfile = {
-          uid: newUid,
-          name: `Farmer ${cleanNum.slice(-4)}`,
-          phone: cleanNum,
-          email: `farmer${cleanNum}@farmflow.ai`,
-          role: 'farmer',
-          phoneVerified: true,
-          createdAt: new Date().toISOString()
-        };
-
-        try {
-          await setDoc(doc(db, 'users', newUid), newFarmerProfile);
-        } catch (dbErr) {
-          console.warn('[Login] Note on user profile creation:', dbErr);
-        }
-
-        farmerData = {
-          id: newUid,
-          ...newFarmerProfile
-        };
+      if (!userData) {
+        setIsSubmitting(false);
+        alert(
+          language === 'ta'
+            ? `+91 ${cleanNum} என்ற கைபேசி எண்ணில் கணக்கு எதுவும் பதிவு செய்யப்படவில்லை. தயவுசெய்து புதிய கணக்கை பதிவு செய்யவும்.`
+            : language === 'hi'
+              ? `+91 ${cleanNum} मोबाइल नंबर से कोई खाता पंजीकृत नहीं है। कृपया नया खाता बनाएं।`
+              : `No account registered with mobile number +91 ${cleanNum}. Please sign up for a new account.`
+        );
+        return;
       }
 
       if (rememberMe) {
-        localStorage.setItem('farmflow_user', JSON.stringify(farmerData));
+        localStorage.setItem('farmflow_user', JSON.stringify(userData));
       } else {
-        sessionStorage.setItem('farmflow_user', JSON.stringify(farmerData));
+        sessionStorage.setItem('farmflow_user', JSON.stringify(userData));
       }
 
       setIsSubmitting(false);
-      navigate('/dashboard');
+
+      // Route according to user's registered role from database
+      if (userData.role === 'admin') {
+        navigate('/admin');
+      } else if (userData.role === 'officer') {
+        navigate('/officer');
+      } else if (userData.role === 'vao') {
+        navigate('/vao');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (e) {
       console.error('Error logging in via OTP:', e);
       setIsSubmitting(false);
@@ -610,222 +664,134 @@ const Login = () => {
           </Link>
         </div>
 
-        {/* SIGN IN AS: Farmer, Local Revenue Administrator (VAO), Admin */}
-        <div className="v-role-section">
-          <div className="v-role-title">{t.signInAs}</div>
-          <div className="v-role-grid">
-            {/* Farmer */}
-            <button
-              type="button"
-              className={`v-role-btn ${selectedRole === 'farmer' ? 'active' : ''}`}
-              onClick={() => handleRoleSelect('farmer')}
-            >
-              <span className="v-role-ico">🌾</span>
-              <span className="v-role-label">{t.farmer}</span>
-            </button>
-
-            {/* Local Revenue Administrator (VAO) */}
-            <button
-              type="button"
-              className={`v-role-btn ${selectedRole === 'vao' ? 'active' : ''}`}
-              onClick={() => handleRoleSelect('vao')}
-            >
-              <span className="v-role-ico">🧑‍💼</span>
-              <span className="v-role-label">{t.administrator}</span>
-            </button>
-
-            {/* Admin */}
-            <button
-              type="button"
-              className={`v-role-btn ${selectedRole === 'admin' ? 'active' : ''}`}
-              onClick={() => handleRoleSelect('admin')}
-            >
-              <span className="v-role-ico">🛡️</span>
-              <span className="v-role-label">{t.admin}</span>
-            </button>
-          </div>
+        {/* Authentication Method Selector: Phone OTP | Email & Password */}
+        <div className="v-method-tabs">
+          <button
+            type="button"
+            className={`v-method-btn ${loginMethod === 'phone' ? 'active' : ''}`}
+            onClick={() => {
+              setLoginMethod('phone');
+              setOtpSent(false);
+            }}
+          >
+            📱 {t.phoneTab}
+          </button>
+          <button
+            type="button"
+            className={`v-method-btn ${loginMethod === 'email' ? 'active' : ''}`}
+            onClick={() => setLoginMethod('email')}
+          >
+            ✉️ {t.emailTab}
+          </button>
         </div>
 
-        {/* Role Content 1: FARMER */}
-        {selectedRole === 'farmer' && (
+        {/* =========================================================
+            OPTION 1: PHONE NUMBER (OTP) LOGIN (All Roles Supported)
+            ========================================================= */}
+        {loginMethod === 'phone' && (
           <div className="v-farmer-form">
-            {farmerAuthMode === 'email' ? (
-              <form onSubmit={handleEmailPasswordLogin}>
-                <div className="v-input-group">
-                  <label className="v-field-label">{t.email}</label>
+            {!otpSent ? (
+              <div className="v-input-group">
+                <label className="v-field-label">{t.mobileNumber}</label>
+                <div className="v-mobile-input-wrap">
+                  <div className="v-country-code">
+                    <span className="v-flag">🇮🇳</span>
+                    <span>+91</span>
+                  </div>
                   <input
-                    type="email"
-                    required
-                    className="v-input-field"
-                    placeholder={t.emailPlaceholder}
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    type="tel"
+                    maxLength="10"
+                    className="v-input-field v-mobile-input"
+                    placeholder={t.enterMobile}
+                    value={mobileNumber}
+                    onChange={(e) => setMobileNumber(e.target.value.replace(/\D/g, ''))}
                   />
                 </div>
 
-                <div className="v-input-group">
-                  <label className="v-field-label">{t.password}</label>
-                  <div className="v-password-wrap">
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      required
-                      className="v-input-field"
-                      placeholder={t.passwordPlaceholder}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                    />
-                    <button
-                      type="button"
-                      className="v-eye-toggle"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? '👁️' : '👁️‍🗨️'}
-                    </button>
-                  </div>
+                <button
+                  type="button"
+                  className="v-submit-btn"
+                  onClick={handleSendOtp}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? t.sendingOtp : t.sendOtp}
+                </button>
+              </div>
+            ) : (
+              <div className="v-otp-flow">
+                <div className="v-success-banner">
+                  <span className="check-icon">✓</span>
+                  <span>
+                    {t.otpSentSuccess} +91 ******{mobileNumber.slice(-4) || '3210'}
+                  </span>
                 </div>
 
-                <div className="v-remember-row">
-                  <label className="v-check-label">
-                    <input
-                      type="checkbox"
-                      checked={rememberMe}
-                      onChange={(e) => setRememberMe(e.target.checked)}
-                    />
-                    <span>{t.keepSignedIn}</span>
-                  </label>
+                <div className="v-otp-header">
+                  <span className="v-otp-title">{t.enterOtp}</span>
                   <button
                     type="button"
-                    className="v-forgot-link"
-                    onClick={handleForgotPassword}
+                    className="v-change-number"
+                    onClick={() => setOtpSent(false)}
                   >
-                    {t.forgotPassword}
+                    {t.changeNumber}
                   </button>
+                </div>
+
+                <div className="v-otp-boxes">
+                  {otpDigits.map((digit, idx) => (
+                    <input
+                      key={idx}
+                      id={`otp-input-${idx}`}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength="1"
+                      className={`v-otp-box ${digit ? 'filled' : ''}`}
+                      value={digit}
+                      onChange={(e) => handleOtpChange(idx, e.target.value)}
+                      onKeyDown={(e) => handleOtpKeyDown(idx, e)}
+                      onPaste={handleOtpPaste}
+                      autoFocus={idx === 0}
+                    />
+                  ))}
+                </div>
+
+                <div className="v-resend-timer">
+                  {resendTimer > 0 ? (
+                    <>
+                      {t.resendOtpIn} <b>{resendTimer} {t.seconds}</b>
+                    </>
+                  ) : (
+                    <button
+                      type="button"
+                      className="v-change-number"
+                      onClick={handleSendOtp}
+                      disabled={isSubmitting}
+                      style={{ fontWeight: 700 }}
+                    >
+                      🔄 {language === 'ta' ? 'மீண்டும் OTP அனுப்பு' : language === 'hi' ? 'पुनः OTP भेजें' : 'Resend OTP'}
+                    </button>
+                  )}
                 </div>
 
                 <button
-                  type="submit"
+                  type="button"
                   className="v-submit-btn"
+                  onClick={handleVerifyOtp}
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? t.authenticating : t.login}
+                  {isSubmitting ? t.verifying : t.verifyContinue}
                 </button>
-
-                <div className="v-alt-auth-toggle">
-                  <button
-                    type="button"
-                    onClick={() => setFarmerAuthMode('otp')}
-                  >
-                    📱 {t.orLoginWithOtp}
-                  </button>
-                </div>
-              </form>
-            ) : (
-              /* Farmer Mobile OTP Flow */
-              <>
-                {!otpSent ? (
-                  <div className="v-input-group">
-                    <label className="v-field-label">{t.mobileNumber}</label>
-                    <div className="v-mobile-input-wrap">
-                      <div className="v-country-code">
-                        <span className="v-flag">🇮🇳</span>
-                        <span>+91</span>
-                      </div>
-                      <input
-                        type="tel"
-                        maxLength="10"
-                        className="v-input-field v-mobile-input"
-                        placeholder={t.enterMobile}
-                        value={mobileNumber}
-                        onChange={(e) => setMobileNumber(e.target.value.replace(/\D/g, ''))}
-                      />
-                    </div>
-
-                    <button
-                      type="button"
-                      className="v-submit-btn"
-                      onClick={handleSendOtp}
-                      disabled={isSubmitting}
-                    >
-                      {isSubmitting ? t.sendingOtp : t.sendOtp}
-                    </button>
-                  </div>
-                ) : (
-                    <div className="v-otp-flow">
-                    <div className="v-success-banner">
-                      <span className="check-icon">✓</span>
-                      <span>
-                        {t.otpSentSuccess} +91 ******{mobileNumber.slice(-4) || '3210'}
-                      </span>
-                    </div>
-
-                    <div className="v-otp-header">
-                      <span className="v-otp-title">{t.enterOtp}</span>
-                      <button
-                        type="button"
-                        className="v-change-number"
-                        onClick={() => setOtpSent(false)}
-                      >
-                        {t.changeNumber}
-                      </button>
-                    </div>
-
-                    <div className="v-otp-boxes">
-                      {otpDigits.map((digit, idx) => (
-                        <input
-                          key={idx}
-                          id={`otp-input-${idx}`}
-                          type="text"
-                          inputMode="numeric"
-                          maxLength="1"
-                          className={`v-otp-box ${digit ? 'filled' : ''}`}
-                          value={digit}
-                          onChange={(e) => handleOtpChange(idx, e.target.value)}
-                          onKeyDown={(e) => handleOtpKeyDown(idx, e)}
-                          onPaste={handleOtpPaste}
-                          autoFocus={idx === 0}
-                        />
-                      ))}
-                    </div>
-
-                    <div className="v-resend-timer">
-                      {resendTimer > 0 ? (
-                        <>
-                          {t.resendOtpIn} <b>{resendTimer} {t.seconds}</b>
-                        </>
-                      ) : (
-                        <button
-                          type="button"
-                          className="v-change-number"
-                          onClick={handleSendOtp}
-                          disabled={isSubmitting}
-                          style={{ fontWeight: 700 }}
-                        >
-                          🔄 {language === 'ta' ? 'மீண்டும் OTP அனுப்பு' : language === 'hi' ? 'पुनः OTP भेजें' : 'Resend OTP'}
-                        </button>
-                      )}
-                    </div>
-
-                    <button
-                      type="button"
-                      className="v-submit-btn"
-                      onClick={handleVerifyOtp}
-                      disabled={isSubmitting}
-                    >
-                      {isSubmitting ? t.verifying : t.verifyContinue}
-                    </button>
-                  </div>
-                )}
-
-                <div className="v-alt-auth-toggle">
-                  <button
-                    type="button"
-                    onClick={() => setFarmerAuthMode('email')}
-                  >
-                    ✉️ {t.orLoginWithEmail}
-                  </button>
-                </div>
-              </>
+              </div>
             )}
+
+            <div className="v-alt-auth-toggle">
+              <button
+                type="button"
+                onClick={() => setLoginMethod('email')}
+              >
+                ✉️ {t.orLoginWithEmail}
+              </button>
+            </div>
 
             <div className="v-new-account">
               {t.newFarmer}{' '}
@@ -834,81 +800,140 @@ const Login = () => {
           </div>
         )}
 
-        {/* Role Content 2: LOCAL REVENUE ADMINISTRATOR (VAO) */}
-        {selectedRole === 'vao' && (
-          <form onSubmit={handleEmailPasswordLogin} className="v-operator-form">
-            <div className="v-input-group">
-              <label className="v-field-label">{t.email}</label>
-              <input
-                type="email"
-                required
-                className="v-input-field"
-                placeholder="vao@farmflow.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-
-            <div className="v-input-group">
-              <label className="v-field-label">{t.password}</label>
-              <div className="v-password-wrap">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  className="v-input-field"
-                  placeholder={t.passwordPlaceholder}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
+        {/* =========================================================
+            OPTION 2: EMAIL & PASSWORD LOGIN
+            ========================================================= */}
+        {loginMethod === 'email' && (
+          <>
+            {/* SIGN IN AS Selector for Email Mode */}
+            <div className="v-role-section">
+              <div className="v-role-title">{t.signInAs}</div>
+              <div className="v-role-grid">
+                {/* Farmer */}
                 <button
                   type="button"
-                  className="v-eye-toggle"
-                  onClick={() => setShowPassword(!showPassword)}
+                  className={`v-role-btn ${selectedRole === 'farmer' ? 'active' : ''}`}
+                  onClick={() => handleRoleSelect('farmer')}
                 >
-                  {showPassword ? '👁️' : '👁️‍🗨️'}
+                  <span className="v-role-ico">🌾</span>
+                  <span className="v-role-label">{t.farmer}</span>
+                </button>
+
+                {/* Local Revenue Administrator (VAO) */}
+                <button
+                  type="button"
+                  className={`v-role-btn ${selectedRole === 'vao' ? 'active' : ''}`}
+                  onClick={() => handleRoleSelect('vao')}
+                >
+                  <span className="v-role-ico">🧑‍💼</span>
+                  <span className="v-role-label">{t.administrator}</span>
+                </button>
+
+                {/* Admin */}
+                <button
+                  type="button"
+                  className={`v-role-btn ${selectedRole === 'admin' ? 'active' : ''}`}
+                  onClick={() => handleRoleSelect('admin')}
+                >
+                  <span className="v-role-ico">🛡️</span>
+                  <span className="v-role-label">{t.admin}</span>
                 </button>
               </div>
             </div>
 
-            <div className="v-pwd-strength">
-              <div className="v-pwd-strength-head">
-                <span>{t.passwordStrength}</span>
-                <span className="v-strength-tag">{t.veryStrong}</span>
+            {/* Email Form: Farmer */}
+            {selectedRole === 'farmer' && (
+              <div className="v-farmer-form">
+                <form onSubmit={handleEmailPasswordLogin}>
+                  <div className="v-input-group">
+                    <label className="v-field-label">{t.email}</label>
+                    <input
+                      type="email"
+                      required
+                      className="v-input-field"
+                      placeholder={t.emailPlaceholder}
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="v-input-group">
+                    <label className="v-field-label">{t.password}</label>
+                    <div className="v-password-wrap">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        required
+                        className="v-input-field"
+                        placeholder={t.passwordPlaceholder}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                      />
+                      <button
+                        type="button"
+                        className="v-eye-toggle"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? '👁️' : '👁️‍🗨️'}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="v-remember-row">
+                    <label className="v-check-label">
+                      <input
+                        type="checkbox"
+                        checked={rememberMe}
+                        onChange={(e) => setRememberMe(e.target.checked)}
+                      />
+                      <span>{t.keepSignedIn}</span>
+                    </label>
+                    <button
+                      type="button"
+                      className="v-forgot-link"
+                      onClick={handleForgotPassword}
+                    >
+                      {t.forgotPassword}
+                    </button>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="v-submit-btn"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? t.authenticating : t.login}
+                  </button>
+
+                  <div className="v-alt-auth-toggle">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setLoginMethod('phone');
+                        setOtpSent(false);
+                      }}
+                    >
+                      📱 {t.orLoginWithOtp}
+                    </button>
+                  </div>
+
+                  <div className="v-new-account">
+                    {t.newFarmer}{' '}
+                    <Link to="/register">{t.createAccount}</Link>
+                  </div>
+                </form>
               </div>
-              <div className="v-strength-badges">
-                <span className="v-badge-pill active">✓ 8+ chars</span>
-                <span className="v-badge-pill active">✓ Upper & lower</span>
-                <span className="v-badge-pill active">✓ Official Role</span>
-              </div>
-            </div>
+            )}
 
-            <div className="v-info-notice">
-              <span className="info-icon">ℹ️</span>
-              <span>{t.operatorNotice}</span>
-            </div>
-
-            <button
-              type="submit"
-              className="v-submit-btn"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? t.authenticating : t.login}
-            </button>
-          </form>
-        )}
-
-        {/* Role Content 3: ADMIN */}
-        {selectedRole === 'admin' && (
-          <div className="v-admin-form">
-            {!adminStep2 ? (
-              <form onSubmit={handleEmailPasswordLogin}>
+            {/* Email Form: VAO */}
+            {selectedRole === 'vao' && (
+              <form onSubmit={handleEmailPasswordLogin} className="v-operator-form">
                 <div className="v-input-group">
                   <label className="v-field-label">{t.email}</label>
                   <input
                     type="email"
                     required
                     className="v-input-field"
-                    placeholder="admin@farmflow.com"
+                    placeholder="vao@farmflow.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                   />
@@ -935,9 +960,21 @@ const Login = () => {
                   </div>
                 </div>
 
-                <div className="v-security-alert">
-                  <span className="lock-icon">🔒</span>
-                  <span>{t.adminNotice}</span>
+                <div className="v-pwd-strength">
+                  <div className="v-pwd-strength-head">
+                    <span>{t.passwordStrength}</span>
+                    <span className="v-strength-tag">{t.veryStrong}</span>
+                  </div>
+                  <div className="v-strength-badges">
+                    <span className="v-badge-pill active">✓ 8+ chars</span>
+                    <span className="v-badge-pill active">✓ Upper & lower</span>
+                    <span className="v-badge-pill active">✓ Official Role</span>
+                  </div>
+                </div>
+
+                <div className="v-info-notice">
+                  <span className="info-icon">ℹ️</span>
+                  <span>{t.operatorNotice}</span>
                 </div>
 
                 <button
@@ -947,41 +984,120 @@ const Login = () => {
                 >
                   {isSubmitting ? t.authenticating : t.login}
                 </button>
-              </form>
-            ) : (
-              <div className="v-admin-step2">
-                <div className="v-admin-modal-card">
-                  <div className="v-admin-modal-head">
-                    <span className="v-modal-icon">✉️</span>
-                    <div>
-                      <strong>{t.adminVerification}</strong>
-                      <p>{t.adminVerificationText}</p>
-                    </div>
-                  </div>
 
-                  <div className="v-input-group">
-                    <label className="v-field-label">{t.verificationCode}</label>
-                    <input
-                      type="text"
-                      className="v-input-field"
-                      placeholder={t.enterCode}
-                      value={adminCode}
-                      onChange={(e) => setAdminCode(e.target.value)}
-                    />
-                  </div>
-
+                <div className="v-alt-auth-toggle">
                   <button
                     type="button"
-                    className="v-submit-btn"
-                    onClick={handleEmailPasswordLogin}
-                    disabled={isSubmitting}
+                    onClick={() => {
+                      setLoginMethod('phone');
+                      setOtpSent(false);
+                    }}
                   >
-                    {isSubmitting ? t.verifying : t.verifyAndLogin}
+                    📱 {t.orLoginWithOtp}
                   </button>
                 </div>
+              </form>
+            )}
+
+            {/* Email Form: Admin */}
+            {selectedRole === 'admin' && (
+              <div className="v-admin-form">
+                {!adminStep2 ? (
+                  <form onSubmit={handleEmailPasswordLogin}>
+                    <div className="v-input-group">
+                      <label className="v-field-label">{t.email}</label>
+                      <input
+                        type="email"
+                        required
+                        className="v-input-field"
+                        placeholder="admin@farmflow.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                      />
+                    </div>
+
+                    <div className="v-input-group">
+                      <label className="v-field-label">{t.password}</label>
+                      <div className="v-password-wrap">
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          required
+                          className="v-input-field"
+                          placeholder={t.passwordPlaceholder}
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                        />
+                        <button
+                          type="button"
+                          className="v-eye-toggle"
+                          onClick={() => setShowPassword(!showPassword)}
+                        >
+                          {showPassword ? '👁️' : '👁️‍🗨️'}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="v-security-alert">
+                      <span className="lock-icon">🔒</span>
+                      <span>{t.adminNotice}</span>
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="v-submit-btn"
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? t.authenticating : t.login}
+                    </button>
+
+                    <div className="v-alt-auth-toggle">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setLoginMethod('phone');
+                          setOtpSent(false);
+                        }}
+                      >
+                        📱 {t.orLoginWithOtp}
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  <div className="v-admin-step2">
+                    <div className="v-admin-modal-card">
+                      <div className="v-admin-modal-head">
+                        <span className="v-modal-icon">✉️</span>
+                        <div>
+                          <strong>{t.adminVerification}</strong>
+                          <p>{t.adminVerificationText}</p>
+                        </div>
+                      </div>
+
+                      <div className="v-input-group">
+                        <label className="v-field-label">{t.verificationCode}</label>
+                        <input
+                          type="text"
+                          className="v-input-field"
+                          placeholder={t.enterCode}
+                          value={adminCode}
+                          onChange={(e) => setAdminCode(e.target.value)}
+                        />
+                      </div>
+
+                      <button
+                        type="button"
+                        className="v-submit-btn"
+                        onClick={handleEmailPasswordLogin}
+                        disabled={isSubmitting}
+                      >
+                        {isSubmitting ? t.verifying : t.verifyAndLogin}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
-          </div>
+          </>
         )}
 
         {/* Footer Security Stamp */}
