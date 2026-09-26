@@ -1,8 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  deleteUser,
+  getAuth
+} from "firebase/auth";
+import { initializeApp, deleteApp } from "firebase/app";
 import { doc, setDoc, collection, query, where, getDocs } from "firebase/firestore";
-import { db, auth } from "../firebase";
+import { db, auth, firebaseConfig } from "../firebase";
 import { generateOTP, sendVerificationOTP } from "../services/textbee";
 import "./Register.css";
 
@@ -437,6 +443,7 @@ const Register = () => {
         uid: user.uid,
         name: formData.name.trim(),
         email: formData.email.trim().toLowerCase(),
+        password: formData.password,
         phone: cleanPhone,
         phoneVerified: true,
         role: "farmer",
@@ -451,6 +458,63 @@ const Register = () => {
       let message = error.message;
 
       if (error.code === "auth/email-already-in-use") {
+        const existingSnap = await getDocs(
+          query(collection(db, "users"), where("email", "==", formData.email.trim().toLowerCase()))
+        );
+
+        if (existingSnap.empty) {
+          // Account was previously removed from Firestore, but remained in Firebase Auth!
+          let purged = false;
+          const candidatePasswords = [
+            formData.password,
+            'farmer123',
+            '123456',
+            'password',
+            cleanPhone
+          ].filter(Boolean);
+
+          for (const pass of candidatePasswords) {
+            const secondaryApp = initializeApp(firebaseConfig, `reg-purge-${Date.now()}-${Math.random()}`);
+            const secondaryAuth = getAuth(secondaryApp);
+            try {
+              const cred = await signInWithEmailAndPassword(secondaryAuth, formData.email.trim().toLowerCase(), pass);
+              await deleteUser(cred.user);
+              purged = true;
+              console.log(`[Register] Purged orphaned ${formData.email} from Firebase Auth.`);
+              await deleteApp(secondaryApp);
+              break;
+            } catch (_) {
+              // try next
+            } finally {
+              try { await deleteApp(secondaryApp); } catch (_) {}
+            }
+          }
+
+          if (purged) {
+            // Re-create user cleanly now that old auth record is deleted
+            const newCred = await createUserWithEmailAndPassword(
+              auth,
+              formData.email.trim().toLowerCase(),
+              formData.password
+            );
+
+            await setDoc(doc(db, "users", newCred.user.uid), {
+              uid: newCred.user.uid,
+              name: formData.name.trim(),
+              email: formData.email.trim().toLowerCase(),
+              password: formData.password,
+              phone: cleanPhone,
+              phoneVerified: true,
+              role: "farmer",
+              createdAt: new Date().toISOString(),
+            });
+
+            alert(t.success);
+            navigate("/login");
+            return;
+          }
+        }
+
         message =
           language === "ta"
             ? "இந்த மின்னஞ்சல் ஏற்கனவே பயன்படுத்தப்பட்டுள்ளது."

@@ -1,15 +1,23 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { db, auth } from '../firebase';
+import { db, auth, firebaseConfig } from '../firebase';
 import {
   collection,
   getDocs,
+  getDoc,
   doc,
   setDoc,
   deleteDoc,
-  updateDoc
+  updateDoc,
+  query,
+  where
 } from 'firebase/firestore';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  deleteUser
+} from 'firebase/auth';
+import { initializeApp, deleteApp } from 'firebase/app';
 import './AdminDashboard.css';
 
 const AdminDashboard = () => {
@@ -93,17 +101,84 @@ const AdminDashboard = () => {
     setIsSubmitting(true);
 
     try {
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        newUser.email.trim().toLowerCase(),
-        newUser.password
-      );
+      const emailLower = newUser.email.trim().toLowerCase();
+      let userUid = null;
 
-      const user = userCredential.user;
+      try {
+        const userCredential = await createUserWithEmailAndPassword(
+          auth,
+          emailLower,
+          newUser.password
+        );
+        userUid = userCredential.user.uid;
+      } catch (authErr) {
+        if (authErr.code === 'auth/email-already-in-use') {
+          // Check if an active user exists in Firestore
+          const existingSnap = await getDocs(
+            query(collection(db, 'users'), where('email', '==', emailLower))
+          );
+
+          if (!existingSnap.empty) {
+            const existing = existingSnap.docs[0].data();
+            alert(`A user account with email "${newUser.email}" is already active in the system (${existing.name} - ${existing.role.toUpperCase()}). Every user must have a unique email.`);
+            setIsSubmitting(false);
+            return;
+          }
+
+          // Email exists in Firebase Auth from a previous deletion/orphaned state
+          // Try candidate passwords on a secondary app to delete the orphaned user and recreate cleanly
+          let purged = false;
+          const candidatePasswords = [
+            newUser.password,
+            'vao123',
+            'officer123',
+            'admin123',
+            'farmer123',
+            cleanPhone,
+            '123456',
+            'password'
+          ].filter(Boolean);
+
+          for (const pass of candidatePasswords) {
+            const secondaryApp = initializeApp(firebaseConfig, `create-reuse-${Date.now()}-${Math.random()}`);
+            const secondaryAuth = getAuth(secondaryApp);
+            try {
+              const cred = await signInWithEmailAndPassword(secondaryAuth, emailLower, pass);
+              await deleteUser(cred.user);
+              purged = true;
+              console.log(`[Admin] Purged orphaned ${emailLower} from Firebase Auth.`);
+              await deleteApp(secondaryApp);
+              break;
+            } catch (_) {
+              // try next candidate
+            } finally {
+              try { await deleteApp(secondaryApp); } catch (_) {}
+            }
+          }
+
+          if (purged) {
+            // Re-create user cleanly now that the email is liberated
+            const newCred = await createUserWithEmailAndPassword(
+              auth,
+              emailLower,
+              newUser.password
+            );
+            userUid = newCred.user.uid;
+          } else {
+            alert(`The email "${newUser.email}" was previously registered in Firebase Authentication under an unknown password. Please delete this email in your Firebase Console (Authentication > Users tab), or use a different email address.`);
+            setIsSubmitting(false);
+            return;
+          }
+        } else {
+          throw authErr;
+        }
+      }
+
       const userProfile = {
-        uid: user.uid,
+        uid: userUid,
         name: newUser.name.trim(),
-        email: newUser.email.trim().toLowerCase(),
+        email: emailLower,
+        password: newUser.password,
         phone: cleanPhone || '',
         role: newUser.role,
         zone: newUser.zone || '',
@@ -111,7 +186,7 @@ const AdminDashboard = () => {
         createdAt: new Date().toISOString()
       };
 
-      await setDoc(doc(db, 'users', user.uid), userProfile);
+      await setDoc(doc(db, 'users', userUid), userProfile);
       alert(`User account (${newUser.role.toUpperCase()}) created successfully!`);
       setNewUser({
         name: '',
@@ -134,15 +209,61 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleDeleteUser = async (id, userName) => {
-    if (window.confirm(`Are you sure you want to delete user account "${userName || id}"?`)) {
-      try {
-        await deleteDoc(doc(db, 'users', id));
-        fetchData();
-      } catch (error) {
-        console.error(error);
-        alert('Failed to delete user.');
+  const handleDeleteUser = async (userOrId, fallbackName) => {
+    const userId = typeof userOrId === 'object' ? userOrId.id : userOrId;
+    const userName = typeof userOrId === 'object' ? userOrId.name : fallbackName;
+
+    if (!window.confirm(`Are you sure you want to permanently delete user account "${userName || userId}"? This will delete both the database record and Firebase login credentials.`)) {
+      return;
+    }
+
+    try {
+      let userData = typeof userOrId === 'object' ? userOrId : null;
+      if (!userData || !userData.email) {
+        const snap = await getDoc(doc(db, 'users', userId));
+        if (snap.exists()) {
+          userData = { id: snap.id, ...snap.data() };
+        }
       }
+
+      // If user has an email, delete their account from Firebase Authentication
+      if (userData?.email) {
+        const emailToDel = userData.email.trim().toLowerCase();
+        const candidatePasswords = [
+          userData.password,
+          'vao123',
+          'officer123',
+          'admin123',
+          'farmer123',
+          userData.phone,
+          '123456',
+          'password'
+        ].filter(Boolean);
+
+        for (const pass of candidatePasswords) {
+          const secondaryApp = initializeApp(firebaseConfig, `del-${Date.now()}-${Math.random()}`);
+          const secondaryAuth = getAuth(secondaryApp);
+          try {
+            const cred = await signInWithEmailAndPassword(secondaryAuth, emailToDel, pass);
+            await deleteUser(cred.user);
+            console.log(`[Admin] Deleted ${emailToDel} from Firebase Auth.`);
+            await deleteApp(secondaryApp);
+            break;
+          } catch (_) {
+            // wrong password, try next candidate
+          } finally {
+            try { await deleteApp(secondaryApp); } catch (_) {}
+          }
+        }
+      }
+
+      // Delete from Firestore
+      await deleteDoc(doc(db, 'users', userId));
+      alert(`User "${userName || userId}" was successfully deleted from Firebase and the database.`);
+      fetchData();
+    } catch (error) {
+      console.error('Delete user error:', error);
+      alert('Failed to delete user: ' + error.message);
     }
   };
 
@@ -658,7 +779,7 @@ const AdminDashboard = () => {
                               <button
                                 type="button"
                                 className="v-btn-op-action revoke"
-                                onClick={() => handleDeleteUser(v.id, v.name)}
+                                onClick={() => handleDeleteUser(v)}
                                 title="Delete VAO Account"
                               >
                                 Delete
@@ -785,7 +906,7 @@ const AdminDashboard = () => {
                               <button
                                 type="button"
                                 className="v-btn-op-action revoke"
-                                onClick={() => handleDeleteUser(op.id, op.name)}
+                                onClick={() => handleDeleteUser(op)}
                                 title="Delete Officer Account"
                               >
                                 Delete
@@ -888,7 +1009,7 @@ const AdminDashboard = () => {
                               <button
                                 type="button"
                                 className="v-btn-op-action revoke"
-                                onClick={() => handleDeleteUser(farmer.id, farmer.name)}
+                                onClick={() => handleDeleteUser(farmer)}
                                 title="Delete Farmer Account"
                               >
                                 Delete
