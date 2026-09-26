@@ -148,7 +148,7 @@ function Profile() {
 
               <div>
                 <strong>Account Active</strong>
-                <span>Your FarmFlow account is ready to use</span>
+                <span>Your AgriProcure account is ready to use</span>
               </div>
             </div>
 
@@ -188,7 +188,7 @@ function Profile() {
 
             <p>
               Your profile information is stored securely
-              and is only used to manage your FarmFlow account.
+              and is only used to manage your AgriProcure account.
             </p>
           </div>
 
@@ -196,7 +196,7 @@ function Profile() {
 
         {/* Footer */}
         <div className="profile-footer">
-          <span>FarmFlow AI</span>
+          <span>AgriProcure</span>
           <span className="footer-separator">•</span>
           <span>Smart Farming Platform</span>
         </div>

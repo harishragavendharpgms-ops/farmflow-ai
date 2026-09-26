@@ -37,7 +37,7 @@ export default function FarmerTracker() {
         
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-          <h1 style={{ color: '#2c3e50', margin: '0 0 10px 0' }}>🌾 FarmFlow AI - Farmer Portal</h1>
+          <h1 style={{ color: '#2c3e50', margin: '0 0 10px 0' }}>🌾 AgriProcure - Farmer Portal</h1>
           <p style={{ color: '#555', margin: 0 }}>Track your crop procurement status, verification steps, and DBT payout in real-time.</p>
         </div>
 

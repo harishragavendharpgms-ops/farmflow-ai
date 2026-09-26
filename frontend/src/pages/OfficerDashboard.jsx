@@ -156,7 +156,7 @@ const OfficerDashboard = () => {
 
       await triggerSms(
         order.userPhone,
-        `FarmFlow AI: Your slot is confirmed on ${combinedSlot} at ${order.zone || 'APMC Centre #402'}.`
+        `AgriProcure: Your slot is confirmed on ${combinedSlot} at ${order.zone || 'APMC Centre #402'}.`
       );
 
       alert(`Time slot successfully assigned: ${combinedSlot}`);
@@ -181,7 +181,7 @@ const OfficerDashboard = () => {
 
       await triggerSms(
         order.userPhone,
-        `FarmFlow AI: Your reschedule request has been APPROVED! New confirmed slot: ${newSlot} at ${order.zone || 'APMC Centre'}.`
+        `AgriProcure: Your reschedule request has been APPROVED! New confirmed slot: ${newSlot} at ${order.zone || 'APMC Centre'}.`
       );
 
       alert(`Reschedule approved for Token ${order.token || order.id.slice(0, 8)}: ${newSlot}`);
@@ -240,7 +240,7 @@ const OfficerDashboard = () => {
 
       await triggerSms(
         nextFarmer.userPhone,
-        `FarmFlow AI: Token ${nextFarmer.token} is now called to Counter #1 at APMC Centre #402. Please proceed for weighing.`
+        `AgriProcure: Token ${nextFarmer.token} is now called to Counter #1 at APMC Centre #402. Please proceed for weighing.`
       );
 
       alert(`Calling Next Farmer: ${nextFarmer.userName || 'Farmer'} (Token: ${nextFarmer.token})`);
@@ -268,7 +268,7 @@ const OfficerDashboard = () => {
 
       await triggerSms(
         order.userPhone,
-        `FarmFlow AI: Procurement complete! Total payout of INR ${totalPayout} has been transferred via DBT to your verified bank account.`
+        `AgriProcure: Procurement complete! Total payout of INR ${totalPayout} has been transferred via DBT to your verified bank account.`
       );
 
       if (nowServing && nowServing.id === id) {
@@ -372,7 +372,7 @@ const OfficerDashboard = () => {
         <div className="v-op-brand">
           <span className="brand-logo-leaf">🌱</span>
           <div>
-            <strong>FarmFlow <span>AI</span></strong>
+            <strong>Agri<span>Procure</span></strong>
             <small>PROCUREMENT OFFICER</small>
           </div>
         </div>
@@ -439,7 +439,7 @@ const OfficerDashboard = () => {
         {/* TOP BAR */}
         <header className="v-op-topbar">
           <div className="v-topbar-centre">
-            <span>FarmFlow AI • {userProfile.subPlace || 'Procurement Centre'}</span>
+            <span>AgriProcure • {userProfile.subPlace || 'Procurement Centre'}</span>
             <span className="v-live-tag"><span className="pulse-dot" /> Live</span>
           </div>
 
@@ -863,7 +863,7 @@ const OfficerDashboard = () => {
                               className="v-btn-call-farmer"
                               onClick={() => {
                                 setNowServing(order);
-                                triggerSms(order.userPhone, `FarmFlow AI: Token ${order.token} please proceed to Counter #1.`);
+                                triggerSms(order.userPhone, `AgriProcure: Token ${order.token} please proceed to Counter #1.`);
                                 alert(`Called farmer: ${order.userName}`);
                               }}
                             >

@@ -20,14 +20,14 @@ import farmMandiBg from '../assets/farm_mandi_bg.jpg';
 import './Login.css';
 
 /* =========================================================
-   TRANSLATIONS (Original FarmFlow AI Copy Preserved)
+   TRANSLATIONS (AgriProcure Copy)
    ========================================================= */
 
 const translations = {
   en: {
     language: 'Language',
-    brand: 'FarmFlow',
-    brandSuffix: 'AI',
+    brand: 'Agri',
+    brandSuffix: 'Procure',
     brandSubtitle: 'Smart Agriculture Platform',
     portalBadge: 'SMART AGRICULTURE PLATFORM',
     heroTitle: 'Smarter farming starts here.',
@@ -72,16 +72,16 @@ const translations = {
     authenticating: 'Authenticating...',
     keepSignedIn: 'Keep me signed in',
     forgotPassword: 'Forgot password?',
-    newFarmer: 'New to FarmFlow AI?',
+    newFarmer: 'New to AgriProcure?',
     createAccount: 'Create a farmer account',
-    footerSystem: 'FarmFlow AI Secure Digital Agriculture Infrastructure',
+    footerSystem: 'AgriProcure Secure Digital Agriculture Infrastructure',
     loginFailed: 'Login failed: Incorrect email or password.',
     invalidOtp: 'Please enter the complete 6-digit verification code.'
   },
   ta: {
     language: 'மொழி',
-    brand: 'FarmFlow',
-    brandSuffix: 'AI',
+    brand: 'Agri',
+    brandSuffix: 'Procure',
     brandSubtitle: 'ஸ்மார்ட் வேளாண்மை தளம்',
     portalBadge: 'ஸ்மார்ட் வேளாண்மை தளம்',
     heroTitle: 'புத்திசாலித்தனமான விவசாயம் இங்கிருந்து தொடங்குகிறது.',
@@ -126,16 +126,16 @@ const translations = {
     authenticating: 'அங்கீகரிக்கிறது...',
     keepSignedIn: 'என்னை உள்நுழைந்த நிலையில் வைத்திருக்கவும்',
     forgotPassword: 'கடவுச்சொல் மறந்துவிட்டதா?',
-    newFarmer: 'FarmFlow AI-க்கு புதியவரா?',
+    newFarmer: 'AgriProcure-க்கு புதியவரா?',
     createAccount: 'விவசாயி கணக்கை உருவாக்கவும்',
-    footerSystem: 'FarmFlow AI பாதுகாப்பான டிஜிட்டல் வேளாண்மை உள்கட்டமைப்பு',
+    footerSystem: 'AgriProcure நம்பகமான விவசாய டிஜிட்டல் உள்கட்டமைப்பு',
     loginFailed: 'உள்நுழைவு தோல்வியடைந்தது: மின்னஞ்சல் அல்லது கடவுச்சொல் தவறானது.',
     invalidOtp: 'தயவுசெய்து முழு 6 இலக்க சரிபார்ப்புக் குறியீட்டை உள்ளிடவும்.'
   },
   hi: {
     language: 'भाषा',
-    brand: 'FarmFlow',
-    brandSuffix: 'AI',
+    brand: 'Agri',
+    brandSuffix: 'Procure',
     brandSubtitle: 'स्मार्ट कृषि प्लेटफ़ॉर्म',
     portalBadge: 'स्मार्ट कृषि प्लेटफ़ॉर्म',
     heroTitle: 'स्मार्ट खेती की शुरुआत यहां से होती है।',
@@ -180,9 +180,9 @@ const translations = {
     authenticating: 'प्रमाणीकृत हो रहा है...',
     keepSignedIn: 'मुझे साइन इन रखें',
     forgotPassword: 'पासवर्ड भूल गए?',
-    newFarmer: 'FarmFlow AI पर नए हैं?',
+    newFarmer: 'AgriProcure पर नए हैं?',
     createAccount: 'किसान खाता बनाएं',
-    footerSystem: 'FarmFlow AI सुरक्षित डिजिटल कृषि अवसंरचना प्रणाली',
+    footerSystem: 'AgriProcure सुरक्षित डिजिटल कृषि अवसंरचना प्रणाली',
     loginFailed: 'लॉगिन विफल: गलत ईमेल या पासवर्ड।',
     invalidOtp: 'कृपया पूरा 6-अंकीय सत्यापन कोड दर्ज करें।'
   }
@@ -246,11 +246,11 @@ const Login = () => {
 
     if (roleId === 'vao') {
       setLoginMethod('email');
-      if (!email) setEmail('vao@farmflow.com');
+      if (!email) setEmail('vao@agriprocure.com');
       if (!password) setPassword('vao123');
     } else if (roleId === 'admin') {
       setLoginMethod('email');
-      if (!email) setEmail('admin@farmflow.com');
+      if (!email) setEmail('admin@agriprocure.com');
       if (!password) setPassword('admin123');
     } else {
       setEmail('');
@@ -487,7 +487,8 @@ const Login = () => {
 
     // Admin Quick Login Bypass
     if (
-      email.trim().toLowerCase() === 'admin@farmflow.com' &&
+      (email.trim().toLowerCase() === 'admin@agriprocure.com' ||
+        email.trim().toLowerCase() === 'admin@farmflow.com') &&
       password === 'admin123'
     ) {
       if (!adminStep2) {
@@ -642,13 +643,13 @@ const Login = () => {
 
       {/* Centered Frosted Card */}
       <div className="v-auth-card">
-        {/* Top Badge: FarmFlow AI */}
+        {/* Top Badge: AgriProcure */}
         <div className="v-portal-badge">
           <span className="v-portal-icon">🌱</span>
           <span>{t.portalBadge}</span>
         </div>
 
-        {/* Brand & Subtitle: FarmFlow AI */}
+        {/* Brand & Subtitle: AgriProcure */}
         <div className="v-brand-header">
           <h1 className="v-brand-title">
             {t.brand} <span>{t.brandSuffix}</span>
@@ -935,7 +936,7 @@ const Login = () => {
                     type="email"
                     required
                     className="v-input-field"
-                    placeholder="vao@farmflow.com"
+                    placeholder="vao@agriprocure.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                   />
@@ -1012,7 +1013,7 @@ const Login = () => {
                         type="email"
                         required
                         className="v-input-field"
-                        placeholder="admin@farmflow.com"
+                        placeholder="admin@agriprocure.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                       />

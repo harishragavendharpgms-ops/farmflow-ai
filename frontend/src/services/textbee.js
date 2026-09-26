@@ -1,5 +1,5 @@
 /**
- * FarmFlow AI - TextBee SMS Gateway Service
+ * AgriProcure - TextBee SMS Gateway Service
  * Handles SMS OTP generation, formatting, and dispatch via TextBee API.
  */
 
@@ -74,7 +74,7 @@ export const sendSMS = async ({ phone, message }) => {
 };
 
 /**
- * Send an authentic FarmFlow AI OTP message to user's phone.
+ * Send an authentic AgriProcure OTP message to user's phone.
  * @param {Object} param0
  * @param {string} param0.phone 
  * @param {string} param0.otp 
@@ -82,7 +82,7 @@ export const sendSMS = async ({ phone, message }) => {
  */
 export const sendVerificationOTP = async ({ phone, otp, purpose = 'registration' }) => {
   const actionText = purpose === 'login' ? 'login' : 'registration';
-  const message = `FarmFlow AI: Your ${actionText} verification OTP is ${otp}. Valid for 10 minutes. Do not share this code with anyone.`;
+  const message = `AgriProcure: Your ${actionText} verification OTP is ${otp}. Valid for 10 minutes. Do not share this code with anyone.`;
 
   return await sendSMS({ phone, message });
 };

@@ -422,7 +422,7 @@ const AdminDashboard = () => {
         <div className="v-adm-brand">
           <span className="v-adm-leaf">🌱</span>
           <div>
-            <strong>FarmFlow <span>AI</span></strong>
+            <strong>Agri<span>Procure</span></strong>
             <small>ADMIN CONSOLE</small>
           </div>
         </div>
@@ -508,7 +508,7 @@ const AdminDashboard = () => {
         {/* TOP BAR */}
         <header className="v-adm-topbar">
           <div className="v-adm-topbar-left">
-            <span className="topbar-logo-text">FarmFlow AI Administration Portal</span>
+            <span className="topbar-logo-text">AgriProcure Administration Portal</span>
           </div>
 
           <div className="v-adm-topbar-right">
@@ -981,7 +981,7 @@ const AdminDashboard = () => {
                           <div className="v-empty-table-box">
                             <span className="v-empty-emoji">🌾</span>
                             <strong>No Farmers Registered</strong>
-                            <p>Farmers who register on FarmFlow AI will appear in this directory.</p>
+                            <p>Farmers who register on AgriProcure will appear in this directory.</p>
                           </div>
                         </td>
                       </tr>
@@ -1197,7 +1197,7 @@ const AdminDashboard = () => {
                     <input
                       type="email"
                       required
-                      placeholder="e.g. ramesh@farmflow.gov.in"
+                      placeholder="e.g. ramesh@agriprocure.gov.in"
                       value={newUser.email}
                       onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
                     />

@@ -14,7 +14,7 @@ function AIInsights() {
         </div>
 
         <p className="insights-subtitle">
-          Powered by FarmFlow AI. These recommendations are based on real-time market data and weather patterns.
+          Powered by AgriProcure. These recommendations are based on real-time market data and weather patterns.
         </p>
 
         <div className="insights-list">

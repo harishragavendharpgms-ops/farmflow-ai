@@ -6,14 +6,14 @@ import './Home.css';
 const translations = {
   en: {
     language: 'Language',
-    brand: 'FarmFlow',
+    brand: 'AgriProcure',
     smartPlatform: 'SMART AGRICULTURE PLATFORM',
 
     heroTitle1: 'Better decisions for',
     heroTitle2: 'every harvest.',
 
     heroDescription:
-      'FarmFlow AI brings market intelligence, weather signals, procurement workflows and land-document verification into one simple workspace for farmers and field officers.',
+      'AgriProcure brings market intelligence, weather signals, procurement workflows and land-document verification into one simple workspace for farmers and field officers.',
 
     getStarted: 'Get started',
     alreadyAccount: 'I already have an account · Sign in',
@@ -68,14 +68,14 @@ const translations = {
 
   ta: {
     language: 'மொழி',
-    brand: 'FarmFlow',
+    brand: 'AgriProcure',
     smartPlatform: 'ஸ்மார்ட் வேளாண்மை தளம்',
 
     heroTitle1: 'ஒவ்வொரு அறுவடைக்கும்',
     heroTitle2: 'சிறந்த முடிவுகள்.',
 
     heroDescription:
-      'FarmFlow AI மூலம் சந்தை தகவல்கள், வானிலை தகவல்கள், கொள்முதல் செயல்முறைகள் மற்றும் நில ஆவண சரிபார்ப்பை ஒரே எளிய தளத்தில் நிர்வகிக்கலாம்.',
+      'AgriProcure மூலம் சந்தை தகவல்கள், வானிலை தகவல்கள், கொள்முதல் செயல்முறைகள் மற்றும் நில ஆவண சரிபார்ப்பை ஒரே எளிய தளத்தில் நிர்வகிக்கலாம்.',
 
     getStarted: 'தொடங்குங்கள்',
     alreadyAccount: 'ஏற்கனவே கணக்கு உள்ளது · உள்நுழைக',
@@ -130,14 +130,14 @@ const translations = {
 
   hi: {
     language: 'भाषा',
-    brand: 'FarmFlow',
+    brand: 'AgriProcure',
     smartPlatform: 'स्मार्ट कृषि प्लेटफ़ॉर्म',
 
     heroTitle1: 'हर फसल के लिए',
     heroTitle2: 'बेहतर निर्णय।',
 
     heroDescription:
-      'FarmFlow AI किसानों और क्षेत्रीय अधिकारियों के लिए बाजार जानकारी, मौसम संकेत, खरीद प्रक्रियाओं और भूमि दस्तावेज़ सत्यापन को एक सरल प्लेटफ़ॉर्म में लाता है।',
+      'AgriProcure किसानों और क्षेत्रीय अधिकारियों के लिए बाजार जानकारी, मौसम संकेत, खरीद प्रक्रियाओं और भूमि दस्तावेज़ सत्यापन को एक सरल प्लेटफ़ॉर्म में लाता है।',
 
     getStarted: 'शुरू करें',
     alreadyAccount: 'मेरे पास पहले से खाता है · साइन इन',
@@ -235,7 +235,7 @@ const Home = () => {
           }}
         >
           <span>🌱</span>
-          {t.brand} <b>AI</b>
+          Agri<b>Procure</b>
         </div>
 
         <div className="home-nav-actions">
@@ -553,7 +553,7 @@ const Home = () => {
       <footer className="home-footer">
 
         <div>
-          🌱 <strong>FarmFlow AI</strong>
+          🌱 <strong>AgriProcure</strong>
         </div>
 
         <p>

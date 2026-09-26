@@ -146,7 +146,7 @@ const t = {
     navHelp: "❓ Help",
     logout: "Log Out",
     confirmLogoutTitle: "Confirm Log Out",
-    confirmLogoutDesc: "Are you sure you want to log out of your FarmFlow AI account and return to the login page?",
+    confirmLogoutDesc: "Are you sure you want to log out of your AgriProcure account and return to the login page?",
     confirmLogoutBtn: "Yes, Log Out",
     cancelLogoutBtn: "Stay on Dashboard",
     subtitle: "Manage your smart farm operations seamlessly.",
@@ -201,7 +201,7 @@ const t = {
     aiTip2: "Market conditions suggest holding wheat sales for 2 weeks to maximize profit.",
     aiTip3: "Weather analysis shows low risk of pests for the next 7 days.",
     helpTitle: "Help & Guide",
-    helpIntro: "Welcome to FarmFlow AI! Here is how to use your dashboard:",
+    helpIntro: "Welcome to AgriProcure! Here is how to use your dashboard:",
     helpProfile: "Profile: View your registered account details and status.",
     helpCrops: "My Crops: Add your harvested crops, enter weight, and monitor live estimated market values.",
     helpProcurement: "Procurement: View live fluctuating market rates and apply to sell crops through VAO verification.",
@@ -218,7 +218,7 @@ const t = {
     navHelp: "❓ உதவி",
     logout: "வெளியேறு",
     confirmLogoutTitle: "வெளியேறுதலை உறுதிப்படுத்தவும்",
-    confirmLogoutDesc: "உங்கள் FarmFlow AI கணக்கிலிருந்து வெளியேறி உள்நுழைவுப் பக்கத்திற்குச் செல்ல விரும்புகிறீர்களா?",
+    confirmLogoutDesc: "உங்கள் AgriProcure கணக்கிலிருந்து வெளியேறி உள்நுழைவுப் பக்கத்திற்குச் செல்ல விரும்புகிறீர்களா?",
     confirmLogoutBtn: "ஆம், வெளியேறு",
     cancelLogoutBtn: "டேஷ்போர்டில் தொடரவும்",
     subtitle: "உங்கள் ஸ்மார்ட் பண்ணை செயல்பாடுகளை எளிதாக நிர்வகிக்கவும்.",
@@ -273,7 +273,7 @@ const t = {
     aiTip2: "லாபத்தை அதிகரிக்க கோதுமை விற்பனையை 2 வாரங்கள் தாமதப்படுத்த சந்தை நிலைமைகள் பரிந்துரைக்கின்றன.",
     aiTip3: "அடுத்த 7 நாட்களில் பூச்சி தாக்குதல் அபாயம் குறைவாக இருக்கும் என வானிலை பகுப்பாய்வு காட்டுகிறது.",
     helpTitle: "உதவி மற்றும் வழிகாட்டி",
-    helpIntro: "FarmFlow AI-க்கு வரவேற்கிறோம்! உங்கள் டாஷ்போர்டை பயன்படுத்துவது எப்படி:",
+    helpIntro: "AgriProcure-க்கு வரவேற்கிறோம்! உங்கள் டாஷ்போர்டை பயன்படுத்துவது எப்படி:",
     helpProfile: "சுயவிவரம்: உங்கள் பதிவு செய்யப்பட்ட கணக்கு விவரங்களையும் நிலையையும் பார்க்கவும்.",
     helpCrops: "என் பயிர்கள்: அறுவடை பயிர்களைச் சேர்த்து, எடையைப் பதிவு செய்து, நேரடி சந்தை மதிப்பைப் பார்க்கவும்.",
     helpProcurement: "கொள்முதல்: நேரடி சந்தை விலைகளைப் பார்த்து, பயிர்களை விற்க விண்ணப்பிக்கவும்.",
@@ -290,7 +290,7 @@ const t = {
     navHelp: "❓ सहायता",
     logout: "लॉग आउट",
     confirmLogoutTitle: "लॉग आउट की पुष्टि करें",
-    confirmLogoutDesc: "क्या आप वाकई अपने FarmFlow AI खाते से लॉग आउट करके लॉगिन पृष्ठ पर जाना चाहते हैं?",
+    confirmLogoutDesc: "क्या आप वाकई अपने AgriProcure खाते से लॉग आउट करके लॉगिन पृष्ठ पर जाना चाहते हैं?",
     confirmLogoutBtn: "हाँ, लॉग आउट करें",
     cancelLogoutBtn: "डैशबोर्ड पर बने रहें",
     subtitle: "अपने स्मार्ट फार्म संचालन को आसानी से प्रबंधित करें।",
@@ -345,7 +345,7 @@ const t = {
     aiTip2: "बाजार की स्थिति लाभ बढ़ाने के लिए गेहूं की बिक्री 2 सप्ताह रोकने का सुझाव देती है।",
     aiTip3: "मौसम विश्लेषण अगले 7 दिनों में कीटों के कम जोखिम को दर्शाता है।",
     helpTitle: "सहायता और मार्गदर्शिका",
-    helpIntro: "FarmFlow AI में आपका स्वागत है! अपना डैशबोर्ड इस्तेमाल करने का तरीका यहां है:",
+    helpIntro: "AgriProcure में आपका स्वागत है! अपना डैशबोर्ड इस्तेमाल करने का तरीका यहां है:",
     helpProfile: "प्रोफ़ाइल: अपने पंजीकृत खाते का विवरण और स्थिति देखें।",
     helpCrops: "मेरी फसलें: फसल जोड़ें, वजन दर्ज करें और लाइव बाजार मूल्य देखें।",
     helpProcurement: "खरीद: लाइव दरें देखें और फसल बेचने के लिए VAO सत्यापन को आवेदन करें।",
@@ -979,7 +979,7 @@ const Dashboard = () => {
       pdf.setTextColor(255, 255, 255);
       pdf.setFontSize(14);
       pdf.setFont('helvetica', 'bold');
-      pdf.text('FARMFLOW AI - OFFICIAL MANDI GATE PASS', 105, 12, { align: 'center' });
+      pdf.text('AGRIPROCURE - OFFICIAL MANDI GATE PASS', 105, 12, { align: 'center' });
       pdf.setFontSize(9);
       pdf.setFont('helvetica', 'normal');
       pdf.text('Smart Agriculture Procurement & Verification System', 105, 20, { align: 'center' });
@@ -1229,12 +1229,12 @@ const Dashboard = () => {
         />
       )}
 
-      {/* SIDEBAR (Original FarmFlow AI Menu Restored) */}
+      {/* SIDEBAR (AgriProcure Menu) */}
       <aside className={`v-sidebar ${isSidebarOpen ? 'open' : ''}`}>
         <div className="v-sidebar-brand">
           <div className="v-brand-leaf">🌱</div>
           <div className="v-brand-text">
-            <strong>FarmFlow <span>AI</span></strong>
+            <strong>Agri<span>Procure</span></strong>
             <small>SMART AGRICULTURE</small>
           </div>
         </div>
@@ -1914,7 +1914,7 @@ const Dashboard = () => {
             <div className="v-profile-logout-card">
               <div className="v-profile-logout-info">
                 <strong>{l.logout}</strong>
-                <p>{l.confirmLogoutDesc || 'Log out of your FarmFlow AI account and return to the login page.'}</p>
+                <p>{l.confirmLogoutDesc || 'Log out of your AgriProcure account and return to the login page.'}</p>
               </div>
               <button
                 type="button"
@@ -2558,7 +2558,7 @@ const Dashboard = () => {
                 <div className="v-help-box">
                   <span className="box-icon">✉️</span>
                   <strong>Email Assistance</strong>
-                  <p>support@farmflow.ai</p>
+                  <p>support@agriprocure.com</p>
                   <small>Reply within 24 hours</small>
                 </div>
 
@@ -2678,7 +2678,7 @@ const Dashboard = () => {
             </h3>
 
             <p style={{ color: '#64748b', fontSize: '0.92rem', lineHeight: '1.55', margin: '0 0 24px' }}>
-              {l.confirmLogoutDesc || 'Are you sure you want to log out of your FarmFlow AI account and return to the login page?'}
+              {l.confirmLogoutDesc || 'Are you sure you want to log out of your AgriProcure account and return to the login page?'}
             </p>
 
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>

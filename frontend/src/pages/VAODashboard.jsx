@@ -140,7 +140,7 @@ const VAODashboard = () => {
       docPdf.setFont('helvetica', 'bold');
       docPdf.setFontSize(16);
       docPdf.setTextColor(255, 255, 255);
-      docPdf.text('FARMFLOW AI - OFFICIAL VERIFIED CERTIFICATE', 20, 16);
+      docPdf.text('AGRIPROCURE - OFFICIAL VERIFIED CERTIFICATE', 20, 16);
 
       docPdf.setTextColor(30, 41, 59);
       docPdf.setFontSize(11);
@@ -203,7 +203,7 @@ const VAODashboard = () => {
       const qty = order.quantity || '0';
       const zone = userProfile.zone || order.zone || 'Jurisdiction';
 
-      const smsText = `Dear ${farmerName}, your land document for ${crop} (${qty}kg) has been VERIFIED by VAO (${zone}). Your application is approved for mandi procurement. - FarmFlow AI`;
+      const smsText = `Dear ${farmerName}, your land document for ${crop} (${qty}kg) has been VERIFIED by VAO (${zone}). Your application is approved for mandi procurement. - AgriProcure`;
 
       await triggerSms(farmerPhone, smsText);
 
@@ -267,7 +267,7 @@ const VAODashboard = () => {
       // Notify farmer via TextBee SMS
       await triggerSms(
         selectedOrderForCancel.userPhone,
-        `FarmFlow AI: Your land document for ${selectedOrderForCancel.item || 'Crop'} (${selectedOrderForCancel.quantity || 0}kg) was REJECTED by VAO. Reason: ${finalReason}.`
+        `AgriProcure: Your land document for ${selectedOrderForCancel.item || 'Crop'} (${selectedOrderForCancel.quantity || 0}kg) was REJECTED by VAO. Reason: ${finalReason}.`
       );
 
       alert(`Application ${selectedOrderForCancel.id.slice(0, 8)} has been cancelled.`);
@@ -316,7 +316,7 @@ const VAODashboard = () => {
         <div className="vao-brand">
           <span className="vao-leaf">🌱</span>
           <div>
-            <strong>FarmFlow <span>AI</span></strong>
+            <strong>Agri<span>Procure</span></strong>
             <small>REVENUE ADMIN (VAO)</small>
           </div>
         </div>
@@ -976,7 +976,7 @@ const VAODashboard = () => {
 
             <div className="vao-modal-foot">
               <div className="vao-modal-note">
-                <span>🔒</span> Official digital record for FarmFlow AI revenue verification.
+                <span>🔒</span> Official digital record for AgriProcure revenue verification.
               </div>
               <button
                 type="button"

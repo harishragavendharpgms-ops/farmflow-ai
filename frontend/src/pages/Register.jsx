@@ -15,7 +15,7 @@ import "./Register.css";
 const translations = {
   en: {
     language: "Language",
-    brandTitle: "FarmFlow AI",
+    brandTitle: "AgriProcure",
     brandSubtitle: "Smart agriculture. Simple management. Better outcomes.",
     brandDescription:
       "A digital platform connecting farmers, local administrators and agricultural officers through one intelligent workflow.",
@@ -24,7 +24,7 @@ const translations = {
 
     title: "Create your account",
     subtitle:
-      "Join FarmFlow AI and manage your farming journey digitally.",
+      "Join AgriProcure and manage your farming journey digitally.",
 
     fullName: "Full Name",
     fullNamePlaceholder: "Enter your full name",
@@ -85,7 +85,7 @@ const translations = {
 
   ta: {
     language: "மொழி",
-    brandTitle: "FarmFlow AI",
+    brandTitle: "AgriProcure",
     brandSubtitle:
       "ஸ்மார்ட் விவசாயம். எளிய நிர்வாகம். சிறந்த முடிவுகள்.",
     brandDescription:
@@ -95,7 +95,7 @@ const translations = {
 
     title: "உங்கள் கணக்கை உருவாக்குங்கள்",
     subtitle:
-      "FarmFlow AI-ல் இணைந்து உங்கள் விவசாய செயல்பாடுகளை டிஜிட்டல் முறையில் நிர்வகிக்கவும்.",
+      "AgriProcure-ல் இணைந்து உங்கள் விவசாய செயல்பாடுகளை டிஜிட்டல் முறையில் நிர்வகிக்கவும்.",
 
     fullName: "முழு பெயர்",
     fullNamePlaceholder: "உங்கள் முழு பெயரை உள்ளிடவும்",
@@ -163,7 +163,7 @@ const translations = {
 
   hi: {
     language: "भाषा",
-    brandTitle: "FarmFlow AI",
+    brandTitle: "AgriProcure",
     brandSubtitle:
       "स्मार्ट कृषि। सरल प्रबंधन। बेहतर परिणाम।",
     brandDescription:
@@ -173,7 +173,7 @@ const translations = {
 
     title: "अपना खाता बनाएं",
     subtitle:
-      "FarmFlow AI से जुड़ें और अपनी कृषि गतिविधियों को डिजिटल रूप से प्रबंधित करें।",
+      "AgriProcure से जुड़ें और अपनी कृषि गतिविधियों को डिजिटल रूप से प्रबंधित करें।",
 
     fullName: "पूरा नाम",
     fullNamePlaceholder:
@@ -1067,7 +1067,7 @@ const Register = () => {
         </div>
 
         <div className="register-bottom-text">
-          © {new Date().getFullYear()} FarmFlow AI
+          © {new Date().getFullYear()} AgriProcure
         </div>
 
       </section>
