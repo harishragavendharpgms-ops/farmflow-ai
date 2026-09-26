@@ -618,10 +618,12 @@ const Login = () => {
   };
 
   return (
-    <div
-      className="v-auth-container"
-      style={{ backgroundImage: `url(${farmMandiBg})` }}
-    >
+    <div className="v-auth-container">
+      {/* Fullscreen Fixed Background (Mobile Safe) */}
+      <div
+        className="v-auth-bg-fixed"
+        style={{ backgroundImage: `url(${farmMandiBg})` }}
+      />
       <div className="v-auth-overlay" />
 
       {/* Language Switcher */}

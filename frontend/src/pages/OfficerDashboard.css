@@ -16,23 +16,35 @@
 .v-op-shell::before {
   content: '';
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
   background-image: url('../assets/officer_dash_bg.jpg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
   z-index: 0;
   pointer-events: none;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 /* Atmospheric vignette overlay */
 .v-op-shell::after {
   content: '';
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
   background: radial-gradient(circle at center, rgba(15, 23, 42, 0.35) 0%, rgba(15, 23, 42, 0.70) 100%);
   z-index: 1;
   pointer-events: none;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 /* SIDEBAR */
@@ -329,6 +341,28 @@
   align-items: center;
   justify-content: center;
   font-weight: 800;
+}
+
+.v-op-header-logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  border-radius: var(--radius-pill);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.v-op-header-logout-btn:hover {
+  background: #fee2e2;
+  border-color: #f87171;
+  transform: translateY(-1px);
 }
 
 /* CONTENT */
@@ -703,6 +737,48 @@
     grid-template-columns: repeat(2, 1fr);
   }
   .v-op-serving-dual {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .v-op-shell {
+    flex-direction: column;
+  }
+  .v-op-sidebar {
+    width: 100%;
+    height: auto;
+    position: relative;
+  }
+  .v-op-topbar {
+    padding: 10px 16px;
+    height: auto;
+    min-height: 56px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .v-topbar-centre {
+    font-size: 0.85rem;
+  }
+  .v-topbar-search {
+    width: 100%;
+    order: 3;
+  }
+  .v-topbar-actions {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .v-topbar-btn-gate {
+    display: none;
+  }
+  .v-op-header-logout-btn {
+    padding: 5px 10px;
+    font-size: 0.78rem;
+  }
+  .v-op-content {
+    padding: 16px 12px 32px;
+  }
+  .v-op-kpi-grid {
     grid-template-columns: 1fr;
   }
 }

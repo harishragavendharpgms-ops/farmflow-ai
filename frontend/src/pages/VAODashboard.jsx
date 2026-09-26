@@ -405,6 +405,17 @@ const VAODashboard = () => {
               <span className="vao-pill-icon">🧑‍💼</span>
               <span>{userProfile.name || 'Revenue Officer'}</span>
             </div>
+
+            <button
+              type="button"
+              className="vao-header-logout-btn"
+              onClick={handleLogout}
+              title="Sign Out"
+              aria-label="Sign Out"
+            >
+              <span>🚪</span>
+              <span className="vao-header-logout-text">Logout</span>
+            </button>
           </div>
         </header>
 

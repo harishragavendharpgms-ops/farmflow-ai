@@ -516,6 +516,17 @@ const AdminDashboard = () => {
               <span className="v-dollar-icon">🛡️</span>
               <span>System Administrator</span>
             </div>
+
+            <button
+              type="button"
+              className="v-adm-header-logout-btn"
+              onClick={handleLogout}
+              title="Sign Out"
+              aria-label="Sign Out"
+            >
+              <span>🚪</span>
+              <span className="v-adm-header-logout-text">Logout</span>
+            </button>
           </div>
         </header>
 

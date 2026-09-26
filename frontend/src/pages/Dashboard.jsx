@@ -1239,6 +1239,30 @@ const Dashboard = () => {
           </div>
         </div>
 
+        {/* Quick User Card at top of sidebar with instant Logout button for mobile & desktop */}
+        <div className="v-sidebar-user-top">
+          <div className="v-sidebar-user-avatar" onClick={() => { changeTab('profile'); setIsSidebarOpen(false); }}>
+            {userProfile.photoUrl ? (
+              <img src={userProfile.photoUrl} alt={userProfile.name} />
+            ) : (
+              userProfile.name?.charAt(0)?.toUpperCase() || 'F'
+            )}
+          </div>
+          <div className="v-sidebar-user-info" onClick={() => { changeTab('profile'); setIsSidebarOpen(false); }}>
+            <strong>{userProfile.name}</strong>
+            <small>+91 {userProfile.phone || 'Farmer'}</small>
+          </div>
+          <button
+            type="button"
+            className="v-sidebar-user-logout"
+            onClick={handleLogoutClick}
+            title={l.logout}
+            aria-label={l.logout}
+          >
+            <span>🚪</span>
+          </button>
+        </div>
+
         <nav className="v-sidebar-nav">
           {navItems.map((item) => (
             <button
@@ -1335,6 +1359,18 @@ const Dashboard = () => {
                 <small className="v-user-id">{l.farmManager}</small>
               </div>
             </div>
+
+            {/* QUICK LOGOUT BUTTON - Prominently placed at the top for immediate access on mobile & desktop */}
+            <button
+              type="button"
+              className="v-header-logout-btn"
+              onClick={handleLogoutClick}
+              title={l.logout}
+              aria-label={l.logout}
+            >
+              <span className="v-header-logout-icon">🚪</span>
+              <span className="v-header-logout-text">{l.logout}</span>
+            </button>
           </div>
         </header>
 
@@ -1873,6 +1909,21 @@ const Dashboard = () => {
                 </form>
               </div>
             )}
+
+            {/* ACCOUNT SESSION & QUICK LOGOUT CARD */}
+            <div className="v-profile-logout-card">
+              <div className="v-profile-logout-info">
+                <strong>{l.logout}</strong>
+                <p>{l.confirmLogoutDesc || 'Log out of your FarmFlow AI account and return to the login page.'}</p>
+              </div>
+              <button
+                type="button"
+                className="v-profile-logout-btn"
+                onClick={handleLogoutClick}
+              >
+                <span>🚪</span> {l.logout}
+              </button>
+            </div>
           </div>
         )}
 

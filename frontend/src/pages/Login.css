@@ -4,24 +4,48 @@
 
 .v-auth-container {
   min-height: 100vh;
+  min-height: 100dvh;
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+  background: transparent;
   padding: 24px 16px;
   overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Fullscreen fixed background (mobile-safe) */
+.v-auth-bg-fixed {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  z-index: 0;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 /* Background overlay for depth & readability */
 .v-auth-overlay {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at center, rgba(15, 23, 42, 0.25) 0%, rgba(15, 23, 42, 0.55) 100%);
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  background: radial-gradient(circle at center, rgba(15, 23, 42, 0.25) 0%, rgba(15, 23, 42, 0.65) 100%);
   pointer-events: none;
+  z-index: 1;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 /* Top language selector */

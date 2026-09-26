@@ -479,6 +479,17 @@ const OfficerDashboard = () => {
             <div className="v-op-user-badge">
               <div className="v-op-avatar">O</div>
             </div>
+
+            <button
+              type="button"
+              className="v-op-header-logout-btn"
+              onClick={handleLogout}
+              title="Sign Out"
+              aria-label="Sign Out"
+            >
+              <span>🚪</span>
+              <span className="v-op-header-logout-text">Logout</span>
+            </button>
           </div>
         </header>
 

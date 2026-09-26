@@ -16,23 +16,35 @@
 .v-adm-shell::before {
   content: '';
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
   background-image: url('../assets/admin_dash_bg.jpg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
   z-index: 0;
   pointer-events: none;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 /* Atmospheric vignette overlay */
 .v-adm-shell::after {
   content: '';
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
   background: radial-gradient(circle at center, rgba(15, 23, 42, 0.35) 0%, rgba(15, 23, 42, 0.70) 100%);
   z-index: 1;
   pointer-events: none;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 /* SIDEBAR: Smart Procurement */
@@ -281,6 +293,28 @@
 .v-dollar-icon {
   color: #16a34a;
   font-size: 0.95rem;
+}
+
+.v-adm-header-logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  border-radius: var(--radius-pill);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.v-adm-header-logout-btn:hover {
+  background: #fee2e2;
+  border-color: #f87171;
+  transform: translateY(-1px);
 }
 
 /* CONTENT */
@@ -969,8 +1003,25 @@
     height: auto;
     position: relative;
   }
+  .v-adm-topbar {
+    padding: 10px 16px;
+    height: auto;
+    min-height: 56px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .topbar-logo-text {
+    font-size: 0.92rem;
+  }
+  .v-adm-header-logout-btn {
+    padding: 5px 10px;
+    font-size: 0.78rem;
+  }
+  .v-adm-content {
+    padding: 16px 12px 32px;
+  }
   .v-adm-stat-cards-row {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
   }
   .v-adm-form-grid {
     grid-template-columns: 1fr;

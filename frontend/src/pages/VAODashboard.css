@@ -16,23 +16,35 @@
 .vao-shell::before {
   content: '';
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
   background-image: url('../assets/vao_dash_bg.jpg');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
   z-index: 0;
   pointer-events: none;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 /* Atmospheric vignette overlay */
 .vao-shell::after {
   content: '';
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
   background: radial-gradient(circle at center, rgba(15, 23, 42, 0.35) 0%, rgba(15, 23, 42, 0.70) 100%);
   z-index: 1;
   pointer-events: none;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 /* SIDEBAR */
@@ -323,6 +335,28 @@
   font-size: 0.85rem;
   font-weight: 600;
   color: #166534;
+}
+
+.vao-header-logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+  border-radius: var(--radius-pill);
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.vao-header-logout-btn:hover {
+  background: #fee2e2;
+  border-color: #f87171;
+  transform: translateY(-1px);
 }
 
 /* CONTENT CONTAINER */
@@ -1066,6 +1100,26 @@
     width: 100%;
     height: auto;
     position: relative;
+  }
+  .vao-topbar {
+    padding: 10px 16px;
+    height: auto;
+    min-height: 56px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .vao-topbar-title {
+    font-size: 0.92rem;
+  }
+  .vao-jurisdiction-chip {
+    display: none;
+  }
+  .vao-header-logout-btn {
+    padding: 5px 10px;
+    font-size: 0.78rem;
+  }
+  .vao-content {
+    padding: 16px 12px 32px;
   }
   .vao-stat-cards-grid {
     grid-template-columns: 1fr;

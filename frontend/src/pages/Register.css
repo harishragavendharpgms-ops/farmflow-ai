@@ -4,28 +4,52 @@
 
 .register-page {
   min-height: 100vh;
+  min-height: 100dvh;
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
-  background-image: url('../assets/farm_mandi_bg.jpg');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
+  background: transparent;
   padding: 40px 16px;
   overflow-y: auto;
+  overflow-x: hidden;
   font-family: var(--sans);
 }
 
-/* Semi-dark radial vignette overlay for readability */
+/* Fixed fullscreen background image (mobile-safe) */
 .register-page::before {
   content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at center, rgba(15, 23, 42, 0.35) 0%, rgba(15, 23, 42, 0.65) 100%);
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  background-image: url('../assets/farm_mandi_bg.jpg');
+  background-size: cover;
+  background-position: center center;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  z-index: 0;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+/* Semi-dark radial vignette overlay for readability */
+.register-page::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  background: radial-gradient(circle at center, rgba(15, 23, 42, 0.35) 0%, rgba(15, 23, 42, 0.68) 100%);
   pointer-events: none;
   z-index: 1;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 /* Hide legacy split brand panel for unified centered portal card */
