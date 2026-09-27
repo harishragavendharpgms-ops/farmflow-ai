@@ -351,6 +351,10 @@ const AdminDashboard = () => {
     () => users.filter((u) => u.role === 'officer' || u.role === 'operator'),
     [users]
   );
+  const supervisors = useMemo(
+    () => users.filter((u) => u.role === 'supervisor'),
+    [users]
+  );
 
   const pendingOrders = useMemo(
     () => orders.filter((o) => o.status === 'Pending VAO'),
@@ -361,7 +365,7 @@ const AdminDashboard = () => {
     [orders]
   );
   const procuredOrders = useMemo(
-    () => orders.filter((o) => o.status === 'Procured'),
+    () => orders.filter((o) => o.status === 'Procured' || o.status === 'Completed'),
     [orders]
   );
 
@@ -401,6 +405,18 @@ const AdminDashboard = () => {
         o.subPlace?.toLowerCase().includes(term)
     );
   }, [officers, searchTerm]);
+
+  const filteredSupervisors = useMemo(() => {
+    if (!searchTerm) return supervisors;
+    const term = searchTerm.toLowerCase();
+    return supervisors.filter(
+      (s) =>
+        s.name?.toLowerCase().includes(term) ||
+        s.email?.toLowerCase().includes(term) ||
+        s.zone?.toLowerCase().includes(term) ||
+        s.subPlace?.toLowerCase().includes(term)
+    );
+  }, [supervisors, searchTerm]);
 
   const filteredOrders = useMemo(() => {
     if (!searchTerm) return orders;
@@ -467,6 +483,16 @@ const AdminDashboard = () => {
             <span>🛡️</span>
             <span>Procurement Officers</span>
             <span className="v-nav-badge">{officers.length}</span>
+          </button>
+
+          <button
+            type="button"
+            className={`v-adm-nav-btn ${activeTab === 'supervisors' ? 'active' : ''}`}
+            onClick={() => { setActiveTab('supervisors'); setSearchTerm(''); }}
+          >
+            <span>👔</span>
+            <span>Supervisors (DBT)</span>
+            <span className="v-nav-badge">{supervisors.length}</span>
           </button>
 
           <button
@@ -558,6 +584,12 @@ const AdminDashboard = () => {
                 <small>Procurement Officers</small>
                 <h2>{officers.length}</h2>
                 <div className="v-stat-sub">Mandi field staff</div>
+              </div>
+
+              <div className="v-adm-stat-card bar-blue" onClick={() => setActiveTab('supervisors')} style={{ cursor: 'pointer' }}>
+                <small>DBT Supervisors</small>
+                <h2>{supervisors.length}</h2>
+                <div className="v-stat-sub">Disbursal approvers</div>
               </div>
 
               <div className="v-adm-stat-card bar-yellow" onClick={() => setActiveTab('orders')} style={{ cursor: 'pointer' }}>
@@ -938,6 +970,133 @@ const AdminDashboard = () => {
         )}
 
         {/* ========================================================
+            TAB: PROCUREMENT SUPERVISORS (DBT)
+            ======================================================== */}
+        {activeTab === 'supervisors' && (
+          <div className="v-adm-content">
+            <div className="v-adm-page-header-row">
+              <div className="v-adm-page-header">
+                <h1>Procurement Supervisors (DBT Disbursal)</h1>
+                <p>Supervisors responsible for verifying officer procurements and sanctioning direct bank credits (DBT) to farmers.</p>
+              </div>
+
+              <div className="v-adm-actions-bar">
+                <div className="v-adm-search-input">
+                  <span>⌕</span>
+                  <input
+                    type="text"
+                    placeholder="Search supervisor by name, email, or zone..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                  {searchTerm && <button onClick={() => setSearchTerm('')}>×</button>}
+                </div>
+                <button
+                  type="button"
+                  className="v-btn-green-sm"
+                  onClick={() => { setNewUser({ ...newUser, role: 'supervisor' }); setActiveTab('create'); }}
+                >
+                  ➕ Add Supervisor Account
+                </button>
+              </div>
+            </div>
+
+            <div className="v-adm-table-card">
+              <div className="v-table-responsive">
+                <table className="v-clean-table v-adm-table">
+                  <thead>
+                    <tr>
+                      <th>SUPERVISOR NAME</th>
+                      <th>EMAIL ADDRESS</th>
+                      <th>ASSIGNED ZONE</th>
+                      <th>JURISDICTION CENTRE</th>
+                      <th>ROLE STATUS</th>
+                      <th>ACTIONS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredSupervisors.length === 0 ? (
+                      <tr>
+                        <td colSpan="6" className="v-empty-table-cell">
+                          <div className="v-empty-table-box">
+                            <span className="v-empty-emoji">👔</span>
+                            <strong>No Procurement Supervisors Found</strong>
+                            <p>
+                              {searchTerm
+                                ? 'No supervisor accounts match your search query.'
+                                : 'No DBT procurement supervisor accounts have been registered yet.'}
+                            </p>
+                            <button
+                              type="button"
+                              className="v-btn-green-sm"
+                              onClick={() => { setNewUser({ ...newUser, role: 'supervisor' }); setActiveTab('create'); }}
+                            >
+                              Provision Supervisor Account
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredSupervisors.map((sp) => (
+                        <tr key={sp.id}>
+                          <td>
+                            <div className="v-user-cell">
+                              <div className="v-avatar-circle v-avatar-blue">
+                                {(sp.name || 'S').charAt(0).toUpperCase()}
+                              </div>
+                              <div>
+                                <strong>{sp.name || 'Unnamed Supervisor'}</strong>
+                                <small>ID: {sp.id.slice(0, 8)}...</small>
+                              </div>
+                            </div>
+                          </td>
+                          <td>
+                            <span className="v-email-text">{sp.email}</span>
+                          </td>
+                          <td>
+                            <span className="v-zone-chip">
+                              📍 {sp.zone || 'State Jurisdiction'}
+                            </span>
+                          </td>
+                          <td>
+                            <span className="v-subplace-chip">
+                              🏛️ {sp.subPlace || 'DBT Sanctioning Division'}
+                            </span>
+                          </td>
+                          <td>
+                            <span className="pill-badge pill-badge-blue">DBT Approver</span>
+                          </td>
+                          <td>
+                            <div className="v-action-buttons-group">
+                              <button
+                                type="button"
+                                className="v-btn-op-action edit"
+                                onClick={() => handleOpenEditUser(sp)}
+                                title="Edit Supervisor Account"
+                              >
+                                ✏️ Edit
+                              </button>
+                              <button
+                                type="button"
+                                className="v-btn-op-action revoke"
+                                onClick={() => handleDeleteUser(sp)}
+                                title="Delete Supervisor Account"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================
             TAB 4: FARMERS LIST
             ======================================================== */}
         {activeTab === 'farmers' && (
@@ -1232,6 +1391,7 @@ const AdminDashboard = () => {
                     >
                       <option value="vao">🏛️ Local Revenue Administrator (VAO)</option>
                       <option value="officer">🛡️ Procurement Officer / Mandi Staff</option>
+                      <option value="supervisor">👔 Procurement Supervisor (DBT Disbursal)</option>
                       <option value="farmer">🌾 Farmer</option>
                     </select>
                   </div>
@@ -1351,6 +1511,7 @@ const AdminDashboard = () => {
                       <option value="farmer">🌾 Farmer</option>
                       <option value="vao">🏛️ Local Revenue Administrator (VAO)</option>
                       <option value="officer">🛡️ Procurement Officer</option>
+                      <option value="supervisor">👔 Procurement Supervisor (DBT Disbursal)</option>
                     </select>
                   </div>
 

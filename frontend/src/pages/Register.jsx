@@ -57,6 +57,24 @@ const translations = {
     phoneAlreadyRegistered: "This phone number is already registered. Please login or use a different phone number.",
     invalidPhone: "Please enter a valid 10-digit phone number.",
 
+    // Aadhaar & Bank Details (DBT)
+    dbtSectionTitle: "Aadhaar & Bank Account (DBT Disbursal Details)",
+    dbtSectionSubtitle: "Mandatory for Government Direct Benefit Transfer (DBT) crop procurement payments.",
+    aadharNumber: "Aadhaar Number *",
+    aadharPlaceholder: "Enter 12-digit Aadhaar number",
+    invalidAadhar: "Please enter a valid 12-digit Aadhaar number.",
+    bankName: "Bank Name *",
+    bankNamePlaceholder: "e.g. State Bank of India, Indian Bank, Canara Bank",
+    bankAccountNumber: "Bank Account Number *",
+    bankAccountNumberPlaceholder: "Enter 9 to 18-digit bank account number",
+    invalidAccountNumber: "Please enter a valid Bank Account Number (9 to 18 digits).",
+    ifscCode: "Bank IFSC Code *",
+    ifscPlaceholder: "e.g. SBIN0001234",
+    invalidIfsc: "Please enter a valid 11-character IFSC code.",
+    accountHolderName: "Account Holder Name *",
+    accountHolderPlaceholder: "Name as printed on Bank Passbook",
+    requiredFieldsMissing: "Please fill in all mandatory Aadhaar and Bank account fields.",
+
     success:
       "Registration successful! Please login.",
 
@@ -134,6 +152,24 @@ const translations = {
       "இந்த தொலைபேசி எண் ஏற்கனவே பதிவு செய்யப்பட்டுள்ளது. உள்நுழையவும் அல்லது வேறு எண்ணைப் பயன்படுத்தவும்.",
     invalidPhone:
       "சரியான 10 இலக்க தொலைபேசி எண்ணை உள்ளிடவும்.",
+
+    // Aadhaar & Bank Details (DBT)
+    dbtSectionTitle: "ஆதார் மற்றும் வங்கி கணக்கு விவரங்கள் (DBT)",
+    dbtSectionSubtitle: "அரசு பயிர் கொள்முதல் தொகையை உங்கள் வங்கி கணக்கில் நேரடியாக (DBT) வரவு வைக்க இந்த விவரங்கள் கட்டாயமாகும்.",
+    aadharNumber: "ஆதார் எண் *",
+    aadharPlaceholder: "12 இலக்க ஆதார் எண்ணை உள்ளிடவும்",
+    invalidAadhar: "சரியான 12 இலக்க ஆதார் எண்ணை உள்ளிடவும்.",
+    bankName: "வங்கியின் பெயர் *",
+    bankNamePlaceholder: "எ.கா. ஸ்டேட் பாங்க் ஆப் இந்தியா, இந்தியன் வங்கி",
+    bankAccountNumber: "வங்கி கணக்கு எண் *",
+    bankAccountNumberPlaceholder: "9 முதல் 18 இலக்க கணக்கு எண்ணை உள்ளிடவும்",
+    invalidAccountNumber: "சரியான வங்கி கணக்கு எண்ணை உள்ளிடவும் (9-18 இலக்கங்கள்).",
+    ifscCode: "IFSC குறியீடு *",
+    ifscPlaceholder: "எ.கா. SBIN0001234",
+    invalidIfsc: "சரியான 11 எழுத்து IFSC குறியீட்டை உள்ளிடவும்.",
+    accountHolderName: "கணக்கு வைத்திருப்பவர் பெயர் *",
+    accountHolderPlaceholder: "வங்கி பாஸ்புக்கில் உள்ள பெயர்",
+    requiredFieldsMissing: "தயவுசெய்து ஆதார் மற்றும் வங்கி விவரங்கள் அனைத்தையும் பூர்த்தி செய்யவும்.",
 
     success:
       "பதிவு வெற்றிகரமாக முடிந்தது! தயவுசெய்து உள்நுழையவும்.",
@@ -215,6 +251,24 @@ const translations = {
     invalidPhone:
       "कृपया एक मान्य 10-अंकीय फ़ोन नंबर दर्ज करें।",
 
+    // Aadhaar & Bank Details (DBT)
+    dbtSectionTitle: "आधार और बैंक खाता विवरण (DBT संवितरण)",
+    dbtSectionSubtitle: "फसल खरीद की राशि सीधे आपके बैंक खाते में (DBT) अंतरित करने के लिए यह जानकारी अनिवार्य है।",
+    aadharNumber: "आधार संख्या *",
+    aadharPlaceholder: "12-अंकीय आधार संख्या दर्ज करें",
+    invalidAadhar: "कृपया एक मान्य 12-अंकीय आधार संख्या दर्ज करें।",
+    bankName: "बैंक का नाम *",
+    bankNamePlaceholder: "उदा. भारतीय स्टेट बैंक, पंजाब नेशनल बैंक",
+    bankAccountNumber: "बैंक खाता संख्या *",
+    bankAccountNumberPlaceholder: "9 से 18-अंकीय खाता संख्या दर्ज करें",
+    invalidAccountNumber: "कृपया एक मान्य बैंक खाता संख्या दर्ज करें (9 से 18 अंक)।",
+    ifscCode: "IFSC कोड *",
+    ifscPlaceholder: "उदा. SBIN0001234",
+    invalidIfsc: "कृपया मान्य 11-वर्णों का IFSC कोड दर्ज करें।",
+    accountHolderName: "खाताधारक का नाम *",
+    accountHolderPlaceholder: "पासबुक में अंकित नाम",
+    requiredFieldsMissing: "कृपया सभी आवश्यक आधार और बैंक विवरण भरें।",
+
     success:
       "पंजीकरण सफल हुआ! कृपया लॉगिन करें।",
 
@@ -255,6 +309,11 @@ const Register = () => {
     phone: "",
     password: "",
     confirmPassword: "",
+    aadharNumber: "",
+    bankName: "",
+    bankAccountNumber: "",
+    ifscCode: "",
+    accountHolderName: "",
   });
 
   const [showPassword, setShowPassword] = useState(false);
@@ -294,7 +353,7 @@ const Register = () => {
 
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
+      [name]: name === 'ifscCode' ? value.toUpperCase() : value,
     }));
   };
 
@@ -346,6 +405,34 @@ const Register = () => {
 
     if (cleanPhone.length < 10) {
       alert(t.invalidPhone);
+      return;
+    }
+
+    const cleanAadhar = formData.aadharNumber.replace(/\D/g, '');
+    if (cleanAadhar.length !== 12) {
+      alert(t.invalidAadhar);
+      return;
+    }
+
+    if (!formData.bankName.trim()) {
+      alert(t.requiredFieldsMissing);
+      return;
+    }
+
+    const cleanAcc = formData.bankAccountNumber.replace(/\D/g, '');
+    if (cleanAcc.length < 9 || cleanAcc.length > 18) {
+      alert(t.invalidAccountNumber);
+      return;
+    }
+
+    const cleanIfsc = formData.ifscCode.trim().toUpperCase();
+    if (cleanIfsc.length !== 11) {
+      alert(t.invalidIfsc);
+      return;
+    }
+
+    if (!formData.accountHolderName.trim() && !formData.name.trim()) {
+      alert(t.requiredFieldsMissing);
       return;
     }
 
@@ -428,6 +515,10 @@ const Register = () => {
 
     setLoading(true);
     const cleanPhone = formData.phone.trim().replace(/\D/g, '').slice(-10);
+    const cleanAadhar = formData.aadharNumber.replace(/\D/g, '');
+    const cleanAcc = formData.bankAccountNumber.replace(/\D/g, '');
+    const cleanIfsc = formData.ifscCode.trim().toUpperCase();
+    const holderName = formData.accountHolderName.trim() || formData.name.trim();
 
     try {
       const userCredential =
@@ -446,6 +537,11 @@ const Register = () => {
         password: formData.password,
         phone: cleanPhone,
         phoneVerified: true,
+        aadharNumber: cleanAadhar,
+        bankName: formData.bankName.trim(),
+        bankAccountNumber: cleanAcc,
+        ifscCode: cleanIfsc,
+        accountHolderName: holderName,
         role: "farmer",
         createdAt: new Date().toISOString(),
       });
@@ -504,6 +600,11 @@ const Register = () => {
               password: formData.password,
               phone: cleanPhone,
               phoneVerified: true,
+              aadharNumber: cleanAadhar,
+              bankName: formData.bankName.trim(),
+              bankAccountNumber: cleanAcc,
+              ifscCode: cleanIfsc,
+              accountHolderName: holderName,
               role: "farmer",
               createdAt: new Date().toISOString(),
             });
@@ -1012,6 +1113,125 @@ const Register = () => {
 
                 </div>
 
+              </div>
+
+              {/* AADHAAR & BANK ACCOUNT (DBT DISBURSAL) SECTION */}
+              <div className="register-section-divider">
+                <span className="divider-line" />
+                <span className="divider-text">
+                  🏛️ {t.dbtSectionTitle}
+                </span>
+                <span className="divider-line" />
+              </div>
+              <p className="register-section-sub">
+                {t.dbtSectionSubtitle}
+              </p>
+
+              {/* AADHAAR NUMBER */}
+              <div className="form-group">
+                <label htmlFor="aadharNumber">
+                  <span className="label-icon">🪪</span>
+                  {t.aadharNumber}
+                </label>
+                <div className="input-wrapper">
+                  <span className="input-icon">🪪</span>
+                  <input
+                    id="aadharNumber"
+                    type="text"
+                    inputMode="numeric"
+                    maxLength="12"
+                    name="aadharNumber"
+                    value={formData.aadharNumber}
+                    onChange={(e) => setFormData({ ...formData, aadharNumber: e.target.value.replace(/\D/g, '') })}
+                    placeholder={t.aadharPlaceholder}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* BANK NAME */}
+              <div className="form-group">
+                <label htmlFor="bankName">
+                  <span className="label-icon">🏦</span>
+                  {t.bankName}
+                </label>
+                <div className="input-wrapper">
+                  <span className="input-icon">🏦</span>
+                  <input
+                    id="bankName"
+                    type="text"
+                    name="bankName"
+                    value={formData.bankName}
+                    onChange={handleChange}
+                    placeholder={t.bankNamePlaceholder}
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* BANK ACCOUNT NUMBER & IFSC CODE */}
+              <div className="register-form-row">
+                <div className="form-group">
+                  <label htmlFor="bankAccountNumber">
+                    <span className="label-icon">💳</span>
+                    {t.bankAccountNumber}
+                  </label>
+                  <div className="input-wrapper">
+                    <span className="input-icon">💳</span>
+                    <input
+                      id="bankAccountNumber"
+                      type="text"
+                      inputMode="numeric"
+                      maxLength="18"
+                      name="bankAccountNumber"
+                      value={formData.bankAccountNumber}
+                      onChange={(e) => setFormData({ ...formData, bankAccountNumber: e.target.value.replace(/\D/g, '') })}
+                      placeholder={t.bankAccountNumberPlaceholder}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="ifscCode">
+                    <span className="label-icon">🏛️</span>
+                    {t.ifscCode}
+                  </label>
+                  <div className="input-wrapper">
+                    <span className="input-icon">🏛️</span>
+                    <input
+                      id="ifscCode"
+                      type="text"
+                      maxLength="11"
+                      name="ifscCode"
+                      value={formData.ifscCode}
+                      onChange={handleChange}
+                      placeholder={t.ifscPlaceholder}
+                      style={{ textTransform: 'uppercase' }}
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* ACCOUNT HOLDER NAME */}
+              <div className="form-group">
+                <label htmlFor="accountHolderName">
+                  <span className="label-icon">👤</span>
+                  {t.accountHolderName}
+                </label>
+                <div className="input-wrapper">
+                  <span className="input-icon">👤</span>
+                  <input
+                    id="accountHolderName"
+                    type="text"
+                    name="accountHolderName"
+                    value={formData.accountHolderName}
+                    onChange={handleChange}
+                    placeholder={t.accountHolderPlaceholder}
+                    required
+                  />
+                </div>
               </div>
 
               {/* SECURITY MESSAGE */}

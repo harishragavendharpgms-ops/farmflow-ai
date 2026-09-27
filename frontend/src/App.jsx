@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import OfficerDashboard from './pages/OfficerDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import VAODashboard from './pages/VAODashboard';
+import SupervisorDashboard from './pages/SupervisorDashboard';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         <Route path="/officer" element={<OfficerDashboard />} />
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/vao" element={<VAODashboard />} />
+        <Route path="/supervisor" element={<SupervisorDashboard />} />
       </Routes>
     </Router>
   );

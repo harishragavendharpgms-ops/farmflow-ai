@@ -40,6 +40,9 @@ const translations = {
     administratorShort: 'Revenue & verification',
     admin: 'Admin',
     adminShort: 'System management',
+    supervisor: 'Supervisor (DBT)',
+    supervisorShort: 'DBT Disbursal',
+    supervisorNotice: 'Mandi Procurement Supervisor gateway for inspection verification & Direct Benefit Transfer.',
     mobileNumber: 'Mobile Number *',
     enterMobile: 'Enter 10-digit mobile number',
     sendOtp: 'Send OTP',
@@ -94,6 +97,9 @@ const translations = {
     administratorShort: 'வருவாய் & சரிபார்ப்பு',
     admin: 'நிர்வாகி',
     adminShort: 'கணினி நிர்வாகம்',
+    supervisor: 'கண்காணிப்பாளர் (DBT)',
+    supervisorShort: 'கொள்முதல் & DBT',
+    supervisorNotice: 'கொள்முதல் சரிபார்ப்பு மற்றும் நேரடி பலன் பரிமாற்ற (DBT) கண்காணிப்பாளர் வாயில்.',
     mobileNumber: 'கைபேசி எண் *',
     enterMobile: '10 இலக்க கைபேசி எண்ணை உள்ளிடவும்',
     sendOtp: 'OTP அனுப்பு',
@@ -148,6 +154,9 @@ const translations = {
     administratorShort: 'राजस्व और सत्यापन',
     admin: 'व्यवस्थापक',
     adminShort: 'सिस्टम प्रबंधन',
+    supervisor: 'पर्यवेक्षक (DBT)',
+    supervisorShort: 'खरीद और DBT',
+    supervisorNotice: 'खरीद सत्यापन और प्रत्यक्ष लाभ अंतरण (DBT) पर्यवेक्षक गेटवे।',
     mobileNumber: 'मोबाइल नंबर *',
     enterMobile: '10-अंकों का मोबाइल नंबर दर्ज करें',
     sendOtp: 'OTP भेजें',
@@ -252,6 +261,10 @@ const Login = () => {
       setLoginMethod('email');
       if (!email) setEmail('admin@agriprocure.com');
       if (!password) setPassword('admin123');
+    } else if (roleId === 'supervisor') {
+      setLoginMethod('email');
+      if (!email) setEmail('supervisor@agriprocure.com');
+      if (!password) setPassword('supervisor123');
     } else {
       setEmail('');
       setPassword('');
@@ -456,6 +469,8 @@ const Login = () => {
       // Route according to user's registered role from database
       if (userData.role === 'admin') {
         navigate('/admin');
+      } else if (userData.role === 'supervisor') {
+        navigate('/supervisor');
       } else if (userData.role === 'officer') {
         navigate('/officer');
       } else if (userData.role === 'vao') {
@@ -504,6 +519,25 @@ const Login = () => {
       };
       sessionStorage.setItem('farmflow_user', JSON.stringify(adminData));
       navigate('/admin');
+      return;
+    }
+
+    // Supervisor Quick Login Bypass
+    if (
+      email.trim().toLowerCase() === 'supervisor@agriprocure.com' &&
+      password === 'supervisor123'
+    ) {
+      const supervisorData = {
+        name: 'Procurement Supervisor (DBT)',
+        email: email.trim().toLowerCase(),
+        role: 'supervisor'
+      };
+      if (rememberMe) {
+        localStorage.setItem('farmflow_user', JSON.stringify(supervisorData));
+      } else {
+        sessionStorage.setItem('farmflow_user', JSON.stringify(supervisorData));
+      }
+      navigate('/supervisor');
       return;
     }
 
@@ -562,6 +596,8 @@ const Login = () => {
       // Role redirection
       if (userData.role === 'admin') {
         navigate('/admin');
+      } else if (userData.role === 'supervisor') {
+        navigate('/supervisor');
       } else if (userData.role === 'officer') {
         navigate('/officer');
       } else if (userData.role === 'vao') {
@@ -832,6 +868,16 @@ const Login = () => {
                   <span className="v-role-label">{t.administrator}</span>
                 </button>
 
+                {/* Procurement Supervisor (DBT) */}
+                <button
+                  type="button"
+                  className={`v-role-btn ${selectedRole === 'supervisor' ? 'active' : ''}`}
+                  onClick={() => handleRoleSelect('supervisor')}
+                >
+                  <span className="v-role-ico">👔</span>
+                  <span className="v-role-label">{t.supervisor}</span>
+                </button>
+
                 {/* Admin */}
                 <button
                   type="button"
@@ -978,6 +1024,81 @@ const Login = () => {
                 <div className="v-info-notice">
                   <span className="info-icon">ℹ️</span>
                   <span>{t.operatorNotice}</span>
+                </div>
+
+                <button
+                  type="submit"
+                  className="v-submit-btn"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? t.authenticating : t.login}
+                </button>
+
+                <div className="v-alt-auth-toggle">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setLoginMethod('phone');
+                      setOtpSent(false);
+                    }}
+                  >
+                    📱 {t.orLoginWithOtp}
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* Email Form: Supervisor */}
+            {selectedRole === 'supervisor' && (
+              <form onSubmit={handleEmailPasswordLogin} className="v-operator-form">
+                <div className="v-input-group">
+                  <label className="v-field-label">{t.email}</label>
+                  <input
+                    type="email"
+                    required
+                    className="v-input-field"
+                    placeholder="supervisor@agriprocure.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                  />
+                </div>
+
+                <div className="v-input-group">
+                  <label className="v-field-label">{t.password}</label>
+                  <div className="v-password-wrap">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      required
+                      className="v-input-field"
+                      placeholder={t.passwordPlaceholder}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      className="v-eye-toggle"
+                      onClick={() => setShowPassword(!showPassword)}
+                    >
+                      {showPassword ? '👁️' : '👁️‍🗨️'}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="v-pwd-strength">
+                  <div className="v-pwd-strength-head">
+                    <span>{t.passwordStrength}</span>
+                    <span className="v-strength-tag">{t.veryStrong}</span>
+                  </div>
+                  <div className="v-strength-badges">
+                    <span className="v-badge-pill active">✓ 8+ chars</span>
+                    <span className="v-badge-pill active">✓ Upper & lower</span>
+                    <span className="v-badge-pill active">✓ Supervisor DBT Portal</span>
+                  </div>
+                </div>
+
+                <div className="v-info-notice">
+                  <span className="info-icon">ℹ️</span>
+                  <span>{t.supervisorNotice}</span>
                 </div>
 
                 <button

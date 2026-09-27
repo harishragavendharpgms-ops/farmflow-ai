@@ -249,7 +249,7 @@ const OfficerDashboard = () => {
     }
   };
 
-  // Procure & DBT Disbursal (Preserved Exactly)
+  // Procure & Forward to Supervisor for DBT Disbursal
   const handleProcure = async (id) => {
     const order = orders.find((o) => o.id === id);
     if (!order) return;
@@ -260,22 +260,26 @@ const OfficerDashboard = () => {
     setIsProcuring(id);
     try {
       await updateDoc(doc(db, 'orders', id), {
-        status: 'Completed',
-        paymentStatus: 'Paid via DBT',
+        status: 'Procured',
+        paymentStatus: 'Pending Supervisor Credit',
         payoutAmount: totalPayout,
-        procuredAt: new Date().toISOString()
+        procuredAt: new Date().toISOString(),
+        procuredBy: userProfile.name || 'Operator Sai Kumar',
+        procuredOfficerPhone: userProfile.phone || '',
+        procuredZone: userProfile.zone || order.zone || 'Zone A',
+        procuredCentre: userProfile.subPlace || order.subPlace || 'APMC Centre #402'
       });
 
       await triggerSms(
         order.userPhone,
-        `AgriProcure: Procurement complete! Total payout of INR ${totalPayout} has been transferred via DBT to your verified bank account.`
+        `AgriProcure: Crop procurement verified at ${userProfile.subPlace || 'Mandi'}. Quantity: ${order.quantity} Qtl. Total payout INR ${totalPayout} forwarded to Supervisor for DBT bank disbursal.`
       );
 
       if (nowServing && nowServing.id === id) {
         setNowServing(null);
       }
 
-      alert('Crop successfully marked as Procured & Disbursed via DBT!');
+      alert(`Crop successfully marked as Procured! Forwarded payout of ₹${totalPayout} to Supervisor for DBT bank credit.`);
     } catch (error) {
       console.error(error);
       alert('Failed to update procurement status.');
@@ -834,8 +838,10 @@ const OfficerDashboard = () => {
                           </span>
                         </td>
                         <td>
-                          {order.paymentStatus ? (
-                            <span className="pill-badge pill-badge-green">Paid via DBT</span>
+                          {order.status === 'Completed' || order.paymentStatus === 'Paid via DBT' ? (
+                            <span className="pill-badge pill-badge-green">✓ Paid via DBT</span>
+                          ) : order.status === 'Procured' || order.paymentStatus === 'Pending Supervisor Credit' ? (
+                            <span className="pill-badge pill-badge-blue">⏳ Sent to Supervisor</span>
                           ) : (
                             <button
                               type="button"

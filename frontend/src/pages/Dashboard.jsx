@@ -406,7 +406,12 @@ const Dashboard = () => {
             zone: parsed.zone || '',
             subPlace: parsed.subPlace || '',
             address: parsed.address || '',
-            photoUrl: parsed.photoUrl || ''
+            photoUrl: parsed.photoUrl || '',
+            aadharNumber: parsed.aadharNumber || '',
+            bankName: parsed.bankName || '',
+            bankAccountNumber: parsed.bankAccountNumber || '',
+            ifscCode: parsed.ifscCode || '',
+            accountHolderName: parsed.accountHolderName || ''
           };
         }
       }
@@ -421,7 +426,12 @@ const Dashboard = () => {
       zone: '',
       subPlace: '',
       address: '',
-      photoUrl: ''
+      photoUrl: '',
+      aadharNumber: '',
+      bankName: '',
+      bankAccountNumber: '',
+      ifscCode: '',
+      accountHolderName: ''
     };
   });
   const [userDocId, setUserDocId] = useState(null);
@@ -432,9 +442,15 @@ const Dashboard = () => {
     zone: '',
     subPlace: '',
     address: '',
-    photoUrl: ''
+    photoUrl: '',
+    aadharNumber: '',
+    bankName: '',
+    bankAccountNumber: '',
+    ifscCode: '',
+    accountHolderName: ''
   });
   const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [showMaskedBank, setShowMaskedBank] = useState(true);
 
   // Orders & Crops
   const [activeOrders, setActiveOrders] = useState([]);
@@ -676,7 +692,12 @@ const Dashboard = () => {
             photoUrl: uData.photoUrl || prev.photoUrl || '',
             zone: uData.zone || prev.zone || '',
             subPlace: uData.subPlace || prev.subPlace || '',
-            address: uData.address || prev.address || ''
+            address: uData.address || prev.address || '',
+            aadharNumber: uData.aadharNumber || prev.aadharNumber || '',
+            bankName: uData.bankName || prev.bankName || '',
+            bankAccountNumber: uData.bankAccountNumber || prev.bankAccountNumber || '',
+            ifscCode: uData.ifscCode || prev.ifscCode || '',
+            accountHolderName: uData.accountHolderName || prev.accountHolderName || ''
           };
 
           try {
@@ -707,7 +728,12 @@ const Dashboard = () => {
       zone: userProfile.zone || '',
       subPlace: userProfile.subPlace || '',
       address: userProfile.address || '',
-      photoUrl: userProfile.photoUrl || ''
+      photoUrl: userProfile.photoUrl || '',
+      aadharNumber: userProfile.aadharNumber || '',
+      bankName: userProfile.bankName || '',
+      bankAccountNumber: userProfile.bankAccountNumber || '',
+      ifscCode: userProfile.ifscCode || '',
+      accountHolderName: userProfile.accountHolderName || ''
     });
     setIsEditingProfile(true);
   };
@@ -799,13 +825,39 @@ const Dashboard = () => {
         }
       }
 
+      const cleanAadhar = (profileFormData.aadharNumber || '').replace(/\D/g, '');
+      if (cleanAadhar && cleanAadhar.length !== 12) {
+        setIsSavingProfile(false);
+        alert('Please enter a valid 12-digit Aadhaar number.');
+        return;
+      }
+
+      const cleanAcc = (profileFormData.bankAccountNumber || '').replace(/\D/g, '');
+      if (cleanAcc && (cleanAcc.length < 9 || cleanAcc.length > 18)) {
+        setIsSavingProfile(false);
+        alert('Please enter a valid Bank Account Number (9 to 18 digits).');
+        return;
+      }
+
+      const cleanIfsc = (profileFormData.ifscCode || '').trim().toUpperCase();
+      if (cleanIfsc && cleanIfsc.length !== 11) {
+        setIsSavingProfile(false);
+        alert('Please enter a valid 11-character IFSC code.');
+        return;
+      }
+
       const updatedFields = {
         name: profileFormData.name.trim(),
         phone: cleanPhone || rawPhone,
         zone: profileFormData.zone.trim(),
         subPlace: profileFormData.subPlace.trim(),
         address: profileFormData.address.trim(),
-        photoUrl: profileFormData.photoUrl || ''
+        photoUrl: profileFormData.photoUrl || '',
+        aadharNumber: cleanAadhar,
+        bankName: (profileFormData.bankName || '').trim(),
+        bankAccountNumber: cleanAcc,
+        ifscCode: cleanIfsc,
+        accountHolderName: (profileFormData.accountHolderName || '').trim() || profileFormData.name.trim()
       };
 
       if (userDocId) {
@@ -945,6 +997,11 @@ const Dashboard = () => {
         userName: userProfile.name || 'Farmer',
         userPhone: userProfile.phone || 'N/A',
         userEmail: userProfile.email ? userProfile.email.toLowerCase() : '',
+        aadharNumber: userProfile.aadharNumber || '',
+        bankName: userProfile.bankName || '',
+        bankAccountNumber: userProfile.bankAccountNumber || '',
+        ifscCode: userProfile.ifscCode || '',
+        accountHolderName: userProfile.accountHolderName || userProfile.name || '',
         item: orderingItem,
         quantity: orderDetails.quantity,
         zone: orderDetails.zone,
@@ -1071,11 +1128,12 @@ const Dashboard = () => {
   const renderOrderTracker = (order) => {
     const isCancelled = order.status === 'Cancelled by VAO';
     const isRescheduled = order.rescheduleRequested || order.status === 'Reschedule Requested';
-    const isCompleted = order.status === 'Procured' || order.status === 'Completed';
+    const isCompleted = order.status === 'Completed' || order.paymentStatus === 'Paid via DBT';
+    const isProcured = !isCompleted && (order.status === 'Procured' || order.paymentStatus === 'Pending Supervisor Credit');
     const isSlotAllocated = !isCancelled && (order.status === 'Slot Allocated' || (order.datetime && order.datetime !== 'TBD by Officer'));
-    const isVaoVerified = !isCancelled && (order.status === 'VAO Verified' || isSlotAllocated || isCompleted || isRescheduled);
+    const isVaoVerified = !isCancelled && (order.status === 'VAO Verified' || isSlotAllocated || isProcured || isCompleted || isRescheduled);
 
-    // Active step index (0=Applied, 1=VAO Verified, 2=Slot Allocated, 3=Procured & Paid)
+    // Active step index (0=Applied, 1=VAO Verified, 2=Slot Allocated, 3=Procured by Officer, 4=Credited via DBT)
     let activeStep = 0;
     let statusTitle = "Applied";
 
@@ -1083,8 +1141,11 @@ const Dashboard = () => {
       activeStep = 1;
       statusTitle = "Application Cancelled";
     } else if (isCompleted) {
+      activeStep = 4;
+      statusTitle = "✓ DBT Payment Credited to Bank";
+    } else if (isProcured) {
       activeStep = 3;
-      statusTitle = "Procured & Paid";
+      statusTitle = "Harvest Procured • Awaiting Supervisor DBT Credit";
     } else if (isRescheduled) {
       activeStep = 2;
       statusTitle = "Reschedule Under Review";
@@ -1109,11 +1170,18 @@ const Dashboard = () => {
         label: isRescheduled ? "Reschedule Pending" : "Slot Allocated",
         sub: isRescheduled ? "Awaiting Officer" : (order.datetime && order.datetime !== 'TBD by Officer' ? order.datetime : "At Mandi")
       },
-      { label: "Procured & Paid", sub: "DBT Payment" }
+      {
+        label: isCompleted || isProcured ? "Procured" : "Procurement",
+        sub: isCompleted || isProcured ? (order.payoutAmount ? `₹${order.payoutAmount}` : "Officer Weighed") : "APMC Mandi"
+      },
+      {
+        label: isCompleted ? "Paid via DBT" : "Supervisor Credit",
+        sub: isCompleted ? (order.transactionRef ? `${order.transactionRef.slice(-8)}` : "Bank Credited") : "DBT Disbursal"
+      }
     ];
 
     // Progress bar fill width percentage
-    const progressWidth = activeStep === 0 ? '12%' : activeStep === 1 ? '38%' : activeStep === 2 ? '70%' : '100%';
+    const progressWidth = activeStep === 0 ? '8%' : activeStep === 1 ? '28%' : activeStep === 2 ? '50%' : activeStep === 3 ? '76%' : '100%';
 
     return (
       <div className="flow-tracker-card">
@@ -1780,6 +1848,72 @@ const Dashboard = () => {
                     <strong>{l.verified}</strong>
                   </div>
                 </div>
+
+                {/* AADHAAR & BANK ACCOUNT (DBT DISBURSAL) CARD */}
+                <div className="v-profile-dbt-section">
+                  <div className="v-profile-dbt-header">
+                    <div className="v-dbt-header-title">
+                      <span className="v-dbt-icon">🏛️</span>
+                      <div>
+                        <h3>Aadhaar & Bank Account (DBT Disbursal)</h3>
+                        <p>Verified government Direct Benefit Transfer details for instant crop payment credits</p>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <button
+                        type="button"
+                        className="v-btn-toggle-mask"
+                        onClick={() => setShowMaskedBank(!showMaskedBank)}
+                        title={showMaskedBank ? 'Show Full Details' : 'Mask Sensitive Details'}
+                      >
+                        {showMaskedBank ? '👁️ Unmask' : '🔒 Mask'}
+                      </button>
+                      <span className="pill-badge pill-badge-green">✓ DBT Active</span>
+                    </div>
+                  </div>
+
+                  <div className="v-profile-dbt-grid">
+                    <div className="v-pg-item">
+                      <small>AADHAAR NUMBER</small>
+                      <strong style={{ letterSpacing: '0.04em' }}>
+                        {userProfile.aadharNumber
+                          ? (showMaskedBank
+                              ? `•••• •••• ${userProfile.aadharNumber.slice(-4)}`
+                              : `${userProfile.aadharNumber.slice(0, 4)} ${userProfile.aadharNumber.slice(4, 8)} ${userProfile.aadharNumber.slice(8, 12)}`)
+                          : 'Not provided'}
+                      </strong>
+                    </div>
+                    <div className="v-pg-item">
+                      <small>BANK NAME</small>
+                      <strong>{userProfile.bankName || 'Not provided'}</strong>
+                    </div>
+                    <div className="v-pg-item">
+                      <small>ACCOUNT NUMBER</small>
+                      <strong style={{ letterSpacing: '0.04em' }}>
+                        {userProfile.bankAccountNumber
+                          ? (showMaskedBank
+                              ? `•••• •••• ${userProfile.bankAccountNumber.slice(-4)}`
+                              : userProfile.bankAccountNumber)
+                          : 'Not provided'}
+                      </strong>
+                    </div>
+                    <div className="v-pg-item">
+                      <small>IFSC CODE</small>
+                      <strong style={{ letterSpacing: '0.05em' }}>{userProfile.ifscCode || 'Not provided'}</strong>
+                    </div>
+                    <div className="v-pg-item" style={{ gridColumn: 'span 2' }}>
+                      <small>ACCOUNT HOLDER NAME</small>
+                      <strong>{userProfile.accountHolderName || userProfile.name || 'Not provided'}</strong>
+                    </div>
+                  </div>
+
+                  <div className="v-dbt-verified-banner">
+                    <span>🛡️</span>
+                    <small>
+                      Procurement payments are authorized by the Mandi Supervisor and credited directly to this verified bank account via RBI NEFT / PFMS DBT.
+                    </small>
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="v-profile-card v-profile-edit-card">
@@ -1886,6 +2020,72 @@ const Dashboard = () => {
                         placeholder="e.g. SF No. 42/B, Green Field Belt"
                         value={profileFormData.address}
                         onChange={(e) => setProfileFormData({ ...profileFormData, address: e.target.value })}
+                      />
+                    </div>
+
+                    {/* AADHAAR & BANK (DBT) EDIT FIELDS */}
+                    <div className="v-edit-form-section-head" style={{ gridColumn: 'span 2', marginTop: '14px', paddingTop: '14px', borderTop: '1px solid #e2e8f0' }}>
+                      <strong style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#166534', fontSize: '0.92rem' }}>
+                        🏛️ Aadhaar & Bank Details (DBT Disbursal)
+                      </strong>
+                      <small style={{ color: '#64748b', display: 'block', marginTop: '2px' }}>
+                        Mandatory for receiving crop sale proceeds directly via Government Direct Benefit Transfer.
+                      </small>
+                    </div>
+
+                    <div className="v-form-field">
+                      <label>Aadhaar Number (12 digits) *</label>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        maxLength="12"
+                        placeholder="12-digit Aadhaar number"
+                        value={profileFormData.aadharNumber}
+                        onChange={(e) => setProfileFormData({ ...profileFormData, aadharNumber: e.target.value.replace(/\D/g, '') })}
+                      />
+                    </div>
+
+                    <div className="v-form-field">
+                      <label>Bank Name *</label>
+                      <input
+                        type="text"
+                        placeholder="e.g. State Bank of India, Indian Bank"
+                        value={profileFormData.bankName}
+                        onChange={(e) => setProfileFormData({ ...profileFormData, bankName: e.target.value })}
+                      />
+                    </div>
+
+                    <div className="v-form-field">
+                      <label>Bank Account Number *</label>
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        maxLength="18"
+                        placeholder="9 to 18-digit account number"
+                        value={profileFormData.bankAccountNumber}
+                        onChange={(e) => setProfileFormData({ ...profileFormData, bankAccountNumber: e.target.value.replace(/\D/g, '') })}
+                      />
+                    </div>
+
+                    <div className="v-form-field">
+                      <label>Bank IFSC Code *</label>
+                      <input
+                        type="text"
+                        maxLength="11"
+                        placeholder="e.g. SBIN0001234"
+                        style={{ textTransform: 'uppercase' }}
+                        value={profileFormData.ifscCode}
+                        onChange={(e) => setProfileFormData({ ...profileFormData, ifscCode: e.target.value.toUpperCase() })}
+                      />
+                    </div>
+
+                    <div className="v-form-field" style={{ gridColumn: 'span 2' }}>
+                      <label>Account Holder Name *</label>
+                      <input
+                        type="text"
+                        placeholder="Name as printed on bank passbook"
+                        value={profileFormData.accountHolderName}
+                        onChange={(e) => setProfileFormData({ ...profileFormData, accountHolderName: e.target.value })}
                       />
                     </div>
                   </div>
@@ -2256,8 +2456,10 @@ const Dashboard = () => {
                     <h2>{order.token}</h2>
                     <span
                       className={`pill-badge ${
-                        order.status === 'Procured' || order.status === 'Completed'
+                        order.status === 'Completed' || order.paymentStatus === 'Paid via DBT'
                           ? 'pill-badge-green'
+                          : order.status === 'Procured' || order.paymentStatus === 'Pending Supervisor Credit'
+                          ? 'pill-badge-blue'
                           : order.status === 'Cancelled by VAO'
                           ? 'pill-badge-red'
                           : order.status === 'Reschedule Requested' || order.rescheduleRequested
@@ -2267,7 +2469,7 @@ const Dashboard = () => {
                           : 'pill-badge-yellow'
                       }`}
                     >
-                      {order.status}
+                      {order.status === 'Completed' ? 'Credited via DBT' : order.status === 'Procured' ? 'Procured • Awaiting DBT Credit' : order.status}
                     </span>
                   </div>
 
@@ -2359,7 +2561,7 @@ const Dashboard = () => {
                       >
                         Application Cancelled by VAO. Re-apply with corrected land records.
                       </div>
-                    ) : order.status === 'Procured' || order.status === 'Completed' ? (
+                    ) : order.status === 'Completed' || order.paymentStatus === 'Paid via DBT' ? (
                       <div
                         style={{
                           color: '#16a34a',
@@ -2373,7 +2575,23 @@ const Dashboard = () => {
                           textAlign: 'center'
                         }}
                       >
-                        ✓ Procurement Finished & DBT Payment Disbursed
+                        ✓ DBT Payment Disbursed: ₹{order.payoutAmount || '---'} {order.transactionRef ? `(Ref: ${order.transactionRef})` : ''}
+                      </div>
+                    ) : order.status === 'Procured' || order.paymentStatus === 'Pending Supervisor Credit' ? (
+                      <div
+                        style={{
+                          color: '#0284c7',
+                          fontWeight: 700,
+                          fontSize: '0.85rem',
+                          background: '#f0f9ff',
+                          padding: '10px 16px',
+                          borderRadius: '8px',
+                          border: '1px solid #bae6fd',
+                          width: '100%',
+                          textAlign: 'center'
+                        }}
+                      >
+                        ⏳ Harvest Procured by Officer • Forwarded to Supervisor for DBT Bank Disbursal (₹{order.payoutAmount || '---'})
                       </div>
                     ) : order.rescheduleRequested || order.status === 'Reschedule Requested' ? (
                       <button
