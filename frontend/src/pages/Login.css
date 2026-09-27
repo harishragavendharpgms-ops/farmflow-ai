@@ -80,7 +80,7 @@
   position: relative;
   z-index: 10;
   width: 100%;
-  max-width: 480px;
+  max-width: 530px;
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
@@ -246,8 +246,8 @@
 
 .v-role-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
 }
 
 .v-role-btn {
@@ -256,22 +256,25 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  padding: 14px 8px;
-  border-radius: 16px;
+  padding: 10px 4px;
+  border-radius: 14px;
   background: #ffffff;
   border: 1.5px solid #e2e8f0;
   cursor: pointer;
   transition: all 0.2s ease;
+  min-height: 70px;
 }
 
 .v-role-ico {
-  font-size: 1.45rem;
+  font-size: 1.35rem;
 }
 
 .v-role-label {
-  font-size: 0.82rem;
+  font-size: 0.74rem;
   font-weight: 600;
   color: #475569;
+  text-align: center;
+  line-height: 1.15;
 }
 
 .v-role-btn:hover {
@@ -678,6 +681,13 @@
 }
 
 /* Responsive adjustments */
+@media (max-width: 520px) {
+  .v-role-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+  }
+}
+
 @media (max-width: 500px) {
   .v-auth-card {
     padding: 26px 20px 22px;
@@ -695,5 +705,12 @@
   .v-otp-box {
     height: 46px;
     font-size: 1.15rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .v-role-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
   }
 }

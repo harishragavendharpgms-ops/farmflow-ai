@@ -26,6 +26,16 @@ const SupervisorDashboard = () => {
   const [activeFilterTab, setActiveFilterTab] = useState('pending'); // 'pending' | 'completed' | 'all'
   const [isCrediting, setIsCrediting] = useState(false);
 
+  // Main View Switcher
+  const [activeMainTab, setActiveMainTab] = useState('procurements'); // 'procurements' | 'reports'
+
+  // Daily Reports State
+  const [dailyReports, setDailyReports] = useState([]);
+  const [reportSearchTerm, setReportSearchTerm] = useState('');
+  const [reportStatusFilter, setReportStatusFilter] = useState('all'); // 'all' | 'pending' | 'acknowledged'
+  const [selectedReportForChallan, setSelectedReportForChallan] = useState(null);
+  const [isAcknowledging, setIsAcknowledging] = useState(false);
+
   // Modals
   const [selectedOrderForCredit, setSelectedOrderForCredit] = useState(null);
   const [selectedOrderForVoucher, setSelectedOrderForVoucher] = useState(null);
@@ -74,6 +84,32 @@ const SupervisorDashboard = () => {
       },
       (err) => {
         console.error('Failed to fetch supervisor orders:', err);
+      }
+    );
+
+    return () => unsub();
+  }, []);
+
+  // Real-time Firestore Daily Reports Listener
+  useEffect(() => {
+    const q = collection(db, 'dailyReports');
+
+    const unsub = onSnapshot(
+      q,
+      (snap) => {
+        const reports = snap.docs.map((d) => ({
+          id: d.id,
+          ...d.data()
+        }));
+
+        reports.sort(
+          (a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)
+        );
+
+        setDailyReports(reports);
+      },
+      (err) => {
+        console.error('Failed to fetch daily reports:', err);
       }
     );
 
@@ -251,6 +287,92 @@ const SupervisorDashboard = () => {
     }
   };
 
+  // Compute Daily Reports Metrics
+  const reportMetrics = useMemo(() => {
+    const totalReports = dailyReports.length;
+    const pendingAcknowledge = dailyReports.filter(
+      (r) => r.status !== 'Acknowledged by Supervisor'
+    ).length;
+    const acknowledgedCount = dailyReports.filter(
+      (r) => r.status === 'Acknowledged by Supervisor'
+    ).length;
+
+    const totalTransportedQtl = dailyReports.reduce(
+      (sum, r) => sum + (parseFloat(r.quintalsTransported) || 0),
+      0
+    );
+    const totalProcuredQtl = dailyReports.reduce(
+      (sum, r) => sum + (parseFloat(r.quintalsProcured) || 0),
+      0
+    );
+    const totalGunnyUsed = dailyReports.reduce(
+      (sum, r) => sum + (parseInt(r.gunnyBagsUsed) || 0),
+      0
+    );
+    const latestGunnyLeft = dailyReports.length > 0 ? (dailyReports[0].gunnyBagsLeft ?? 0) : 0;
+
+    return {
+      totalReports,
+      pendingAcknowledge,
+      acknowledgedCount,
+      totalTransportedQtl: totalTransportedQtl.toFixed(1),
+      totalProcuredQtl: totalProcuredQtl.toFixed(1),
+      totalGunnyUsed,
+      latestGunnyLeft
+    };
+  }, [dailyReports]);
+
+  // Filtered Daily Reports based on search and status filter
+  const filteredDailyReports = useMemo(() => {
+    return dailyReports.filter((report) => {
+      // Status filter
+      if (reportStatusFilter === 'pending' && report.status === 'Acknowledged by Supervisor') {
+        return false;
+      }
+      if (reportStatusFilter === 'acknowledged' && report.status !== 'Acknowledged by Supervisor') {
+        return false;
+      }
+
+      // Search filter
+      const s = reportSearchTerm.trim().toLowerCase();
+      if (!s) return true;
+
+      return (
+        (report.lorryNumber && report.lorryNumber.toLowerCase().includes(s)) ||
+        (report.driverName && report.driverName.toLowerCase().includes(s)) ||
+        (report.driverPhone && report.driverPhone.includes(s)) ||
+        (report.officerName && report.officerName.toLowerCase().includes(s)) ||
+        (report.centre && report.centre.toLowerCase().includes(s)) ||
+        (report.zone && report.zone.toLowerCase().includes(s)) ||
+        (report.challanRef && report.challanRef.toLowerCase().includes(s)) ||
+        (report.destinationGodown && report.destinationGodown.toLowerCase().includes(s)) ||
+        (report.date && report.date.includes(s))
+      );
+    });
+  }, [dailyReports, reportStatusFilter, reportSearchTerm]);
+
+  // Supervisor Acknowledge Daily Report
+  const handleAcknowledgeReport = async (report) => {
+    setIsAcknowledging(true);
+    try {
+      await updateDoc(doc(db, 'dailyReports', report.id), {
+        status: 'Acknowledged by Supervisor',
+        acknowledgedAt: new Date().toISOString(),
+        acknowledgedBy: {
+          name: userProfile.name || 'Supervisor K. Ramanathan',
+          email: userProfile.email || 'supervisor@agriprocure.com',
+          role: 'supervisor'
+        }
+      });
+      alert(`✅ Lorry Dispatch & Day-End Report (${report.challanRef || report.lorryNumber}) has been officially acknowledged!`);
+    } catch (err) {
+      console.error('Error acknowledging report:', err);
+      alert('Failed to acknowledge report: ' + err.message);
+    } finally {
+      setIsAcknowledging(false);
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('farmflow_user');
     sessionStorage.removeItem('farmflow_user');
@@ -297,25 +419,66 @@ const SupervisorDashboard = () => {
         {/* BANNER GREETING */}
         <div className="v-sup-hero-card">
           <div className="v-sup-hero-content">
-            <h1>Procurement Approval & Direct Benefit Transfer (DBT)</h1>
+            <h1>
+              {activeMainTab === 'procurements'
+                ? 'Procurement Approval & Direct Benefit Transfer (DBT)'
+                : 'Mandi Day-End Closing & Lorry Dispatch Operations'}
+            </h1>
             <p>
-              Review all crop procurements verified and weighed by mandi officers. Authorize and disburse direct treasury payments into farmers' bank accounts.
+              {activeMainTab === 'procurements'
+                ? "Review all crop procurements verified and weighed by mandi officers. Authorize and disburse direct treasury payments into farmers' bank accounts."
+                : 'Monitor daily closing reports submitted by Mandi Officers: total quintals procured, gunny bags utilized vs in stock, and verify lorry dispatches with driver credentials.'}
             </p>
           </div>
 
           <div className="v-sup-hero-actions">
             <div className="v-sup-treasury-tag">
-              <span>🏛️</span>
+              <span>{activeMainTab === 'procurements' ? '🏛️' : '🚛'}</span>
               <div>
-                <small>DISBURSAL GATEWAY</small>
-                <strong>PFMS / RBI Direct Benefit Transfer Active</strong>
+                <small>{activeMainTab === 'procurements' ? 'DISBURSAL GATEWAY' : 'LOGISTICS & TRANSIT'}</small>
+                <strong>
+                  {activeMainTab === 'procurements'
+                    ? 'PFMS / RBI Direct Benefit Transfer Active'
+                    : 'CWC / SWC Buffer Godown Link Active'}
+                </strong>
               </div>
             </div>
           </div>
         </div>
 
-        {/* METRICS / STATS CARDS */}
-        <div className="v-sup-kpi-grid">
+        {/* TOP LEVEL NAVIGATION TABS */}
+        <div className="v-sup-main-nav">
+          <button
+            type="button"
+            className={`v-sup-nav-tab-btn ${activeMainTab === 'procurements' ? 'active' : ''}`}
+            onClick={() => setActiveMainTab('procurements')}
+          >
+            <span className="v-nav-icon">🌾</span>
+            <span className="v-nav-title">Farmer Procurements & DBT Credits</span>
+            {metrics.pendingCount > 0 && (
+              <span className="v-sup-nav-badge warning">{metrics.pendingCount} Pending</span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            className={`v-sup-nav-tab-btn ${activeMainTab === 'reports' ? 'active' : ''}`}
+            onClick={() => setActiveMainTab('reports')}
+          >
+            <span className="v-nav-icon">🚚</span>
+            <span className="v-nav-title">Day-End Closing & Lorry Dispatches</span>
+            {reportMetrics.pendingAcknowledge > 0 ? (
+              <span className="v-sup-nav-badge info">{reportMetrics.pendingAcknowledge} New</span>
+            ) : (
+              <span className="v-sup-nav-badge neutral">{dailyReports.length}</span>
+            )}
+          </button>
+        </div>
+
+        {activeMainTab === 'procurements' && (
+          <>
+            {/* METRICS / STATS CARDS */}
+            <div className="v-sup-kpi-grid">
           <div className="v-sup-kpi-card">
             <div className="v-sup-kpi-head">
               <span className="kpi-icon blue">📦</span>
@@ -619,6 +782,285 @@ const SupervisorDashboard = () => {
             </table>
           </div>
         </div>
+      </>
+    )}
+
+    {activeMainTab === 'reports' && (
+      <>
+        {/* DAILY REPORTS KPI GRID */}
+        <div className="v-sup-kpi-grid">
+          <div className="v-sup-kpi-card">
+            <div className="v-sup-kpi-head">
+              <span className="kpi-icon blue">🚚</span>
+              <span className="kpi-title">TOTAL DISPATCHES FILED</span>
+            </div>
+            <div className="kpi-value">{reportMetrics.totalReports}</div>
+            <div className="kpi-sub">
+              {reportMetrics.pendingAcknowledge > 0
+                ? `${reportMetrics.pendingAcknowledge} awaiting supervisor acknowledgement`
+                : 'All officer reports acknowledged'}
+            </div>
+          </div>
+
+          <div className="v-sup-kpi-card pending-card">
+            <div className="v-sup-kpi-head">
+              <span className="kpi-icon amber">🚛</span>
+              <span className="kpi-title">VOLUME IN TRANSIT</span>
+              {reportMetrics.pendingAcknowledge > 0 && <span className="kpi-pulse-dot" />}
+            </div>
+            <div className="kpi-value" style={{ color: '#d97706' }}>
+              {reportMetrics.totalTransportedQtl} <span style={{ fontSize: '1.05rem', fontWeight: 600 }}>Qtl</span>
+            </div>
+            <div className="kpi-sub">
+              Total intake today: {reportMetrics.totalProcuredQtl} Qtl procured
+            </div>
+          </div>
+
+          <div className="v-sup-kpi-card success-card">
+            <div className="v-sup-kpi-head">
+              <span className="kpi-icon green">📦</span>
+              <span className="kpi-title">GUNNY BAGS DISPATCHED</span>
+            </div>
+            <div className="kpi-value" style={{ color: '#16a34a' }}>
+              {reportMetrics.totalGunnyUsed} <span style={{ fontSize: '1.05rem', fontWeight: 600 }}>Bags</span>
+            </div>
+            <div className="kpi-sub">
+              Buffer balance: {reportMetrics.latestGunnyLeft} bags in stock
+            </div>
+          </div>
+
+          <div className="v-sup-kpi-card">
+            <div className="v-sup-kpi-head">
+              <span className="kpi-icon purple">🏭</span>
+              <span className="kpi-title">GODOWN DESTINATIONS</span>
+            </div>
+            <div className="kpi-value" style={{ fontSize: '1.45rem', marginTop: '6px' }}>
+              Central & State Buffer
+            </div>
+            <div className="kpi-sub">CWC / SWC Warehouse Network</div>
+          </div>
+        </div>
+
+        {/* CONTROLS BAR: SEARCH & STATUS TABS FOR REPORTS */}
+        <div className="v-sup-controls-card">
+          <div className="v-sup-tabs">
+            <button
+              type="button"
+              className={`v-sup-tab-btn ${reportStatusFilter === 'all' ? 'active' : ''}`}
+              onClick={() => setReportStatusFilter('all')}
+            >
+              All Dispatches ({dailyReports.length})
+            </button>
+            <button
+              type="button"
+              className={`v-sup-tab-btn ${reportStatusFilter === 'pending' ? 'active' : ''}`}
+              onClick={() => setReportStatusFilter('pending')}
+            >
+              ⏳ Awaiting Acknowledgment ({reportMetrics.pendingAcknowledge})
+            </button>
+            <button
+              type="button"
+              className={`v-sup-tab-btn ${reportStatusFilter === 'acknowledged' ? 'active' : ''}`}
+              onClick={() => setReportStatusFilter('acknowledged')}
+            >
+              ✓ Acknowledged ({reportMetrics.acknowledgedCount})
+            </button>
+          </div>
+
+          <div className="v-sup-filters">
+            <div className="v-sup-search">
+              <span className="search-icon">🔍</span>
+              <input
+                type="text"
+                placeholder="Search lorry no, driver phone, officer, centre, challan..."
+                value={reportSearchTerm}
+                onChange={(e) => setReportSearchTerm(e.target.value)}
+              />
+              {reportSearchTerm && (
+                <button
+                  type="button"
+                  className="clear-search-btn"
+                  onClick={() => setReportSearchTerm('')}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* REPORTS TABLE CARD */}
+        <div className="v-sup-table-card">
+          <div className="v-sup-table-header">
+            <div>
+              <h3>Mandi Day-End Closing & Goods Lorry Dispatch Ledger</h3>
+              <p>Official end-of-day reports submitted by Mandi Officers with quantity, gunny bags, and transport credentials</p>
+            </div>
+            <span className="v-table-count-badge">
+              Showing {filteredDailyReports.length} of {dailyReports.length} reports
+            </span>
+          </div>
+
+          <div className="v-table-responsive">
+            <table className="v-clean-table v-sup-table">
+              <thead>
+                <tr>
+                  <th>CHALLAN & DATE</th>
+                  <th>MANDI CENTRE & OFFICER</th>
+                  <th>INTAKE & DISPATCH</th>
+                  <th>GUNNY BAGS (USED / LEFT)</th>
+                  <th>LORRY & DRIVER CONTACT</th>
+                  <th>DESTINATION WAREHOUSE</th>
+                  <th>STATUS</th>
+                  <th>ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredDailyReports.length === 0 ? (
+                  <tr>
+                    <td colSpan="8" className="v-empty-table-cell">
+                      <div className="v-empty-state">
+                        <span className="v-empty-icon">🚛</span>
+                        <h4>No Day-End Reports Found</h4>
+                        <p>
+                          {dailyReports.length === 0
+                            ? 'Mandi officers have not submitted day-end reports yet today. When filed from the Officer Dashboard, they will appear here in real-time.'
+                            : 'No reports matched your current search/filter criteria.'}
+                        </p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredDailyReports.map((report) => {
+                    const isAck = report.status === 'Acknowledged by Supervisor';
+                    return (
+                      <tr key={report.id} className={!isAck ? 'row-pending-credit' : ''}>
+                        <td>
+                          <div className="v-cell-token">
+                            <span className="v-token-badge">{report.challanRef || 'DSP-CHALLAN'}</span>
+                            <small className="v-date-sub">
+                              📅 {report.date}
+                            </small>
+                            {report.createdAt && (
+                              <small style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+                                ⏱️ {new Date(report.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </small>
+                            )}
+                          </div>
+                        </td>
+
+                        <td>
+                          <div className="v-cell-officer">
+                            <strong>{report.centre || 'APMC Centre'}</strong>
+                            <small>Officer: <b>{report.officerName || 'Officer'}</b></small>
+                            <span className="v-officer-zone-chip">📍 {report.zone || 'District Zone'}</span>
+                          </div>
+                        </td>
+
+                        <td>
+                          <div className="v-cell-crop">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Procured:</span>
+                              <strong style={{ color: '#0f172a' }}>{report.quintalsProcured} Qtl</strong>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span style={{ fontSize: '0.75rem', color: '#16a34a', fontWeight: 600 }}>In Lorry:</span>
+                              <strong style={{ color: '#16a34a' }}>{report.quintalsTransported} Qtl</strong>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td>
+                          <div className="v-cell-gunny">
+                            <div className="v-gunny-pill-used" title="Gunny bags loaded on vehicle">
+                              <span>Used:</span>
+                              <strong>{report.gunnyBagsUsed} bags</strong>
+                            </div>
+                            <div className="v-gunny-pill-left" title="Gunny bags remaining in mandi buffer stock">
+                              <span>Stock Left:</span>
+                              <strong>{report.gunnyBagsLeft} bags</strong>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td>
+                          <div className="v-cell-lorry">
+                            <div className="v-lorry-reg-plate">
+                              🚛 {report.lorryNumber || 'NOT SPECIFIED'}
+                            </div>
+                            <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#334155', marginTop: '2px' }}>
+                              {report.driverName || 'Designated Driver'}
+                            </div>
+                            {report.driverPhone && (
+                              <a
+                                href={`tel:${report.driverPhone}`}
+                                className="v-driver-phone-link"
+                                title="Click to call driver"
+                              >
+                                📞 +91 {report.driverPhone}
+                              </a>
+                            )}
+                          </div>
+                        </td>
+
+                        <td>
+                          <div style={{ maxWidth: '210px' }}>
+                            <div style={{ fontSize: '0.82rem', fontWeight: 600, color: '#1e293b' }}>
+                              🏢 {report.destinationGodown || 'Central Godown'}
+                            </div>
+                            {report.remarks && (
+                              <small style={{ fontSize: '0.72rem', color: '#64748b', display: 'block', marginTop: '2px', fontStyle: 'italic' }}>
+                                "{report.remarks.length > 55 ? report.remarks.slice(0, 52) + '...' : report.remarks}"
+                              </small>
+                            )}
+                          </div>
+                        </td>
+
+                        <td>
+                          {isAck ? (
+                            <span className="v-status-badge completed">
+                              ✓ Acknowledged
+                            </span>
+                          ) : (
+                            <span className="v-status-badge pending">
+                              ⏳ Awaiting Review
+                            </span>
+                          )}
+                        </td>
+
+                        <td>
+                          <div className="v-action-btn-group">
+                            {!isAck && (
+                              <button
+                                type="button"
+                                className="v-action-btn-credit"
+                                disabled={isAcknowledging}
+                                onClick={() => handleAcknowledgeReport(report)}
+                                title="Acknowledge receipt and verify transport"
+                              >
+                                ✓ Acknowledge
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              className="v-action-btn-voucher"
+                              onClick={() => setSelectedReportForChallan(report)}
+                              title="View and print official dispatch challan"
+                            >
+                              📄 Challan
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </>
+    )}
       </main>
 
       {/* MODAL 1: CREDIT AMOUNT (DBT DISBURSAL AUTHORIZATION) */}
@@ -856,6 +1298,150 @@ const SupervisorDashboard = () => {
                 onClick={() => window.print()}
               >
                 🖨️ Print Payment Voucher
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL 4: OFFICIAL MANDI GOODS LORRY DISPATCH CHALLAN */}
+      {selectedReportForChallan && (
+        <div
+          className="v-modal-overlay"
+          onClick={() => setSelectedReportForChallan(null)}
+        >
+          <div
+            className="v-modal-card v-voucher-modal"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: '640px' }}
+          >
+            <div className="v-modal-header">
+              <div className="v-dbt-modal-title">
+                <span className="v-modal-badge-ico">📜</span>
+                <div>
+                  <h4>Government Mandi Goods Dispatch Note</h4>
+                  <small>Inter-Warehouse Grain Transit Challan & Gate Pass</small>
+                </div>
+              </div>
+              <button
+                type="button"
+                className="v-close-modal"
+                onClick={() => setSelectedReportForChallan(null)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="v-voucher-paper">
+              <div className="v-voucher-emblem">
+                <div className="v-ve-seal">🌾</div>
+                <div>
+                  <h3>TAMIL NADU AGRICULTURAL PRODUCE MARKETING COMMITTEE</h3>
+                  <small>DEPARTMENT OF AGRICULTURAL MARKETING & AGRI BUSINESS • AGRIPROCURE</small>
+                </div>
+              </div>
+
+              <div className="v-voucher-head-info">
+                <div>
+                  <small>DISPATCH CHALLAN REF</small>
+                  <strong>{selectedReportForChallan.challanRef || 'DSP-2026-CHALLAN'}</strong>
+                </div>
+                <div>
+                  <small>DISPATCH DATE & TIME</small>
+                  <strong>
+                    {selectedReportForChallan.date} •{' '}
+                    {selectedReportForChallan.createdAt
+                      ? new Date(selectedReportForChallan.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                      : 'Closing Hours'}
+                  </strong>
+                </div>
+              </div>
+
+              <div className="v-voucher-grid">
+                <div className="v-vg-item">
+                  <small>ORIGIN MANDI CENTRE</small>
+                  <strong>{selectedReportForChallan.centre || 'APMC Procurement Yard'}</strong>
+                  <span>Zone: {selectedReportForChallan.zone || 'Central Mandi District'}</span>
+                  <span>Officer: {selectedReportForChallan.officerName || 'Duty Officer'}</span>
+                </div>
+
+                <div className="v-vg-item">
+                  <small>DESTINATION BUFFER GODOWN</small>
+                  <strong>{selectedReportForChallan.destinationGodown || 'CWC / SWC Buffer Warehouse'}</strong>
+                  <span>Consignment Category: Buffer Grain Storage</span>
+                </div>
+
+                <div className="v-vg-item">
+                  <small>TRANSPORT VEHICLE (LORRY)</small>
+                  <strong style={{ color: '#0369a1', fontSize: '1.05rem', letterSpacing: '0.04em' }}>
+                    🚚 {selectedReportForChallan.lorryNumber || 'TN-REGISTERED'}
+                  </strong>
+                  <span>Driver: <b>{selectedReportForChallan.driverName || 'Designated Driver'}</b></span>
+                  <span>Phone: +91 {selectedReportForChallan.driverPhone}</span>
+                </div>
+
+                <div className="v-vg-item">
+                  <small>GUNNY BAGS DISPATCHED & REMAINING</small>
+                  <strong>{selectedReportForChallan.gunnyBagsUsed} Gunny Bags Loaded</strong>
+                  <span>Capacity: ~50 Kg Standard Jute / HDPE</span>
+                  <span style={{ color: '#059669', fontWeight: 600 }}>
+                    Mandi Buffer Balance: {selectedReportForChallan.gunnyBagsLeft} Bags
+                  </span>
+                </div>
+              </div>
+
+              <div className="v-voucher-amount-box" style={{ background: '#f8fafc', borderColor: '#cbd5e1' }}>
+                <div className="v-vab-label" style={{ color: '#475569' }}>
+                  TOTAL QUANTITY TRANSPORTED VIA LORRY:
+                </div>
+                <div className="v-vab-amount" style={{ color: '#0f172a' }}>
+                  {selectedReportForChallan.quintalsTransported} Quintals
+                  <span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 500, marginLeft: '10px' }}>
+                    (Procured Today: {selectedReportForChallan.quintalsProcured} Qtl)
+                  </span>
+                </div>
+              </div>
+
+              {selectedReportForChallan.remarks && (
+                <div style={{ background: '#f1f5f9', padding: '10px 14px', borderRadius: '8px', fontSize: '0.82rem', color: '#334155', border: '1px dashed #cbd5e1', margin: '14px 0' }}>
+                  <strong>Operational Remarks:</strong> {selectedReportForChallan.remarks}
+                </div>
+              )}
+
+              <div className="v-voucher-signatures">
+                <div>
+                  <small>DISPATCHING MANDI OFFICER</small>
+                  <strong>{selectedReportForChallan.officerName || 'Operator Sai Kumar'}</strong>
+                  <span>Weighbridge Verified & Bagged</span>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <small>SUPERVISOR ACKNOWLEDGEMENT</small>
+                  <strong>
+                    {selectedReportForChallan.acknowledgedBy?.name || (selectedReportForChallan.status === 'Acknowledged by Supervisor' ? userProfile.name : 'Pending Acknowledgement')}
+                  </strong>
+                  <span style={{ color: selectedReportForChallan.status === 'Acknowledged by Supervisor' ? '#15803d' : '#d97706' }}>
+                    {selectedReportForChallan.status === 'Acknowledged by Supervisor'
+                      ? 'Digitally Verified & Acknowledged ✓'
+                      : 'Pending Supervisor Sign-Off'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="v-modal-actions">
+              <button
+                type="button"
+                className="v-btn-modal-cancel"
+                onClick={() => setSelectedReportForChallan(null)}
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                className="v-btn-modal-confirm"
+                onClick={() => window.print()}
+              >
+                🖨️ Print Dispatch Challan
               </button>
             </div>
           </div>

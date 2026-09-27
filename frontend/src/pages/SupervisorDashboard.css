@@ -1182,4 +1182,166 @@
   .v-voucher-grid {
     grid-template-columns: 1fr;
   }
+
+  .v-sup-main-nav {
+    flex-direction: column;
+  }
 }
+
+/* ========================================================
+   TOP LEVEL NAVIGATION (PROCUREMENTS vs REPORTS)
+   ======================================================== */
+.v-sup-main-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #ffffff;
+  padding: 8px;
+  border-radius: 16px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+}
+
+.v-sup-nav-tab-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 13px 20px;
+  border-radius: 12px;
+  border: 1.5px solid transparent;
+  background: transparent;
+  color: #475569;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.v-sup-nav-tab-btn:hover {
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.v-sup-nav-tab-btn.active {
+  background: linear-gradient(135deg, #14532d 0%, #166534 100%);
+  color: #ffffff;
+  border-color: #14532d;
+  box-shadow: 0 4px 12px rgba(22, 101, 52, 0.2);
+}
+
+.v-sup-nav-tab-btn .v-nav-icon {
+  font-size: 1.25rem;
+}
+
+.v-sup-nav-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.v-sup-nav-badge.warning {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.v-sup-nav-tab-btn.active .v-sup-nav-badge.warning {
+  background: #fef08a;
+  color: #78350f;
+}
+
+.v-sup-nav-badge.info {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.v-sup-nav-tab-btn.active .v-sup-nav-badge.info {
+  background: #bae6fd;
+  color: #0c4a6e;
+}
+
+.v-sup-nav-badge.neutral {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+.v-sup-nav-tab-btn.active .v-sup-nav-badge.neutral {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+/* DAY-END REPORTS CELLS */
+.v-cell-lorry {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.v-lorry-reg-plate {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #fef08a;
+  color: #854d0e;
+  border: 1px solid #facc15;
+  font-weight: 800;
+  font-size: 0.8rem;
+  padding: 3px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.04em;
+  width: fit-content;
+}
+
+.v-driver-phone-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #0284c7;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.v-driver-phone-link:hover {
+  color: #0369a1;
+  text-decoration: underline;
+}
+
+.v-cell-gunny {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.v-gunny-pill-used {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.76rem;
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+  padding: 2px 8px;
+  border-radius: 6px;
+  width: fit-content;
+}
+
+.v-gunny-pill-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.76rem;
+  background: #f8fafc;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  padding: 2px 8px;
+  border-radius: 6px;
+  width: fit-content;
+}
+

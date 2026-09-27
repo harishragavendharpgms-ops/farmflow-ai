@@ -7,7 +7,8 @@ import {
   where,
   onSnapshot,
   doc,
-  updateDoc
+  updateDoc,
+  addDoc
 } from 'firebase/firestore';
 import './OfficerDashboard.css';
 
@@ -47,6 +48,24 @@ const OfficerDashboard = () => {
   const [assessedWeight, setAssessedWeight] = useState('');
   const [assessedMoisture, setAssessedMoisture] = useState('12% (Standard / Optimum)');
   const [qualityRemarks, setQualityRemarks] = useState('');
+
+  // Day-End Report & Lorry Dispatch State
+  const [showDayEndModal, setShowDayEndModal] = useState(false);
+  const [isSubmittingDayEnd, setIsSubmittingDayEnd] = useState(false);
+  const [dailyReports, setDailyReports] = useState([]);
+  const [showReportHistoryModal, setShowReportHistoryModal] = useState(false);
+  const [dayEndForm, setDayEndForm] = useState({
+    date: new Date().toISOString().split('T')[0],
+    quintalsProcured: '',
+    gunnyBagsUsed: '',
+    gunnyBagsLeft: '',
+    quintalsTransported: '',
+    lorryNumber: '',
+    driverName: '',
+    driverPhone: '',
+    destinationGodown: 'Central Warehousing Corporation (CWC) Buffer Godown #3, Trichy',
+    remarks: 'Grade A paddy loaded and secured with moisture-proof tarpaulin and mandi security seal.'
+  });
 
   // Load Saved User
   useEffect(() => {
@@ -95,6 +114,25 @@ const OfficerDashboard = () => {
     );
 
     return () => unsub();
+  }, []);
+
+  // Fetch Day-End Reports submitted by Officers
+  useEffect(() => {
+    const qReports = collection(db, 'dailyReports');
+    const unsubReports = onSnapshot(
+      qReports,
+      (snap) => {
+        const list = snap.docs.map((d) => ({
+          id: d.id,
+          ...d.data()
+        }));
+        list.sort((a, b) => new Date(b.createdAt || b.date || 0) - new Date(a.createdAt || a.date || 0));
+        setDailyReports(list);
+      },
+      (err) => console.warn('Error loading daily reports:', err)
+    );
+
+    return () => unsubReports();
   }, []);
 
   const handleInputChange = (orderId, field, value) => {
@@ -320,6 +358,85 @@ const OfficerDashboard = () => {
     }
   };
 
+  // Open Day-End Report Modal (Auto calculates today's totals)
+  const handleOpenDayEndModal = () => {
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    // Orders procured today by this centre
+    const todayProcured = orders.filter((o) => {
+      const isDone = o.status === 'Procured' || o.status === 'Completed';
+      if (!isDone) return false;
+      return o.procuredAt ? o.procuredAt.startsWith(todayStr) : true;
+    });
+
+    const totalQtl = todayProcured.reduce((sum, o) => {
+      return sum + (parseFloat(o.verifiedWeight || o.quantity) || 0);
+    }, 0);
+
+    const estBags = Math.round(totalQtl * 2);
+
+    setDayEndForm({
+      date: todayStr,
+      quintalsProcured: totalQtl > 0 ? totalQtl.toFixed(2) : (orders.length > 0 ? '45.00' : '0.00'),
+      gunnyBagsUsed: estBags > 0 ? String(estBags) : '90',
+      gunnyBagsLeft: '410',
+      quintalsTransported: totalQtl > 0 ? totalQtl.toFixed(2) : '45.00',
+      lorryNumber: '',
+      driverName: '',
+      driverPhone: '',
+      destinationGodown: 'Central Warehousing Corporation (CWC) Buffer Godown #3, Trichy',
+      remarks: 'Moisture tested and passed FAQ norms. Bags weighed, tagged, and sealed onto lorry.'
+    });
+    setShowDayEndModal(true);
+  };
+
+  // Submit Day-End Report to Supervisor
+  const handleSubmitDayEndReport = async (e) => {
+    e.preventDefault();
+    if (!dayEndForm.lorryNumber.trim()) {
+      alert('Please enter the transport Lorry / Vehicle Registration Number.');
+      return;
+    }
+    if (!dayEndForm.driverPhone.trim()) {
+      alert('Please enter the Lorry Driver contact phone number.');
+      return;
+    }
+
+    setIsSubmittingDayEnd(true);
+    try {
+      const challanRef = `DSP-${new Date().getFullYear()}-${Math.floor(100000 + Math.random() * 900000)}`;
+
+      await addDoc(collection(db, 'dailyReports'), {
+        challanRef,
+        date: dayEndForm.date,
+        officerName: userProfile.name || 'Officer',
+        officerEmail: userProfile.email || '',
+        officerPhone: userProfile.phone || '',
+        zone: userProfile.zone || 'Zone A',
+        centre: userProfile.subPlace || 'APMC Centre #402',
+        quintalsProcured: parseFloat(dayEndForm.quintalsProcured) || 0,
+        gunnyBagsUsed: parseInt(dayEndForm.gunnyBagsUsed) || 0,
+        gunnyBagsLeft: parseInt(dayEndForm.gunnyBagsLeft) || 0,
+        quintalsTransported: parseFloat(dayEndForm.quintalsTransported) || 0,
+        lorryNumber: dayEndForm.lorryNumber.trim().toUpperCase(),
+        driverName: dayEndForm.driverName.trim(),
+        driverPhone: dayEndForm.driverPhone.trim(),
+        destinationGodown: dayEndForm.destinationGodown.trim(),
+        remarks: dayEndForm.remarks.trim(),
+        status: 'Submitted to Supervisor',
+        createdAt: new Date().toISOString()
+      });
+
+      alert(`✅ Day-End Report & Lorry Dispatch (${dayEndForm.lorryNumber.toUpperCase()}) successfully submitted to the Supervisor!\nChallan: ${challanRef}`);
+      setShowDayEndModal(false);
+    } catch (err) {
+      console.error('Error submitting daily report:', err);
+      alert('Failed to submit day-end report: ' + err.message);
+    } finally {
+      setIsSubmittingDayEnd(false);
+    }
+  };
+
   // QR Scan Handler
   const handleScanSubmit = (e) => {
     e.preventDefault();
@@ -532,7 +649,7 @@ const OfficerDashboard = () => {
         {/* CONTENT VIEW */}
         <div className="v-op-content">
           {/* Greeting Banner */}
-          <div className="v-op-greeting-card">
+          <div className="v-op-greeting-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '16px' }}>
             <div>
               <h1>Good Evening, {userProfile.name || 'Officer'} 🌾</h1>
               <p>Here's today's procurement activity and verified farmer queue</p>
@@ -540,6 +657,50 @@ const OfficerDashboard = () => {
                 <span>TODAY'S DATE • {new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
                 <span className="pill-badge pill-badge-green">MANDI OPEN</span>
               </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                className="v-btn-dayend-action"
+                onClick={handleOpenDayEndModal}
+                style={{
+                  background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)',
+                  color: '#ffffff',
+                  border: 'none',
+                  padding: '10px 18px',
+                  borderRadius: '10px',
+                  fontWeight: 700,
+                  fontSize: '0.88rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)'
+                }}
+              >
+                <span>🚚</span>
+                <span>File Day-End Lorry Dispatch Report</span>
+              </button>
+
+              {dailyReports.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setShowReportHistoryModal(true)}
+                  style={{
+                    background: '#ffffff',
+                    color: '#1e293b',
+                    border: '1.5px solid #cbd5e1',
+                    padding: '10px 14px',
+                    borderRadius: '10px',
+                    fontWeight: 600,
+                    fontSize: '0.82rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  📜 Past Reports ({dailyReports.length})
+                </button>
+              )}
             </div>
           </div>
 
@@ -1154,6 +1315,288 @@ const OfficerDashboard = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Day-End Mandi Closing & Lorry Dispatch Report Modal */}
+      {showDayEndModal && (
+        <div className="v-modal-overlay" onClick={() => !isSubmittingDayEnd && setShowDayEndModal(false)}>
+          <div className="v-modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '680px' }}>
+            <div className="v-modal-header">
+              <h4>🚚 Day-End Mandi Closing & Lorry Dispatch Report</h4>
+              <button
+                type="button"
+                className="v-close-modal"
+                disabled={isSubmittingDayEnd}
+                onClick={() => setShowDayEndModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="v-modal-sub" style={{ marginBottom: '14px' }}>
+              Official closing account of day procurement, gunny bag stock balance, and warehouse lorry dispatch to <b>Procurement Supervisor</b>.
+            </p>
+
+            <form onSubmit={handleSubmitDayEndReport}>
+              {/* Centre & Officer Stamp */}
+              <div style={{
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: '8px',
+                padding: '12px 14px',
+                marginBottom: '16px',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(3, 1fr)',
+                gap: '10px',
+                fontSize: '0.82rem'
+              }}>
+                <div>
+                  <small style={{ color: '#64748b', display: 'block', fontWeight: 700 }}>REPORTING DATE</small>
+                  <strong style={{ color: '#0f172a' }}>📅 {dayEndForm.date}</strong>
+                </div>
+                <div>
+                  <small style={{ color: '#64748b', display: 'block', fontWeight: 700 }}>MANDI / CENTRE</small>
+                  <strong style={{ color: '#0f172a' }}>🏛️ {userProfile.subPlace || 'Main Mandi'}</strong>
+                </div>
+                <div>
+                  <small style={{ color: '#64748b', display: 'block', fontWeight: 700 }}>PROCURING OFFICER</small>
+                  <strong style={{ color: '#0f172a' }}>👤 {userProfile.name}</strong>
+                </div>
+              </div>
+
+              {/* Section 1: Procurement & Gunny Bags */}
+              <div style={{ marginBottom: '16px' }}>
+                <strong style={{ display: 'block', color: '#166534', fontSize: '0.9rem', marginBottom: '8px', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px' }}>
+                  📦 1. Procurement Volume & Gunny Bags Accounting
+                </strong>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' }}>
+                  <div className="v-form-field">
+                    <label style={{ fontWeight: 700, fontSize: '0.78rem' }}>Procured Today (Quintals) *</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      required
+                      placeholder="e.g. 85.50"
+                      value={dayEndForm.quintalsProcured}
+                      onChange={(e) => setDayEndForm({ ...dayEndForm, quintalsProcured: e.target.value })}
+                      style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1.5px solid #cbd5e1' }}
+                    />
+                  </div>
+
+                  <div className="v-form-field">
+                    <label style={{ fontWeight: 700, fontSize: '0.78rem' }}>Gunny Bags Used *</label>
+                    <input
+                      type="number"
+                      required
+                      placeholder="e.g. 170"
+                      value={dayEndForm.gunnyBagsUsed}
+                      onChange={(e) => setDayEndForm({ ...dayEndForm, gunnyBagsUsed: e.target.value })}
+                      style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1.5px solid #cbd5e1' }}
+                    />
+                  </div>
+
+                  <div className="v-form-field">
+                    <label style={{ fontWeight: 700, fontSize: '0.78rem' }}>Gunny Bags Left (Stock) *</label>
+                    <input
+                      type="number"
+                      required
+                      placeholder="e.g. 330"
+                      value={dayEndForm.gunnyBagsLeft}
+                      onChange={(e) => setDayEndForm({ ...dayEndForm, gunnyBagsLeft: e.target.value })}
+                      style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1.5px solid #cbd5e1' }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Section 2: Lorry Transport & Logistics */}
+              <div style={{ marginBottom: '16px' }}>
+                <strong style={{ display: 'block', color: '#1e40af', fontSize: '0.9rem', marginBottom: '8px', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px' }}>
+                  🚛 2. Warehouse Lorry Transport & Dispatch
+                </strong>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '10px' }}>
+                  <div className="v-form-field">
+                    <label style={{ fontWeight: 700, fontSize: '0.78rem' }}>Quintals Transported in Lorry *</label>
+                    <input
+                      type="number"
+                      step="0.01"
+                      required
+                      placeholder="e.g. 85.50"
+                      value={dayEndForm.quintalsTransported}
+                      onChange={(e) => setDayEndForm({ ...dayEndForm, quintalsTransported: e.target.value })}
+                      style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1.5px solid #cbd5e1' }}
+                    />
+                  </div>
+
+                  <div className="v-form-field">
+                    <label style={{ fontWeight: 700, fontSize: '0.78rem' }}>Lorry Number (Vehicle Reg.) *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. TN-45-AZ-8921"
+                      value={dayEndForm.lorryNumber}
+                      onChange={(e) => setDayEndForm({ ...dayEndForm, lorryNumber: e.target.value.toUpperCase() })}
+                      style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1.5px solid #cbd5e1', textTransform: 'uppercase', fontWeight: 700 }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', marginBottom: '10px' }}>
+                  <div className="v-form-field">
+                    <label style={{ fontWeight: 700, fontSize: '0.78rem' }}>Driver Full Name *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. M. Selvam"
+                      value={dayEndForm.driverName}
+                      onChange={(e) => setDayEndForm({ ...dayEndForm, driverName: e.target.value })}
+                      style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1.5px solid #cbd5e1' }}
+                    />
+                  </div>
+
+                  <div className="v-form-field">
+                    <label style={{ fontWeight: 700, fontSize: '0.78rem' }}>Driver Phone Number *</label>
+                    <input
+                      type="tel"
+                      required
+                      placeholder="10-digit mobile number"
+                      value={dayEndForm.driverPhone}
+                      onChange={(e) => setDayEndForm({ ...dayEndForm, driverPhone: e.target.value })}
+                      style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1.5px solid #cbd5e1' }}
+                    />
+                  </div>
+                </div>
+
+                <div className="v-form-field" style={{ marginBottom: '10px' }}>
+                  <label style={{ fontWeight: 700, fontSize: '0.78rem' }}>Destination Warehouse / Godown *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Central Warehousing Corporation (CWC) Buffer Godown #3, Trichy"
+                    value={dayEndForm.destinationGodown}
+                    onChange={(e) => setDayEndForm({ ...dayEndForm, destinationGodown: e.target.value })}
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1.5px solid #cbd5e1' }}
+                  />
+                </div>
+
+                <div className="v-form-field">
+                  <label style={{ fontWeight: 700, fontSize: '0.78rem' }}>Seal Numbers & Dispatch Remarks</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Security Seal #SEC-4029 applied, tarpaulin secured"
+                    value={dayEndForm.remarks}
+                    onChange={(e) => setDayEndForm({ ...dayEndForm, remarks: e.target.value })}
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: '6px', border: '1.5px solid #cbd5e1' }}
+                  />
+                </div>
+              </div>
+
+              <div className="v-modal-actions">
+                <button
+                  type="button"
+                  className="v-btn-modal-cancel"
+                  disabled={isSubmittingDayEnd}
+                  onClick={() => setShowDayEndModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="v-btn-modal-confirm"
+                  disabled={isSubmittingDayEnd}
+                  style={{ background: 'linear-gradient(135deg, #1e3a8a 0%, #2563eb 100%)' }}
+                >
+                  {isSubmittingDayEnd ? 'Transmitting to Supervisor...' : '✓ Submit Day-End Report to Supervisor'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Past Daily Reports Modal */}
+      {showReportHistoryModal && (
+        <div className="v-modal-overlay" onClick={() => setShowReportHistoryModal(false)}>
+          <div className="v-modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '820px' }}>
+            <div className="v-modal-header">
+              <h4>📜 Filed Day-End Mandi Closing & Dispatch Reports</h4>
+              <button
+                type="button"
+                className="v-close-modal"
+                onClick={() => setShowReportHistoryModal(false)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <div style={{ maxHeight: '450px', overflowY: 'auto', marginTop: '12px' }}>
+              {dailyReports.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '36px', color: '#64748b' }}>
+                  No day-end reports filed yet.
+                </div>
+              ) : (
+                <table className="v-clean-table" style={{ fontSize: '0.84rem' }}>
+                  <thead>
+                    <tr>
+                      <th>DATE & CHALLAN</th>
+                      <th>PROCURED / TRANSPORTED</th>
+                      <th>GUNNY BAGS (USED/LEFT)</th>
+                      <th>LORRY & DRIVER</th>
+                      <th>DESTINATION</th>
+                      <th>STATUS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {dailyReports.map((r) => (
+                      <tr key={r.id}>
+                        <td>
+                          <strong>📅 {r.date}</strong>
+                          <small style={{ display: 'block', color: '#64748b' }}>{r.challanRef}</small>
+                        </td>
+                        <td>
+                          <strong>{r.quintalsProcured} Qtl procured</strong>
+                          <span style={{ display: 'block', color: '#0369a1', fontSize: '0.78rem' }}>
+                            🚚 {r.quintalsTransported} Qtl in lorry
+                          </span>
+                        </td>
+                        <td>
+                          <span style={{ color: '#b45309', fontWeight: 600 }}>Used: {r.gunnyBagsUsed}</span>
+                          <small style={{ display: 'block', color: '#16a34a' }}>Left: {r.gunnyBagsLeft}</small>
+                        </td>
+                        <td>
+                          <strong>🚛 {r.lorryNumber}</strong>
+                          <span style={{ display: 'block', fontSize: '0.78rem', color: '#64748b' }}>
+                            {r.driverName} (📞 {r.driverPhone})
+                          </span>
+                        </td>
+                        <td>
+                          <span style={{ fontSize: '0.8rem', color: '#334155' }}>{r.destinationGodown}</span>
+                        </td>
+                        <td>
+                          <span className={`pill-badge ${r.status?.includes('Acknowledged') ? 'pill-badge-green' : 'pill-badge-blue'}`}>
+                            {r.status?.includes('Acknowledged') ? '✓ Acknowledged' : 'Submitted to Supervisor'}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+
+            <div className="v-modal-actions" style={{ marginTop: '16px' }}>
+              <button
+                type="button"
+                className="v-btn-modal-cancel"
+                onClick={() => setShowReportHistoryModal(false)}
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}
