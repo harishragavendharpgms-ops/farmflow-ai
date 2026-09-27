@@ -41,6 +41,13 @@ const OfficerDashboard = () => {
   const [showQrModal, setShowQrModal] = useState(false);
   const [scannedToken, setScannedToken] = useState('');
 
+  // Procure & Quality Inspection Modal
+  const [procureModalOrder, setProcureModalOrder] = useState(null);
+  const [assessedQuality, setAssessedQuality] = useState('Grade A (FAQ - Fair Average Quality)');
+  const [assessedWeight, setAssessedWeight] = useState('');
+  const [assessedMoisture, setAssessedMoisture] = useState('12% (Standard / Optimum)');
+  const [qualityRemarks, setQualityRemarks] = useState('');
+
   // Load Saved User
   useEffect(() => {
     const savedUser =
@@ -249,20 +256,44 @@ const OfficerDashboard = () => {
     }
   };
 
-  // Procure & Forward to Supervisor for DBT Disbursal
-  const handleProcure = async (id) => {
-    const order = orders.find((o) => o.id === id);
-    if (!order) return;
+  // Open Quality Assessment & Procurement Modal
+  const handleOpenProcureModal = (order) => {
+    setProcureModalOrder(order);
+    setAssessedQuality(order.quality || 'Grade A (FAQ - Fair Average Quality)');
+    setAssessedWeight(order.quantity || '');
+    setAssessedMoisture('12% (Standard / Optimum)');
+    setQualityRemarks('');
+  };
 
-    const estimatedRate = 23.00;
-    const totalPayout = ((parseFloat(order.quantity) || 0) * estimatedRate).toFixed(2);
+  // Confirm Quality Assessment & Forward to Supervisor for DBT
+  const handleConfirmProcure = async (e) => {
+    e.preventDefault();
+    if (!procureModalOrder) return;
 
-    setIsProcuring(id);
+    const order = procureModalOrder;
+    const qty = parseFloat(assessedWeight) || parseFloat(order.quantity) || 0;
+
+    // Standard Mandi MSP / Quality Rate tiered calculation
+    let ratePerKg = 23.00;
+    if (assessedQuality.includes('Grade B')) {
+      ratePerKg = 21.50;
+    } else if (assessedQuality.includes('Grade C')) {
+      ratePerKg = 19.00;
+    }
+
+    const totalPayout = (qty * ratePerKg).toFixed(2);
+    setIsProcuring(order.id);
+
     try {
-      await updateDoc(doc(db, 'orders', id), {
+      await updateDoc(doc(db, 'orders', order.id), {
         status: 'Procured',
         paymentStatus: 'Pending Supervisor Credit',
+        officerQuality: assessedQuality,
+        verifiedWeight: qty,
+        moistureContent: assessedMoisture,
+        qualityRemarks: qualityRemarks.trim() || 'Passed physical inspection & quality standards at weighbridge.',
         payoutAmount: totalPayout,
+        ratePerKg: ratePerKg,
         procuredAt: new Date().toISOString(),
         procuredBy: userProfile.name || 'Operator Sai Kumar',
         procuredOfficerPhone: userProfile.phone || '',
@@ -272,14 +303,15 @@ const OfficerDashboard = () => {
 
       await triggerSms(
         order.userPhone,
-        `AgriProcure: Crop procurement verified at ${userProfile.subPlace || 'Mandi'}. Quantity: ${order.quantity} Qtl. Total payout INR ${totalPayout} forwarded to Supervisor for DBT bank disbursal.`
+        `AgriProcure: Produce verified at ${userProfile.subPlace || 'Mandi'}. Assessed Quality: ${assessedQuality}. Quantity: ${qty} Qtl. Total payout INR ${totalPayout} forwarded to Supervisor for DBT bank credit.`
       );
 
-      if (nowServing && nowServing.id === id) {
+      if (nowServing && nowServing.id === order.id) {
         setNowServing(null);
       }
 
-      alert(`Crop successfully marked as Procured! Forwarded payout of ₹${totalPayout} to Supervisor for DBT bank credit.`);
+      alert(`Produce successfully inspected as ${assessedQuality}!\nPayout of ₹${totalPayout} sent to Supervisor for DBT credit.`);
+      setProcureModalOrder(null);
     } catch (error) {
       console.error(error);
       alert('Failed to update procurement status.');
@@ -569,9 +601,9 @@ const OfficerDashboard = () => {
                   <button
                     type="button"
                     className="v-btn-complete-bay"
-                    onClick={() => handleProcure(nowServing.id)}
+                    onClick={() => handleOpenProcureModal(nowServing)}
                   >
-                    Complete Procurement & Disburse DBT ✓
+                    Inspect Quality & Complete Procurement ✓
                   </button>
                 </div>
               ) : (
@@ -713,6 +745,7 @@ const OfficerDashboard = () => {
                     <th>TOKEN</th>
                     <th>FARMER</th>
                     <th>CROP</th>
+                    <th>QUALITY</th>
                     <th>QTY</th>
                     <th>SLOT</th>
                     <th>STATUS</th>
@@ -723,7 +756,7 @@ const OfficerDashboard = () => {
                 <tbody>
                   {filteredOrders.length === 0 ? (
                     <tr>
-                      <td colSpan="8" style={{ textAlign: 'center', padding: '36px' }}>
+                      <td colSpan="9" style={{ textAlign: 'center', padding: '36px' }}>
                         <div className="v-no-tokens-box">
                           <p>No tokens match the selected filters.</p>
                           <small>Try changing your filters or search query</small>
@@ -741,7 +774,18 @@ const OfficerDashboard = () => {
                           <small style={{ display: 'block', color: '#64748b' }}>{order.userPhone}</small>
                         </td>
                         <td>{order.item || 'Paddy (Grade A)'}</td>
-                        <td>{order.quantity} Qtl</td>
+                        <td>
+                          {order.officerQuality ? (
+                            <span className="pill-badge pill-badge-blue" style={{ fontSize: '0.72rem', whiteSpace: 'nowrap' }}>
+                              ✓ {order.officerQuality.split(' ')[0]} {order.officerQuality.split(' ')[1]}
+                            </span>
+                          ) : (
+                            <span style={{ fontSize: '0.78rem', color: '#166534', fontWeight: 600 }}>
+                              ⭐ {order.quality ? (order.quality.length > 18 ? order.quality.slice(0, 18) + '...' : order.quality) : 'Grade A (FAQ)'}
+                            </span>
+                          )}
+                        </td>
+                        <td>{order.verifiedWeight || order.quantity} Qtl</td>
                         <td>
                           {order.rescheduleRequested || order.status === 'Reschedule Requested' ? (
                             <div style={{ background: '#fffbeb', border: '1px solid #fde68a', borderRadius: '8px', padding: '8px 10px', maxWidth: '280px' }}>
@@ -846,7 +890,7 @@ const OfficerDashboard = () => {
                             <button
                               type="button"
                               className="v-btn-procure-action"
-                              onClick={() => handleProcure(order.id)}
+                              onClick={() => handleOpenProcureModal(order)}
                               disabled={isProcuring === order.id}
                             >
                               Procure
@@ -950,6 +994,166 @@ const OfficerDashboard = () => {
             <div className="v-doc-preview-body">
               <img src={modalImage} alt="Land Record" />
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Procure & Crop Quality Inspection Modal */}
+      {procureModalOrder && (
+        <div className="v-modal-overlay" onClick={() => !isProcuring && setProcureModalOrder(null)}>
+          <div className="v-modal-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '580px' }}>
+            <div className="v-modal-header">
+              <h4>🌾 Produce Inspection & Quality Assessment</h4>
+              <button
+                type="button"
+                className="v-close-modal"
+                disabled={isProcuring}
+                onClick={() => setProcureModalOrder(null)}
+              >
+                ✕
+              </button>
+            </div>
+
+            <p className="v-modal-sub" style={{ marginBottom: '14px' }}>
+              Weighbridge intake for <b>{procureModalOrder.userName}</b> (Token: <b>{procureModalOrder.token}</b>)
+            </p>
+
+            <form onSubmit={handleConfirmProcure}>
+              {/* Token & Crop Summary Box */}
+              <div style={{
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: '8px',
+                padding: '12px 14px',
+                marginBottom: '16px',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(2, 1fr)',
+                gap: '10px',
+                fontSize: '0.85rem'
+              }}>
+                <div>
+                  <small style={{ color: '#64748b', display: 'block', fontSize: '0.72rem', fontWeight: 700 }}>CROP VARIETY</small>
+                  <strong style={{ color: '#0f172a' }}>{procureModalOrder.item}</strong>
+                </div>
+                <div>
+                  <small style={{ color: '#64748b', display: 'block', fontSize: '0.72rem', fontWeight: 700 }}>FARMER DECLARED QUALITY</small>
+                  <strong style={{ color: '#166534' }}>⭐ {procureModalOrder.quality || 'Grade A (FAQ)'}</strong>
+                </div>
+                <div>
+                  <small style={{ color: '#64748b', display: 'block', fontSize: '0.72rem', fontWeight: 700 }}>APPLICATION QUANTITY</small>
+                  <strong style={{ color: '#0f172a' }}>{procureModalOrder.quantity} Qtl</strong>
+                </div>
+                <div>
+                  <small style={{ color: '#64748b', display: 'block', fontSize: '0.72rem', fontWeight: 700 }}>VERIFIED JURISDICTION</small>
+                  <strong style={{ color: '#0f172a' }}>📍 {procureModalOrder.zone}</strong>
+                </div>
+              </div>
+
+              {/* Quality Grade Selector */}
+              <div className="v-form-field" style={{ marginBottom: '14px' }}>
+                <label style={{ fontWeight: 700, display: 'flex', justifyContent: 'space-between' }}>
+                  <span>⭐ Assessed Crop Quality (Official Grade) *</span>
+                  <span style={{ fontSize: '0.75rem', color: '#16a34a', fontWeight: 600 }}>
+                    Rate: ₹{assessedQuality.includes('Grade B') ? '21.50' : assessedQuality.includes('Grade C') ? '19.00' : '23.00'}/Kg
+                  </span>
+                </label>
+                <select
+                  required
+                  value={assessedQuality}
+                  onChange={(e) => setAssessedQuality(e.target.value)}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1.5px solid #cbd5e1', fontWeight: 600 }}
+                >
+                  <option value="Grade A (FAQ - Fair Average Quality / Premium)">Grade A (FAQ - Fair Average Quality / Premium) • ₹23.00/kg</option>
+                  <option value="Grade B (Standard Market Quality)">Grade B (Standard Market Quality) • ₹21.50/kg</option>
+                  <option value="Grade C (Substandard / Feed Quality)">Grade C (Substandard / Feed Quality) • ₹19.00/kg</option>
+                </select>
+              </div>
+
+              {/* Row for Actual Weight & Moisture */}
+              <div className="v-form-row" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
+                <div className="v-form-field">
+                  <label style={{ fontWeight: 700 }}>Actual Weighed Quantity (Qtl) *</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    required
+                    placeholder="e.g. 50"
+                    value={assessedWeight}
+                    onChange={(e) => setAssessedWeight(e.target.value)}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1.5px solid #cbd5e1' }}
+                  />
+                </div>
+                <div className="v-form-field">
+                  <label style={{ fontWeight: 700 }}>Moisture Content</label>
+                  <select
+                    value={assessedMoisture}
+                    onChange={(e) => setAssessedMoisture(e.target.value)}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1.5px solid #cbd5e1' }}
+                  >
+                    <option value="12% (Standard / Optimum)">12% (Standard / Optimum)</option>
+                    <option value="13% - 14% (Permissible)">13% - 14% (Permissible)</option>
+                    <option value="15%+ (High Moisture)">15%+ (High Moisture)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Physical Inspection Remarks */}
+              <div className="v-form-field" style={{ marginBottom: '14px' }}>
+                <label style={{ fontWeight: 700 }}>Inspection Remarks / Visual Appearance</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Grain uniform, golden color, moisture within permissible limits"
+                  value={qualityRemarks}
+                  onChange={(e) => setQualityRemarks(e.target.value)}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1.5px solid #cbd5e1' }}
+                />
+              </div>
+
+              {/* Calculated Payout Banner */}
+              <div style={{
+                background: '#f0fdf4',
+                border: '1px solid #bbf7d0',
+                borderRadius: '8px',
+                padding: '12px 14px',
+                marginBottom: '16px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center'
+              }}>
+                <div>
+                  <small style={{ color: '#166534', fontWeight: 700, display: 'block', fontSize: '0.72rem' }}>
+                    ESTIMATED MANDI PAYOUT (DBT)
+                  </small>
+                  <span style={{ fontSize: '0.8rem', color: '#15803d' }}>
+                    {assessedWeight || procureModalOrder.quantity || 0} Qtl × ₹{assessedQuality.includes('Grade B') ? '21.50' : assessedQuality.includes('Grade C') ? '19.00' : '23.00'}
+                  </span>
+                </div>
+                <strong style={{ fontSize: '1.25rem', color: '#15803d' }}>
+                  ₹{(
+                    (parseFloat(assessedWeight || procureModalOrder.quantity) || 0) *
+                    (assessedQuality.includes('Grade B') ? 21.50 : assessedQuality.includes('Grade C') ? 19.00 : 23.00)
+                  ).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </strong>
+              </div>
+
+              <div className="v-modal-actions">
+                <button
+                  type="button"
+                  className="v-btn-modal-cancel"
+                  disabled={isProcuring}
+                  onClick={() => setProcureModalOrder(null)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="v-btn-modal-confirm"
+                  disabled={isProcuring}
+                >
+                  {isProcuring ? 'Recording Procurement...' : '✓ Confirm Quality & Forward to Supervisor'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

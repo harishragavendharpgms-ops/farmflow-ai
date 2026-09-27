@@ -532,9 +532,23 @@ const SupervisorDashboard = () => {
                         {/* CROP & WEIGHT */}
                         <td>
                           <div className="v-sup-crop-cell">
-                            <span className="v-crop-chip">🌾 {order.item || 'Paddy (Grade A)'}</span>
-                            <strong>{order.quantity} Qtl</strong>
-                            <small>Govt MSP Verified</small>
+                            <span className="v-crop-chip">🌾 {order.item || 'Crop'}</span>
+                            <strong>{order.verifiedWeight || order.quantity} Qtl</strong>
+                            <div style={{ marginTop: '4px', fontSize: '0.74rem' }}>
+                              <span style={{ color: '#0369a1', fontWeight: 700, display: 'block' }}>
+                                ⭐ {order.officerQuality ? `Grade: ${order.officerQuality}` : (order.quality || 'Grade A (FAQ)')}
+                              </span>
+                              {order.officerQuality && order.quality && order.officerQuality !== order.quality && (
+                                <small style={{ color: '#64748b', display: 'block' }}>
+                                  Farmer Declared: {order.quality}
+                                </small>
+                              )}
+                              {order.moistureContent && (
+                                <small style={{ color: '#059669', display: 'block' }}>
+                                  Moisture: {order.moistureContent}
+                                </small>
+                              )}
+                            </div>
                           </div>
                         </td>
 
@@ -679,10 +693,10 @@ const SupervisorDashboard = () => {
                 </div>
 
                 <div className="v-dbt-dg-item">
-                  <small>CROP & VOLUME</small>
-                  <strong>{selectedOrderForCredit.item} ({selectedOrderForCredit.quantity} Qtl)</strong>
-                  <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                    Token: {selectedOrderForCredit.token}
+                  <small>CROP, QUALITY & VOLUME</small>
+                  <strong>{selectedOrderForCredit.item} ({selectedOrderForCredit.verifiedWeight || selectedOrderForCredit.quantity} Qtl)</strong>
+                  <span style={{ fontSize: '0.8rem', color: '#0369a1', fontWeight: 700 }}>
+                    ⭐ {selectedOrderForCredit.officerQuality || selectedOrderForCredit.quality || 'Grade A (FAQ)'}
                   </span>
                 </div>
 
@@ -800,10 +814,10 @@ const SupervisorDashboard = () => {
                 </div>
 
                 <div className="v-vg-item">
-                  <small>PROCUREMENT BATCH</small>
+                  <small>PROCUREMENT BATCH & QUALITY</small>
                   <strong>{selectedOrderForVoucher.item}</strong>
-                  <span>Quantity: {selectedOrderForVoucher.quantity} Qtl</span>
-                  <span>Token: {selectedOrderForVoucher.token}</span>
+                  <span>Quality: <b>{selectedOrderForVoucher.officerQuality || selectedOrderForVoucher.quality || 'Grade A (FAQ)'}</b></span>
+                  <span>Quantity: {selectedOrderForVoucher.verifiedWeight || selectedOrderForVoucher.quantity} Qtl • Token: {selectedOrderForVoucher.token}</span>
                 </div>
               </div>
 

@@ -626,6 +626,9 @@ const VAODashboard = () => {
                             <div className="vao-crop-cell">
                               <span className="vao-crop-pill">🌾 {order.item || 'Crop'}</span>
                               <b>{order.quantity || 0} kg</b>
+                              <small style={{ color: '#166534', fontWeight: 600, display: 'block', marginTop: '3px' }}>
+                                ⭐ {order.quality || 'Grade A (FAQ)'}
+                              </small>
                             </div>
                           </td>
 

@@ -186,6 +186,10 @@ const t = {
     procurementApp: "Procurement Application",
     applyingFor: "Applying for:",
     quantity: "Quantity (KGs / Bags)",
+    cropQuality: "Crop Quality / Expected Grade",
+    gradeA: "Grade A (FAQ - Fair Average Quality / Premium)",
+    gradeB: "Grade B (Standard Market Quality)",
+    gradeC: "Grade C (Substandard / Feed Quality)",
     selectZone: "-- Select Active Zone --",
     selectSubPlace: "-- Select Sub-Place / Village --",
     farmAddress: "Specific Farm Address",
@@ -258,6 +262,10 @@ const t = {
     procurementApp: "கொள்முதல் விண்ணப்பம்",
     applyingFor: "இதற்கான விண்ணப்பம்:",
     quantity: "அளவு (கிலோ / பைகள்)",
+    cropQuality: "பயிரின் தரம் / எதிர்பார்க்கப்படும் தரம்",
+    gradeA: "தரம் A (FAQ - சிறந்த சராசரி தரம் / பிரீமியம்)",
+    gradeB: "தரம் B (நிலையான சந்தை தரம்)",
+    gradeC: "தரம் C (குறைந்த தரம்)",
     selectZone: "-- செயலில் உள்ள மண்டலத்தைத் தேர்ந்தெடுக்கவும் --",
     selectSubPlace: "-- கிராமம் / துணை இடத்தைத் தேர்ந்தெடுக்கவும் --",
     farmAddress: "குறிப்பிட்ட பண்ணை முகவரி",
@@ -330,6 +338,10 @@ const t = {
     procurementApp: "खरीद आवेदन",
     applyingFor: "इसके लिए आवेदन:",
     quantity: "मात्रा (किग्रा / बैग)",
+    cropQuality: "फसल की गुणवत्ता / अपेक्षित ग्रेड",
+    gradeA: "ग्रेड A (FAQ - उचित औसत गुणवत्ता / प्रीमियम)",
+    gradeB: "ग्रेड B (मानक बाजार गुणवत्ता)",
+    gradeC: "ग्रेड C (उप-मानक / निम्न गुणवत्ता)",
     selectZone: "-- सक्रिय ज़ोन चुनें --",
     selectSubPlace: "-- गांव / उप-स्थान चुनें --",
     farmAddress: "विशिष्ट खेत का पता",
@@ -491,6 +503,7 @@ const Dashboard = () => {
     subPlace: '',
     address: '',
     quantity: '',
+    quality: 'Grade A (FAQ - Fair Average Quality)',
     pattaChitta: ''
   });
   const [pattaFile, setPattaFile] = useState(null);
@@ -1004,6 +1017,7 @@ const Dashboard = () => {
         accountHolderName: userProfile.accountHolderName || userProfile.name || '',
         item: orderingItem,
         quantity: orderDetails.quantity,
+        quality: orderDetails.quality || 'Grade A (FAQ - Fair Average Quality)',
         zone: orderDetails.zone,
         subPlace: orderDetails.subPlace,
         address: orderDetails.address,
@@ -1016,7 +1030,7 @@ const Dashboard = () => {
 
       alert(`Application sent successfully to VAO in ${orderDetails.zone} (${orderDetails.subPlace})! Assigned Token: ${generatedToken}`);
       setOrderingItem(null);
-      setOrderDetails({ zone: '', subPlace: '', address: '', quantity: '', pattaChitta: '' });
+      setOrderDetails({ zone: '', subPlace: '', address: '', quantity: '', quality: 'Grade A (FAQ - Fair Average Quality)', pattaChitta: '' });
       setPattaFile(null);
       changeTab('track');
     } catch (err) {
@@ -1072,7 +1086,7 @@ const Dashboard = () => {
       pdf.text('Crop & Quantity:', 20, 82);
       pdf.setTextColor(15, 23, 42);
       pdf.setFont('helvetica', 'bold');
-      pdf.text(`${order.item} (${order.quantity} KGs/Qtl)`, 75, 82);
+      pdf.text(`${order.item} (${order.quantity} KGs/Qtl) [${order.officerQuality || order.quality || 'Grade A'}]`, 75, 82);
 
       pdf.setTextColor(100, 116, 139);
       pdf.setFont('helvetica', 'normal');
@@ -2305,6 +2319,21 @@ const Dashboard = () => {
                         />
                       </div>
                       <div className="v-form-field">
+                        <label>{l.cropQuality} *</label>
+                        <select
+                          required
+                          value={orderDetails.quality}
+                          onChange={(e) => setOrderDetails({ ...orderDetails, quality: e.target.value })}
+                        >
+                          <option value="Grade A (FAQ - Fair Average Quality)">{l.gradeA}</option>
+                          <option value="Grade B (Standard Market Quality)">{l.gradeB}</option>
+                          <option value="Grade C (Substandard / Feed Quality)">{l.gradeC}</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="v-form-row">
+                      <div className="v-form-field">
                         <label>{l.selectZone}</label>
                         <select
                           required
@@ -2317,20 +2346,19 @@ const Dashboard = () => {
                           ))}
                         </select>
                       </div>
-                    </div>
-
-                    <div className="v-form-field">
-                      <label>{l.selectSubPlace}</label>
-                      <select
-                        required
-                        value={orderDetails.subPlace}
-                        onChange={(e) => setOrderDetails({ ...orderDetails, subPlace: e.target.value })}
-                      >
-                        <option value="">{l.selectSubPlace}</option>
-                        {availableSubPlaces.map((sp) => (
-                          <option key={sp} value={sp}>{sp}</option>
-                        ))}
-                      </select>
+                      <div className="v-form-field">
+                        <label>{l.selectSubPlace}</label>
+                        <select
+                          required
+                          value={orderDetails.subPlace}
+                          onChange={(e) => setOrderDetails({ ...orderDetails, subPlace: e.target.value })}
+                        >
+                          <option value="">{l.selectSubPlace}</option>
+                          {availableSubPlaces.map((sp) => (
+                            <option key={sp} value={sp}>{sp}</option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
 
                     <div className="v-form-field">
@@ -2478,6 +2506,27 @@ const Dashboard = () => {
                       <small>CROP ITEM</small>
                       <strong>{order.item} ({order.quantity} KGs/Qtl)</strong>
                     </div>
+                    <div className="v-td-item">
+                      <small>DECLARED QUALITY</small>
+                      <strong style={{ color: '#166534' }}>
+                        ⭐ {order.quality || 'Grade A (FAQ)'}
+                      </strong>
+                    </div>
+                    {order.officerQuality ? (
+                      <div className="v-td-item">
+                        <small>OFFICER VERIFIED QUALITY</small>
+                        <strong style={{ color: '#0369a1' }}>
+                          ✅ {order.officerQuality}
+                        </strong>
+                      </div>
+                    ) : (
+                      <div className="v-td-item">
+                        <small>OFFICER QUALITY ASSESSMENT</small>
+                        <span style={{ fontSize: '0.82rem', color: '#64748b' }}>
+                          ⏳ At Weighbridge Intake
+                        </span>
+                      </div>
+                    )}
                     <div className="v-td-item">
                       <small>ZONE & VILLAGE</small>
                       <strong>{order.zone} ({order.subPlace})</strong>

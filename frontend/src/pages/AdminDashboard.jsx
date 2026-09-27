@@ -1266,7 +1266,10 @@ const AdminDashboard = () => {
                             <td>
                               <div className="v-crop-info-cell">
                                 <span className="v-crop-name-pill">🌾 {o.item || 'Crop'}</span>
-                                <b>{o.quantity || 0} kg</b>
+                                <b>{o.verifiedWeight || o.quantity || 0} kg</b>
+                                <small style={{ color: o.officerQuality ? '#0369a1' : '#166534', fontWeight: 600, display: 'block', marginTop: '2px' }}>
+                                  ⭐ {o.officerQuality ? `Officer: ${o.officerQuality.split(' ')[0]} ${o.officerQuality.split(' ')[1]}` : (o.quality ? (o.quality.length > 16 ? o.quality.slice(0, 16) + '...' : o.quality) : 'Grade A')}
+                                </small>
                               </div>
                             </td>
                             <td>
